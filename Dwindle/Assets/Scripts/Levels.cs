@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // level layouts
-// coordinates: (0,0) - bottom-left cell
-// (x = -1, x = width, y = -1, y = height) - where objects and destinations sit
 public static class Levels
 {
     static readonly Color Red = new(0.92f, 0.30f, 0.30f);
@@ -29,7 +27,7 @@ public static class Levels
     static LevelData Sketch3x3()
     {
         var l = new LevelData { title = "Level 2", width = 3, height = 3, required = 2, bonus = BonusGoal.UseEveryType };
-        l.inventory = Inv(cross: 2, ne: 2, es: 1, sw: 2, wn: 2, h: 4, v: 2);
+        l.inventory = Inv(cross: 2, bridge: 1, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1, ne: 2, es: 1, sw: 2, wn: 2, h: 4, v: 2); // step 1: T tiles and a bridge to try out
         l.objects.Add(Obj("Red", Red, 1, -1, Dir.N, 0, 3));
         l.objects.Add(Obj("Green", Green, 2, 3, Dir.S, -1, 1));
         l.objects.Add(Obj("Cyan", Cyan, -1, 0, Dir.E, 3, 0));
@@ -40,7 +38,7 @@ public static class Levels
     static LevelData Shared4x4()
     {
         var l = new LevelData { title = "Level 3", width = 4, height = 4, required = 2, bonus = BonusGoal.ComboDelivery };
-        l.inventory = Inv(cross: 3, ne: 2, es: 2, sw: 2, wn: 2, h: 3, v: 3);
+        l.inventory = Inv(cross: 3, bridge: 1, tESW: 1, tWNE: 1, ne: 2, es: 2, sw: 2, wn: 2, h: 3, v: 3);
         l.obstacles.Add(new Vector2Int(0, 2));
         l.objects.Add(Obj("Red", Red, -1, 3, Dir.E, 4, 0));
         l.objects.Add(Obj("Blue", Blue, 0, -1, Dir.N, 4, 3));
@@ -51,9 +49,13 @@ public static class Levels
     static ObjectSpec Obj(string name, Color color, int sx, int sy, Dir heading, int dx, int dy) =>
         new() { name = name, color = color, start = new Vector2Int(sx, sy), heading = heading, dest = new Vector2Int(dx, dy) };
 
-    static Dictionary<TileType, int> Inv(int cross, int ne, int es, int sw, int wn, int h, int v) => new()
+    // every count defaults to 0, so a level only lists the tiles it hands out
+    static Dictionary<TileType, int> Inv(int cross = 0, int bridge = 0,
+        int tNES = 0, int tESW = 0, int tSWN = 0, int tWNE = 0,
+        int ne = 0, int es = 0, int sw = 0, int wn = 0, int h = 0, int v = 0) => new()
     {
-        { TileType.Cross, cross },
+        { TileType.Cross, cross }, { TileType.Bridge, bridge },
+        { TileType.TeeNES, tNES }, { TileType.TeeESW, tESW }, { TileType.TeeSWN, tSWN }, { TileType.TeeWNE, tWNE },
         { TileType.CornerNE, ne }, { TileType.CornerES, es }, { TileType.CornerSW, sw }, { TileType.CornerWN, wn },
         { TileType.StraightH, h }, { TileType.StraightV, v },
     };

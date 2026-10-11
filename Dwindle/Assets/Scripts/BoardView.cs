@@ -156,17 +156,16 @@ public class BoardView : MonoBehaviour
         o.dest.MarkDelivered();
     }
 
-    // the object waits at the center of the + tile, clicking one sends it out that way
-    public IEnumerator AskDirection(MovingObject o)
+    // the object waits at the center of a + or T tile, with one arrow per way it may go
+    public IEnumerator AskDirection(MovingObject o, List<Dir> options)
     {
         var cellBg = Cells[o.pos.x, o.pos.y].view.background;
         cellBg.color = crossHighlightColor;
         Clear(choicesRoot);
 
         pickedDirection = null;
-        foreach (var d in DirUtil.All)
+        foreach (var d in options)
         {
-            if (d == DirUtil.Opposite(o.heading)) continue; // can't turn back
             var dir = d; // copy for the click handler below
             var button = Instantiate(arrowButtonPrefab, choicesRoot);
             var rt = (RectTransform)button.transform;

@@ -1,45 +1,57 @@
-// 7 pre-oriented tiles: one cross, four L corners, two I straights
-public enum TileType { Cross, CornerNE, CornerES, CornerSW, CornerWN, StraightH, StraightV }
+using System.Collections.Generic;
+using System.Linq;
 
-public enum TileCategory { Cross, Corner, Straight }
+// 12 pre-oriented tiles
+public enum TileType
+{
+    Cross, CornerNE, CornerES, CornerSW, CornerWN, StraightH, StraightV,
+    Bridge, TeeNES, TeeESW, TeeSWN, TeeWNE,
+}
+
+// the groups of the supply bar
+public enum TileCategory { Cross, Corner, Straight, Tee }
 
 public static class Tiles
 {
-    // inventory bar: + | four L | two I
+    // supply bar order: two crosses (+ and bridge) | four L | two I | four T
     public static readonly TileType[] All =
     {
-        TileType.Cross,
+        TileType.Cross, TileType.Bridge,
         TileType.CornerNE, TileType.CornerES, TileType.CornerSW, TileType.CornerWN,
         TileType.StraightH, TileType.StraightV,
+        TileType.TeeNES, TileType.TeeESW, TileType.TeeSWN, TileType.TeeWNE,
     };
 
     static int Bit(Dir d) => 1 << (int)d;
+    const int AllSides = 0b1111;
 
     static int Mask(TileType t) => t switch
     {
-        TileType.Cross => Bit(Dir.N) | Bit(Dir.E) | Bit(Dir.S) | Bit(Dir.W),
+        TileType.Cross or TileType.Bridge => AllSides,
         TileType.CornerNE => Bit(Dir.N) | Bit(Dir.E),
         TileType.CornerES => Bit(Dir.E) | Bit(Dir.S),
         TileType.CornerSW => Bit(Dir.S) | Bit(Dir.W),
         TileType.CornerWN => Bit(Dir.W) | Bit(Dir.N),
         TileType.StraightH => Bit(Dir.E) | Bit(Dir.W),
-        _ => Bit(Dir.N) | Bit(Dir.S),
+        TileType.StraightV => Bit(Dir.N) | Bit(Dir.S),
+        TileType.TeeNES => AllSides & ~Bit(Dir.W),
+        TileType.TeeESW => AllSides & ~Bit(Dir.N),
+        TileType.TeeSWN => AllSides & ~Bit(Dir.E),
+        _ => AllSides & ~Bit(Dir.S), // TeeWNE
     };
 
-    // asks is this side open, true - open
     public static bool Has(TileType t, Dir side) => (Mask(t) & Bit(side)) != 0;
 
-    // L and I tiles: came in here and where to leave
-    public static Dir OtherExit(TileType t, Dir entrySide)
+    public static List<Dir> Exits(TileType t, Dir entrySide)
     {
-        foreach (var d in DirUtil.All)
-            if (d != entrySide && Has(t, d)) return d;
-        return entrySide;
+        if (t == TileType.Bridge) return new List<Dir> { DirUtil.Opposite(entrySide) };
+        return DirUtil.All.Where(d => d != entrySide && Has(t, d)).ToList();
     }
 
     public static TileCategory Category(TileType t) => t switch
     {
-        TileType.Cross => TileCategory.Cross,
+        TileType.Cross or TileType.Bridge => TileCategory.Cross,
+        TileType.TeeNES or TileType.TeeESW or TileType.TeeSWN or TileType.TeeWNE => TileCategory.Tee,
         TileType.StraightH or TileType.StraightV => TileCategory.Straight,
         _ => TileCategory.Corner,
     };
@@ -47,11 +59,16 @@ public static class Tiles
     public static string Name(TileType t) => t switch
     {
         TileType.Cross => "+ Cross",
+        TileType.Bridge => "+ Bridge (straight only)",
         TileType.CornerNE => "L (N-E)",
         TileType.CornerES => "L (E-S)",
         TileType.CornerSW => "L (S-W)",
         TileType.CornerWN => "L (W-N)",
         TileType.StraightH => "I (horizontal)",
-        _ => "I (vertical)",
+        TileType.StraightV => "I (vertical)",
+        TileType.TeeNES => "T (N-E-S)",
+        TileType.TeeESW => "T (E-S-W)",
+        TileType.TeeSWN => "T (S-W-N)",
+        _ => "T (W-N-E)",
     };
 }

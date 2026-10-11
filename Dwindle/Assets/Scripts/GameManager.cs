@@ -31,7 +31,6 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        hud.BuildSlots(SelectTile);
         ShowStartScreen();
     }
 
@@ -54,6 +53,7 @@ public class GameManager : MonoBehaviour
         comboAchieved = false;
         finalComboNote = null;
 
+        hud.BuildSlots(Tiles.All, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
         objects = board.Build(level, OnCellClicked);
         Log($"{level.title}: pick a tile, then click an empty cell.");
         RefreshAll();
@@ -143,15 +143,16 @@ public class GameManager : MonoBehaviour
             o.pos = next;
             o.path.Add(next);
 
-            var t = cell.tile.Value;
-            if (t == TileType.Cross)
+            // L, I and the bridge have one way out; + and T tiles let the player choose
+            var ways = Tiles.Exits(cell.tile.Value, DirUtil.Opposite(o.heading));
+            if (ways.Count == 1)
             {
-                Log($"{o.spec.name} is on a + tile. Click an arrow to choose its direction.");
-                yield return board.AskDirection(o); // sets o.heading from the arrow the player clicks
+                o.heading = ways[0];
             }
             else
             {
-                o.heading = Tiles.OtherExit(t, DirUtil.Opposite(o.heading));
+                Log($"{o.spec.name} is at a junction. Click an arrow to choose its direction.");
+                yield return board.AskDirection(o, ways); // sets o.heading from the arrow the player clicks
             }
             o.view.Face(o.heading);
             yield return board.Slide(o, board.WaitPos(o));
@@ -296,12 +297,10 @@ public class GameManager : MonoBehaviour
             var entry = DirUtil.Opposite(heading);
             if (cell.tile != null && !Tiles.Has(cell.tile.Value, entry)) continue;
 
-            foreach (var exit in DirUtil.All)
-            {
-                if (exit == entry) continue;
-                if (cell.tile != null && !Tiles.Has(cell.tile.Value, exit)) continue;
+            // an empty cell could still hold any tile: every way except straight back
+            var exits = cell.tile == null ? DirUtil.All.Where(d => d != entry).ToList() : Tiles.Exits(cell.tile.Value, entry);
+            foreach (var exit in exits)
                 if (seen.Add((next, exit))) queue.Enqueue((next, exit));
-            }
         }
         return false;
     }
@@ -329,7 +328,9 @@ public class GameManager : MonoBehaviour
     {
         switch (level.bonus)
         {
-            case BonusGoal.UseEveryType: return usedCategories.Count == 3;
+            case BonusGoal.UseEveryType: // +, L and I (the bridge counts as a +; T tiles aren't needed)
+                return usedCategories.Contains(TileCategory.Cross) && usedCategories.Contains(TileCategory.Corner)
+                    && usedCategories.Contains(TileCategory.Straight);
             case BonusGoal.NoCross:      return !usedCategories.Contains(TileCategory.Cross);
             case BonusGoal.ShortestRoute: return objects.All(o => o.completed && TookShortestRoute(o));
             default:                     return comboAchieved;
