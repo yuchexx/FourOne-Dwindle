@@ -17,7 +17,8 @@ public class GameManager : MonoBehaviour
     [Header("Scoring")]
     public int pointsPerDelivery = 100;
     public int comboPointsPerObject = 50; // per object, when one placement delivers 2 or more
-    public int pointsPerUnusedTile = 75;  // per tile left in the supply, only if every object was delivered
+    public int pointsPerFilterUse = 50;   // each time
+    public int pointsPerUnusedTile = 75;  // per tile, only if every object was delivered
 
     int levelIndex;
     LevelData level;
@@ -31,8 +32,8 @@ public class GameManager : MonoBehaviour
     bool levelOver;
 
     // score, kept per source so the end window can show where it came from
-    int deliveryPoints, comboPoints, unusedPoints;
-    int Score => deliveryPoints + comboPoints + unusedPoints;
+    int deliveryPoints, comboPoints, filterPoints, unusedPoints;
+    int Score => deliveryPoints + comboPoints + filterPoints + unusedPoints;
 
     Cell[,] Cells => board.Cells;
 
@@ -57,11 +58,13 @@ public class GameManager : MonoBehaviour
         hud.ClearLog();
         removed = new List<RemovedEntry>();
         finalComboNote = null;
-        deliveryPoints = comboPoints = unusedPoints = 0;
+        deliveryPoints = comboPoints = filterPoints = unusedPoints = 0;
 
         hud.BuildSlots(Tiles.All, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
         objects = board.Build(level, OnCellClicked);
         Log($"{level.title}: pick a tile, then click an empty cell.");
+        if (level.filters.Count > 0)
+            Log("A colored filter is an extra way out for its own color (+50), and a wall for every other color.");
         RefreshAll();
     }
 
@@ -120,14 +123,19 @@ public class GameManager : MonoBehaviour
     // moves one object as far as the path goes
     IEnumerator MoveObject(MovingObject o)
     {
+        var color = o.spec.color;
         for (int guard = 0; guard < 500; guard++)
         {
             var next = o.pos + DirUtil.Offset(o.heading);
+            var edgeFilter = level.FilterOnEdge(o.pos, o.heading);
+            if (edgeFilter != null && !edgeFilter.Matches(color))
+                yield break; // a filter of another color is a wall
 
             if (!board.InGrid(next))
             {
                 if (next == o.spec.dest)
                 {
+                    CountFilterUse(o, edgeFilter);
                     yield return board.Slide(o, board.CellPos(next));
                     o.pos = next;
                     o.completed = true;
@@ -137,17 +145,20 @@ public class GameManager : MonoBehaviour
             }
 
             var cell = Cells[next.x, next.y];
-            if (cell.tile == null || !Tiles.Has(cell.tile.Value, DirUtil.Opposite(o.heading)))
+            var entry = DirUtil.Opposite(o.heading);
+            if (cell.tile == null || !CanEnter(color, next, entry, cell.tile.Value))
                 yield break; // the path ends here for now
+
+            CountFilterUse(o, edgeFilter);
 
             // entry edge then the center
             yield return board.Slide(o, board.CellPos(next) - (Vector2)DirUtil.Offset(o.heading) * board.CellSize * 0.5f);
             yield return board.Slide(o, board.CellPos(next));
             o.pos = next;
             o.path.Add(next);
+            board.RefreshFilterArms(objects);
 
-            // L, I and the bridge have one way out; + and T tiles let the player choose
-            var ways = Tiles.Exits(cell.tile.Value, DirUtil.Opposite(o.heading));
+            var ways = WaysOut(color, next, entry, cell.tile);
             if (ways.Count == 1)
             {
                 o.heading = ways[0];
@@ -158,8 +169,44 @@ public class GameManager : MonoBehaviour
                 yield return board.AskDirection(o, ways); // sets o.heading from the arrow the player clicks
             }
             o.view.Face(o.heading);
+            board.RefreshFilterArms(objects);
             yield return board.Slide(o, board.WaitPos(o));
         }
+    }
+
+    void CountFilterUse(MovingObject o, FilterSpec f)
+    {
+        if (f == null) return; // only matching filters get this far
+        filterPoints += pointsPerFilterUse;
+        Log($"{o.spec.name} passed through its color filter. +{pointsPerFilterUse}");
+    }
+
+    // filter and tile routing, shared by movement, blocking and the reachability search
+
+    // can an object of this color cross the edge from `from` in direction d?
+    bool CanCross(Color color, Vector2Int from, Dir d)
+    {
+        var f = level.FilterOnEdge(from, d);
+        return f == null || f.Matches(color);
+    }
+
+    List<Dir> WaysOut(Color color, Vector2Int cell, Dir entry, TileType? tile)
+    {
+        var exits = tile == null ? DirUtil.All.Where(d => d != entry).ToList() : Tiles.Exits(tile.Value, entry);
+        var colored = level.filters
+            .Where(f => f.Touches(cell) && f.Matches(color))
+            .Select(f => f.SideFrom(cell))
+            .Where(side => side != entry);
+        return DirUtil.All // in N, E, S, W order, so the arrows always come out the same way
+            .Where(d => (exits.Contains(d) || colored.Contains(d)) && CanCross(color, cell, d))
+            .ToList();
+    }
+
+    bool CanEnter(Color color, Vector2Int cell, Dir entry, TileType tile)
+    {
+        var f = level.FilterOnEdge(cell, entry);
+        bool open = Tiles.Has(tile, entry) || (f != null && f.Matches(color));
+        return open && WaysOut(color, cell, entry, tile).Count > 0;
     }
 
     int Delivered => objects.Count(o => o.completed);
@@ -284,22 +331,26 @@ public class GameManager : MonoBehaviour
     // blocked = the square in front can't be entered right now
     bool IsBlocked(MovingObject o)
     {
+        var color = o.spec.color;
+        if (!CanCross(color, o.pos, o.heading)) return true;
         var next = o.pos + DirUtil.Offset(o.heading);
         if (!board.InGrid(next)) return next != o.spec.dest;
         var cell = Cells[next.x, next.y];
         if (cell.obstacle) return true;
-        return cell.tile != null && !Tiles.Has(cell.tile.Value, DirUtil.Opposite(o.heading));
+        return cell.tile != null && !CanEnter(color, next, DirUtil.Opposite(o.heading), cell.tile.Value);
     }
 
     // could the object still reach its ring by some route - breadth-first search
     bool CanStillReach(MovingObject o)
     {
+        var color = o.spec.color;
         var seen = new HashSet<(Vector2Int, Dir)>();
         var queue = new Queue<(Vector2Int pos, Dir heading)>();
         queue.Enqueue((o.pos, o.heading));
         while (queue.Count > 0)
         {
             var (pos, heading) = queue.Dequeue();
+            if (!CanCross(color, pos, heading)) continue;
             var next = pos + DirUtil.Offset(heading);
             if (!board.InGrid(next))
             {
@@ -309,11 +360,9 @@ public class GameManager : MonoBehaviour
             var cell = Cells[next.x, next.y];
             if (cell.obstacle) continue;
             var entry = DirUtil.Opposite(heading);
-            if (cell.tile != null && !Tiles.Has(cell.tile.Value, entry)) continue;
+            if (cell.tile != null && !CanEnter(color, next, entry, cell.tile.Value)) continue;
 
-            // an empty cell could still hold any tile: every way except straight back
-            var exits = cell.tile == null ? DirUtil.All.Where(d => d != entry).ToList() : Tiles.Exits(cell.tile.Value, entry);
-            foreach (var exit in exits)
+            foreach (var exit in WaysOut(color, next, entry, cell.tile))
                 if (seen.Add((next, exit))) queue.Enqueue((next, exit));
         }
         return false;
@@ -356,7 +405,7 @@ public class GameManager : MonoBehaviour
             (reason != null ? reason + "\n" : "") +
             (ended && finalComboNote != null ? finalComboNote + "\n" : "") +
             $"Delivered {Delivered} / {objects.Count}   Score {Score} (3rd star: {level.targetScore})\n" +
-            $"<size=80%>Deliveries {deliveryPoints} | Combos {comboPoints} | Unused tiles {unusedPoints}</size>" +
+            $"<size=80%>Deliveries {deliveryPoints} | Combos {comboPoints} | Filters {filterPoints} | Unused tiles {unusedPoints}</size>" +
             (stars == 0 ? "\nEarn at least 1 star to unlock the next level." : "") +
             (isLast && stars > 0 ? "\nThat was the last level!" : "");
 

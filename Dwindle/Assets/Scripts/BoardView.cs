@@ -40,6 +40,22 @@ public class BoardView : MonoBehaviour
     LevelData level;
     Dir? pickedDirection;
 
+    // a filter drawn on the board
+    class FilterMark
+    {
+        public FilterSpec spec;
+        public List<FilterArm> arms = new List<FilterArm>();
+    }
+
+    class FilterArm
+    {
+        public Vector2Int cell;
+        public GameObject root;
+        public Image fill, hatch;
+    }
+    readonly List<FilterMark> filterMarks = new List<FilterMark>();
+    static Sprite hatchSprite;
+
     // builds the grid, the destination rings and the objects, and hands back the objects.
     public List<MovingObject> Build(LevelData levelData, Action<Vector2Int> onCellClicked)
     {
@@ -73,6 +89,9 @@ public class BoardView : MonoBehaviour
             Cells[o.x, o.y].obstacle = true;
             Cells[o.x, o.y].view.background.color = obstacleColor;
         }
+
+        filterMarks.Clear();
+        foreach (var f in level.filters) filterMarks.Add(MakeFilter(f));
 
         var objects = new List<MovingObject>();
         foreach (var spec in level.objects)
@@ -115,6 +134,97 @@ public class BoardView : MonoBehaviour
         StartCoroutine(Flash(cell.view.background));
     }
 
+    // filter's path
+    public void RefreshFilterArms(List<MovingObject> objects)
+    {
+        foreach (var m in filterMarks)
+        {
+            // objects still at their start marker, outside the grid, don't open it
+            bool open = objects.Any(o => !o.completed && InGrid(o.pos) &&
+                (m.spec.Touches(o.pos) || m.spec.Touches(o.pos + DirUtil.Offset(o.heading))));
+            foreach (var arm in m.arms) arm.root.SetActive(open);
+        }
+    }
+
+    FilterMark MakeFilter(FilterSpec f)
+    {
+        var mark = new FilterMark { spec = f };
+        foreach (var square in new[] { f.cell, f.Neighbor })
+            if (InGrid(square)) mark.arms.Add(MakeArm(f, square));
+
+        // the colored segment on the edge itself
+        var offset = (Vector2)DirUtil.Offset(f.side);
+        bool horizontalEdge = f.side == Dir.N || f.side == Dir.S;
+        var bar = MakeImage("Filter", markersRoot, null);
+        var barRect = bar.rectTransform;
+        barRect.anchorMin = barRect.anchorMax = new Vector2(0.5f, 0.5f);
+        barRect.anchoredPosition = CellPos(f.cell) + offset * CellSize * 0.5f;
+        float length = CellSize * 0.5f, thickness = Mathf.Max(6f, CellSize * 0.09f);
+        barRect.sizeDelta = horizontalEdge ? new Vector2(length, thickness) : new Vector2(thickness, length);
+        bar.color = f.color;
+        return mark;
+    }
+
+    // one arm, the width of a tile's arm, from the edge of the square's center square (not over it) to the filter
+    FilterArm MakeArm(FilterSpec f, Vector2Int square)
+    {
+        var side = f.SideFrom(square);
+        var offset = (Vector2)DirUtil.Offset(side);
+        bool vertical = side == Dir.N || side == Dir.S;
+        var arm = new FilterArm { cell = square, root = new GameObject("FilterArm", typeof(RectTransform)) };
+        var rt = (RectTransform)arm.root.transform;
+        rt.SetParent(markersRoot, false);
+        float tileSize = CellSize - 4; // cells are drawn with a 4px gap
+        float start = tileSize * 0.14f, end = CellSize * 0.5f; // the center square spans 0.36-0.64 of the tile
+        rt.anchoredPosition = CellPos(square) + offset * (start + end) * 0.5f;
+        float width = tileSize * 0.28f, length = end - start;
+        rt.sizeDelta = vertical ? new Vector2(width, length) : new Vector2(length, width);
+        arm.fill = MakeImage("Fill", rt, null);
+        arm.hatch = MakeImage("Hatch", rt, HatchSprite());
+        arm.hatch.type = Image.Type.Tiled;
+        SetArmColor(arm, f.color);
+        arm.root.SetActive(false);
+        return arm;
+    }
+
+    static void SetArmColor(FilterArm arm, Color c)
+    {
+        arm.fill.color = new Color(c.r, c.g, c.b, 0.35f);
+        arm.hatch.color = c;
+    }
+
+    static Image MakeImage(string name, RectTransform parent, Sprite sprite)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        var rt = (RectTransform)go.transform;
+        rt.SetParent(parent, false);
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+        var img = go.GetComponent<Image>();
+        img.sprite = sprite;
+        img.raycastTarget = false;
+        return img;
+    }
+
+    // diagonal stripes, made once in code so no texture asset is needed
+    static Sprite HatchSprite()
+    {
+        if (hatchSprite != null) return hatchSprite;
+        const int size = 16;
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+        {
+            wrapMode = TextureWrapMode.Repeat,
+            filterMode = FilterMode.Bilinear,
+        };
+        for (int x = 0; x < size; x++)
+        for (int y = 0; y < size; y++)
+            tex.SetPixel(x, y, (x + y) % 8 < 3 ? Color.white : Color.clear);
+        tex.Apply();
+        hatchSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        return hatchSprite;
+    }
+
     // where an object rests
     public Vector2 WaitPos(MovingObject o) =>
         InGrid(o.pos) ? CellPos(o.pos) + (Vector2)DirUtil.Offset(o.heading) * CellSize * 0.5f : CellPos(o.pos);
@@ -122,6 +232,7 @@ public class BoardView : MonoBehaviour
     // several spread each group out along its edge
     public void LayoutWaitingObjects(List<MovingObject> objects)
     {
+        RefreshFilterArms(objects);
         var groups = objects.Where(o => !o.completed)
             .GroupBy(o => Vector2Int.RoundToInt(WaitPos(o) * 2f / CellSize));
         foreach (var group in groups)
@@ -156,7 +267,7 @@ public class BoardView : MonoBehaviour
         o.dest.MarkDelivered();
     }
 
-    // the object waits at the center of a + or T tile, with one arrow per way it may go
+    // the object waits at the center of a + or T tile
     public IEnumerator AskDirection(MovingObject o, List<Dir> options)
     {
         var cellBg = Cells[o.pos.x, o.pos.y].view.background;

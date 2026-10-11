@@ -6,7 +6,7 @@ public class TileView : MonoBehaviour
     public Image center;
     public Image armN, armE, armS, armW;
 
-    const float BridgeHalfWidth = 0.17f; // the horizontal road spans 0.33-0.67 of the tile
+    const float BridgeHalfWidth = 0.14f; // the horizontal road spans 0.33-0.67 of the tile
     const float BridgeGap = 0.04f;       // the gap between the two roads
 
     (Vector2 min, Vector2 max)[] prefabAnchors;
