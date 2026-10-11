@@ -50,7 +50,6 @@ public class HudView : MonoBehaviour
     TileType? lastSelected;
     Dictionary<TileType, int> lastInventory;
 
-    // slots get narrower when they wouldn't fit the bar
     public void BuildSlots(IEnumerable<TileType> types, Action<TileType> onSelect)
     {
         Clear(slotsRoot);
@@ -137,7 +136,7 @@ public class HudView : MonoBehaviour
         flashingSlots.Clear();
     }
 
-    public void RefreshInfo(LevelData level, int delivered, int total, int tilesLeft, bool bonusMet)
+    public void RefreshInfo(LevelData level, int delivered, int total, int tilesLeft, int score, bool scoreStar)
     {
         levelTitleText.text = level.title;
 
@@ -146,13 +145,12 @@ public class HudView : MonoBehaviour
             "<b>Progress</b>\n" +
             $"{delivered}/{total} delivered | {tilesLeft} tiles left\n\n" +
             "<b>Star Goals</b>\n" +
-            $"1st star: Deliver {level.required}\n" +
+            $"1st star: Deliver {level.Required}\n" +
             $"2nd star: Deliver all {total}";
 
         bonusText.text =
-            $"3rd star (bonus goal):\n" +
-            $"{level.BonusText()}\n" +
-            $"Bonus: {(bonusMet ? "Complete" : "Not complete")}";
+            $"3rd star: deliver all and score {level.targetScore}\n" +
+            $"<b>Score: {score}</b>{(scoreStar ? "  (target reached)" : "")}";
     }
 
     // 3 sections of the panel: junctions (+, bridge, T) on top, the four L tiles, then the two I tiles

@@ -14,6 +14,11 @@ public class GameManager : MonoBehaviour
     [Header("Timing")]
     public float endPopupDelay = 1.2f; // seconds between the level ending and the end window
 
+    [Header("Scoring")]
+    public int pointsPerDelivery = 100;
+    public int comboPointsPerObject = 50; // per object, when one placement delivers 2 or more
+    public int pointsPerUnusedTile = 75;  // per tile left in the supply, only if every object was delivered
+
     int levelIndex;
     LevelData level;
     Dictionary<TileType, int> inventory;
@@ -22,10 +27,12 @@ public class GameManager : MonoBehaviour
     List<MovingObject> objects;
     List<RemovedEntry> removed;
     TileType? pendingRecovery; // the card the player clicked during a recovery choice
-    bool comboAchieved;
     string finalComboNote; // set when the last objects arrive together
-    HashSet<TileCategory> usedCategories;
     bool levelOver;
+
+    // score, kept per source so the end window can show where it came from
+    int deliveryPoints, comboPoints, unusedPoints;
+    int Score => deliveryPoints + comboPoints + unusedPoints;
 
     Cell[,] Cells => board.Cells;
 
@@ -42,7 +49,6 @@ public class GameManager : MonoBehaviour
         hud.ResetSlotFlashes();
         menu.ShowGame();
         levelOver = false;
-        usedCategories = new HashSet<TileCategory>();
         levelIndex = index;
         level = Levels.All[index];
         inventory = Tiles.All.ToDictionary(t => t, t => level.inventory.TryGetValue(t, out var c) ? c : 0);
@@ -50,8 +56,8 @@ public class GameManager : MonoBehaviour
         busy = false;
         hud.ClearLog();
         removed = new List<RemovedEntry>();
-        comboAchieved = false;
         finalComboNote = null;
+        deliveryPoints = comboPoints = unusedPoints = 0;
 
         hud.BuildSlots(Tiles.All, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
         objects = board.Build(level, OnCellClicked);
@@ -81,7 +87,6 @@ public class GameManager : MonoBehaviour
         inventory[t]--;
         board.SetTile(p, t);
         Log($"Placed {Tiles.Name(t)} at ({p.x},{p.y}).");
-        usedCategories.Add(Tiles.Category(t));
         RefreshAll();
         StartCoroutine(ResolveRound());
     }
@@ -99,11 +104,9 @@ public class GameManager : MonoBehaviour
             if (o.completed)
             {
                 deliveredNow.Add(o);
-                Log($"{o.spec.name} reached its destination!");
-                if (level.bonus == BonusGoal.ShortestRoute)
-                    Log(TookShortestRoute(o)
-                        ? $"{o.spec.name} took a shortest route ({o.path.Count} tiles)."
-                        : $"{o.spec.name} took {o.path.Count} tiles; the shortest route is {ShortestRouteCells(o.spec)}.");
+                deliveryPoints += pointsPerDelivery;
+                Log($"{o.spec.name} reached its destination! +{pointsPerDelivery}");
+                RefreshAll();
             }
         }
 
@@ -194,10 +197,13 @@ public class GameManager : MonoBehaviour
         }
         RefreshAll();
 
-        // 2 or more deliveries from one placemen - the player gets one removed tile back
+        // 2 or more deliveries from one placement - combo points, and the player gets one removed tile back
         if (deliveredNow.Count >= 2)
         {
-            comboAchieved = true;
+            int bonus = comboPointsPerObject * deliveredNow.Count;
+            comboPoints += bonus;
+            Log($"{deliveredNow.Count} delivered in one move! Combo +{bonus}");
+            RefreshAll();
             if (objects.All(o => o.completed))
             {
                 finalComboNote = string.Join(" and ", deliveredNow.Select(o => o.spec.name)) + " arrived together!";
@@ -257,6 +263,14 @@ public class GameManager : MonoBehaviour
         levelOver = true;
         selected = null;
         Log(reason);
+
+        // unused tiles only score when everything was delivered
+        if (objects.All(o => o.completed))
+        {
+            int unusedTiles = inventory.Values.Sum();
+            unusedPoints = unusedTiles * pointsPerUnusedTile;
+            if (unusedTiles > 0) Log($"{unusedTiles} unused tiles. +{unusedPoints}");
+        }
         RefreshAll();
         StartCoroutine(ShowEndMenuAfterDelay(reason));
     }
@@ -305,7 +319,7 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
-    //cCrosses out blocked objects, and logs when one becomes blocked or free again
+    // crosses out blocked objects, and logs when one becomes blocked or free again
     void UpdateBlocked()
     {
         foreach (var o in objects.Where(o => !o.completed))
@@ -324,48 +338,14 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
-    bool BonusMet()
-    {
-        switch (level.bonus)
-        {
-            case BonusGoal.UseEveryType: // +, L and I (the bridge counts as a +; T tiles aren't needed)
-                return usedCategories.Contains(TileCategory.Cross) && usedCategories.Contains(TileCategory.Corner)
-                    && usedCategories.Contains(TileCategory.Straight);
-            case BonusGoal.NoCross:      return !usedCategories.Contains(TileCategory.Cross);
-            case BonusGoal.ShortestRoute: return objects.All(o => o.completed && TookShortestRoute(o));
-            default:                     return comboAchieved;
-        }
-    }
+    bool ScoreStar => Score >= level.targetScore;
 
-    bool TookShortestRoute(MovingObject o) => o.path.Count == ShortestRouteCells(o.spec);
-
-    int ShortestRouteCells(ObjectSpec s)
-    {
-        var from = s.start + DirUtil.Offset(s.heading);
-        var to = new Vector2Int(Mathf.Clamp(s.dest.x, 0, level.width - 1), Mathf.Clamp(s.dest.y, 0, level.height - 1));
-        var dist = new Dictionary<Vector2Int, int> { [from] = 1 };
-        var queue = new Queue<Vector2Int>();
-        queue.Enqueue(from);
-        while (queue.Count > 0)
-        {
-            var c = queue.Dequeue();
-            if (c == to) return dist[c];
-            foreach (var d in DirUtil.All)
-            {
-                var n = c + DirUtil.Offset(d);
-                if (!board.InGrid(n) || Cells[n.x, n.y].obstacle || dist.ContainsKey(n)) continue;
-                dist[n] = dist[c] + 1;
-                queue.Enqueue(n);
-            }
-        }
-        return int.MaxValue; // unreachable
-    }
-
+    // 1 = all but one delivered, 2 = all delivered, 3 = all delivered and the target score
     int Stars()
     {
-        if (Delivered < level.required) return 0;
+        if (Delivered < level.Required) return 0;
         if (Delivered < objects.Count) return 1;
-        return BonusMet() ? 3 : 2;
+        return ScoreStar ? 3 : 2;
     }
 
     void ShowMenu(bool ended, string reason)
@@ -375,17 +355,17 @@ public class GameManager : MonoBehaviour
         string summary =
             (reason != null ? reason + "\n" : "") +
             (ended && finalComboNote != null ? finalComboNote + "\n" : "") +
-            $"Delivered {Delivered} / {objects.Count} (need {level.required})\n" +
-            $"Bonus: {(BonusMet() ? "done" : "not done")}" +
+            $"Delivered {Delivered} / {objects.Count}   Score {Score} (3rd star: {level.targetScore})\n" +
+            $"<size=80%>Deliveries {deliveryPoints} | Combos {comboPoints} | Unused tiles {unusedPoints}</size>" +
             (stars == 0 ? "\nEarn at least 1 star to unlock the next level." : "") +
             (isLast && stars > 0 ? "\nThat was the last level!" : "");
 
         menu.ShowMenu(
             level.title + (ended ? " complete" : " paused"),
             summary,
-            Delivered >= level.required,
+            Delivered >= level.Required,
             Delivered >= objects.Count,
-            BonusMet(),
+            ScoreStar,
             showResume: !ended,
             showNext: ended && stars >= 1 && !isLast);
     }
@@ -417,7 +397,7 @@ public class GameManager : MonoBehaviour
     {
         if (selected != null && inventory[selected.Value] <= 0) selected = null;
         hud.RefreshInventory(inventory, selected);
-        hud.RefreshInfo(level, Delivered, objects.Count, inventory.Values.Sum(), BonusMet());
+        hud.RefreshInfo(level, Delivered, objects.Count, inventory.Values.Sum(), Score, ScoreStar);
         hud.RefreshRemoved(removed);
     }
 
