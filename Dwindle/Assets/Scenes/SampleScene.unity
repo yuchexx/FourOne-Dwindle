@@ -3837,7 +3837,7 @@ MonoBehaviour:
 
     +75 each unused tile, only if every object is delivered
 
-    
+
 
     Stars
 
@@ -3846,13 +3846,12 @@ MonoBehaviour:
 
     2nd: Deliver every object.
 
-    3rd: Deliver
-    every object and reach the target score.
+    3rd: Reach
+    the target score.
 
 
-    The level ends when all objects
-    are delivered, no object can reach its destination, no tiles remain, or no empty
-    cells remain.'
+    The level ends when all objects are delivered, no object
+    can reach its destination, no tiles remain, or no empty cells remain.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

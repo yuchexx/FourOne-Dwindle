@@ -149,7 +149,7 @@ public class HudView : MonoBehaviour
             $"2nd star: Deliver all {total}";
 
         bonusText.text =
-            $"3rd star: deliver all and score {level.targetScore}\n" +
+            $"3rd star: score {level.targetScore}\n" +
             $"<b>Score: {score}</b>{(scoreStar ? "  (target reached)" : "")}";
     }
 

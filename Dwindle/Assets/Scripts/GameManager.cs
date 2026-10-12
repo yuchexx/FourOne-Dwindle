@@ -63,7 +63,7 @@ public class GameManager : MonoBehaviour
         comboObjects = teleports = unusedTiles = 0;
 
         hud.BuildSlots(Tiles.All, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
-        objects = board.Build(level, OnCellClicked);
+        objects = board.Build(level, OnCellClicked, OnDoorClicked);
         Log($"{level.title}: pick a tile, then click an empty cell.");
         if (level.doors.Count > 0)
             Log("Doors with the same letter are linked: a road into one comes out of the other.");
@@ -103,6 +103,9 @@ public class GameManager : MonoBehaviour
         var local = p - level.boards[b].origin;
         return level.boards.Count > 1 ? $"({local.x},{local.y}) on board {b + 1}" : $"({local.x},{local.y})";
     }
+
+    // clicking a door names it
+    void OnDoorClicked(DoorSpec door) => Log($"Door {door.label}");
 
     // movement that happens after one tile placement
     IEnumerator ResolveRound()

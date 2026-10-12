@@ -44,11 +44,14 @@ public class BoardView : MonoBehaviour
 
     LevelData level;
     Dir? pickedDirection;
+    Action<DoorSpec> onDoorClicked;
 
-    // builds the boards, the doors, the destination rings and the objects, and hands back the objects
-    public List<MovingObject> Build(LevelData levelData, Action<Vector2Int> onCellClicked)
+    // builds the boards, the doors, the destination rings and the objects, and hands back the objects.
+    public List<MovingObject> Build(LevelData levelData, Action<Vector2Int> onCellClicked,
+                                    Action<DoorSpec> onDoorClicked = null)
     {
         level = levelData;
+        this.onDoorClicked = onDoorClicked;
         StopAllCoroutines(); // a Flash left over from the last level would touch a destroyed cell
         Clear(cellsRoot);
         Clear(markersRoot);
@@ -140,6 +143,15 @@ public class BoardView : MonoBehaviour
         badge.rectTransform.anchoredPosition = Vector2.zero;
         badge.rectTransform.sizeDelta = Vector2.one * CellSize * 0.3f;
         badge.color = doorColor;
+
+        if (onDoorClicked != null)
+        {
+            // the bar and the badge both take clicks; the button on the bar gets the badge's too
+            bar.raycastTarget = badge.raycastTarget = true;
+            var button = bar.gameObject.AddComponent<Button>();
+            button.transition = Selectable.Transition.None;
+            button.onClick.AddListener(() => onDoorClicked(door));
+        }
 
         var letter = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
         var lrt = (RectTransform)letter.transform;
