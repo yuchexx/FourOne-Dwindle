@@ -17,6 +17,7 @@ public class GameManager : MonoBehaviour
     [Header("Scoring")]
     public int pointsPerDelivery = 100;
     public int comboPointsPerObject = 50; // per object, when one placement delivers 2 or more
+    public int pointsPerTeleport = 50;    // per door gone through, paid when the object reaches a ring on another board
     public int pointsPerUnusedTile = 75;  // per tile left in the supply, only if every object was delivered
 
     int levelIndex;
@@ -31,8 +32,9 @@ public class GameManager : MonoBehaviour
     bool levelOver;
 
     // score, kept per source so the end window can show where it came from
-    int deliveryPoints, comboPoints, unusedPoints;
-    int Score => deliveryPoints + comboPoints + unusedPoints;
+    int deliveryPoints, comboPoints, teleportPoints, unusedPoints;
+    int comboObjects, teleports, unusedTiles; // how many of each, for the breakdown
+    int Score => deliveryPoints + comboPoints + teleportPoints + unusedPoints;
 
     Cell[,] Cells => board.Cells;
 
@@ -57,11 +59,14 @@ public class GameManager : MonoBehaviour
         hud.ClearLog();
         removed = new List<RemovedEntry>();
         finalComboNote = null;
-        deliveryPoints = comboPoints = unusedPoints = 0;
+        deliveryPoints = comboPoints = teleportPoints = unusedPoints = 0;
+        comboObjects = teleports = unusedTiles = 0;
 
         hud.BuildSlots(Tiles.All, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
         objects = board.Build(level, OnCellClicked);
         Log($"{level.title}: pick a tile, then click an empty cell.");
+        if (level.doors.Count > 0)
+            Log("Doors with the same letter are linked: a road into one comes out of the other.");
         RefreshAll();
     }
 
@@ -86,9 +91,17 @@ public class GameManager : MonoBehaviour
         var t = selected.Value;
         inventory[t]--;
         board.SetTile(p, t);
-        Log($"Placed {Tiles.Name(t)} at ({p.x},{p.y}).");
+        Log($"Placed {Tiles.Name(t)} at {Where(p)}.");
         RefreshAll();
         StartCoroutine(ResolveRound());
+    }
+
+    // a cell as the player sees it: its board's own coordinate, plus the board when there are several
+    string Where(Vector2Int p)
+    {
+        int b = level.BoardOf(p);
+        var local = p - level.boards[b].origin;
+        return level.boards.Count > 1 ? $"({local.x},{local.y}) on board {b + 1}" : $"({local.x},{local.y})";
     }
 
     // movement that happens after one tile placement
@@ -106,6 +119,14 @@ public class GameManager : MonoBehaviour
                 deliveredNow.Add(o);
                 deliveryPoints += pointsPerDelivery;
                 Log($"{o.spec.name} reached its destination! +{pointsPerDelivery}");
+                // doors only score for an object whose ring is on another board, once it gets there
+                if (o.spec.destBoard != o.spec.startBoard && o.teleports > 0)
+                {
+                    int bonus = pointsPerTeleport * o.teleports;
+                    teleports += o.teleports;
+                    teleportPoints += bonus;
+                    Log($"{o.spec.name} crossed boards through {o.teleports} door(s). +{bonus}");
+                }
                 RefreshAll();
             }
         }
@@ -117,12 +138,14 @@ public class GameManager : MonoBehaviour
         CheckLevelEnd();
     }
 
-    // moves one object as far as the path goes
+    // moves one object as far as the path goes, through doors too
     IEnumerator MoveObject(MovingObject o)
     {
         for (int guard = 0; guard < 500; guard++)
         {
             var next = o.pos + DirUtil.Offset(o.heading);
+            if (!CanCross(o.pos, o.heading, o.viaDoor))
+                yield break; // a door is a wall, except for the object coming out of it
 
             if (!board.InGrid(next))
             {
@@ -133,34 +156,80 @@ public class GameManager : MonoBehaviour
                     o.completed = true;
                     board.MarkDelivered(o);
                 }
-                yield break; // leaving the grid anywhere else is a dead end
+                yield break; // leaving the board anywhere else is a dead end
             }
 
             var cell = Cells[next.x, next.y];
-            if (cell.tile == null || !Tiles.Has(cell.tile.Value, DirUtil.Opposite(o.heading)))
+            var entry = DirUtil.Opposite(o.heading);
+            if (cell.tile == null || !Tiles.Has(cell.tile.Value, entry))
                 yield break; // the path ends here for now
 
             // entry edge then the center
-            yield return board.Slide(o, board.CellPos(next) - (Vector2)DirUtil.Offset(o.heading) * board.CellSize * 0.5f);
+            o.viaDoor = false;
+            yield return board.Slide(o, board.EdgePos(next, entry));
             yield return board.Slide(o, board.CellPos(next));
             o.pos = next;
             o.path.Add(next);
 
-            // L, I and the bridge have one way out; + and T tiles let the player choose
-            var ways = Tiles.Exits(cell.tile.Value, DirUtil.Opposite(o.heading));
+            // L, I and the bridge have one way out; + and T tiles let the player choose.
+            // a way out onto a door teleports
+            var ways = Tiles.Exits(cell.tile.Value, entry);
             if (ways.Count == 1)
             {
                 o.heading = ways[0];
             }
             else
             {
-                Log($"{o.spec.name} is at a junction. Click an arrow to choose its direction.");
+                Log(ways.Any(d => level.DoorOnEdge(next, d) != null)
+                    ? $"{o.spec.name} is next to a door. Click an arrow: the one on the door teleports."
+                    : $"{o.spec.name} is at a junction. Click an arrow to choose its direction.");
                 yield return board.AskDirection(o, ways); // sets o.heading from the arrow the player clicks
             }
             o.view.Face(o.heading);
+
+            var door = level.DoorOnEdge(next, o.heading);
+            if (door != null)
+            {
+                yield return board.Slide(o, board.EdgePos(next, o.heading));
+                yield return Teleport(o, door);
+            }
             yield return board.Slide(o, board.WaitPos(o));
         }
     }
+
+    // through one door and out of its partner, then facing a square beside it
+    IEnumerator Teleport(MovingObject o, DoorSpec door)
+    {
+        var partner = level.Partner(door);
+        o.teleports++;
+        Log($"{o.spec.name} went through door {door.label} to board {partner.board + 1}.");
+        yield return board.Teleport(o, board.EdgePos(partner.cell, partner.side));
+
+        var into = ArrivalHeadings(partner);
+        if (into.Count == 1) o.heading = into[0];
+        else
+        {
+            Log($"Pick the way {o.spec.name} faces as it comes out of door {partner.label}.");
+            yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into);
+        }
+
+        // stand on the far side of the door's edge, facing the square it'll enter next
+        o.pos = o.heading == partner.side ? partner.cell : partner.Neighbor;
+        o.viaDoor = true;
+        o.view.Face(o.heading);
+    }
+
+    // the ways an object can face coming out of a door
+    List<Dir> ArrivalHeadings(DoorSpec door)
+    {
+        var into = new List<Dir>();
+        if (board.InGrid(door.cell)) into.Add(DirUtil.Opposite(door.side));
+        if (board.InGrid(door.Neighbor)) into.Add(door.side);
+        return into;
+    }
+
+    // the only way across a door's edge is to teleport, or to step off it right after coming out
+    bool CanCross(Vector2Int from, Dir d, bool viaDoor) => viaDoor || level.DoorOnEdge(from, d) == null;
 
     int Delivered => objects.Count(o => o.completed);
 
@@ -181,7 +250,7 @@ public class GameManager : MonoBehaviour
                 board.ClearTile(c);
                 removed.Add(entry);
                 removedNow.Add(entry);
-                Log($"Removed {Tiles.Name(entry.type)} from the board at ({c.x},{c.y}).");
+                Log($"Removed {Tiles.Name(entry.type)} from the board at {Where(c)}.");
             }
 
             // one random unused tile from the supply.
@@ -202,6 +271,7 @@ public class GameManager : MonoBehaviour
         {
             int bonus = comboPointsPerObject * deliveredNow.Count;
             comboPoints += bonus;
+            comboObjects += deliveredNow.Count;
             Log($"{deliveredNow.Count} delivered in one move! Combo +{bonus}");
             RefreshAll();
             if (objects.All(o => o.completed))
@@ -267,7 +337,7 @@ public class GameManager : MonoBehaviour
         // unused tiles only score when everything was delivered
         if (objects.All(o => o.completed))
         {
-            int unusedTiles = inventory.Values.Sum();
+            unusedTiles = inventory.Values.Sum();
             unusedPoints = unusedTiles * pointsPerUnusedTile;
             if (unusedTiles > 0) Log($"{unusedTiles} unused tiles. +{unusedPoints}");
         }
@@ -284,6 +354,7 @@ public class GameManager : MonoBehaviour
     // blocked = the square in front can't be entered right now
     bool IsBlocked(MovingObject o)
     {
+        if (!CanCross(o.pos, o.heading, o.viaDoor)) return true;
         var next = o.pos + DirUtil.Offset(o.heading);
         if (!board.InGrid(next)) return next != o.spec.dest;
         var cell = Cells[next.x, next.y];
@@ -291,15 +362,16 @@ public class GameManager : MonoBehaviour
         return cell.tile != null && !Tiles.Has(cell.tile.Value, DirUtil.Opposite(o.heading));
     }
 
-    // could the object still reach its ring by some route - breadth-first search
+    // could the object still reach its ring by some route, doors included - breadth-first search
     bool CanStillReach(MovingObject o)
     {
-        var seen = new HashSet<(Vector2Int, Dir)>();
-        var queue = new Queue<(Vector2Int pos, Dir heading)>();
-        queue.Enqueue((o.pos, o.heading));
+        var seen = new HashSet<(Vector2Int, Dir, bool)>();
+        var queue = new Queue<(Vector2Int pos, Dir heading, bool viaDoor)>();
+        queue.Enqueue((o.pos, o.heading, o.viaDoor));
         while (queue.Count > 0)
         {
-            var (pos, heading) = queue.Dequeue();
+            var (pos, heading, viaDoor) = queue.Dequeue();
+            if (!CanCross(pos, heading, viaDoor)) continue;
             var next = pos + DirUtil.Offset(heading);
             if (!board.InGrid(next))
             {
@@ -314,7 +386,20 @@ public class GameManager : MonoBehaviour
             // an empty cell could still hold any tile: every way except straight back
             var exits = cell.tile == null ? DirUtil.All.Where(d => d != entry).ToList() : Tiles.Exits(cell.tile.Value, entry);
             foreach (var exit in exits)
-                if (seen.Add((next, exit))) queue.Enqueue((next, exit));
+            {
+                var door = level.DoorOnEdge(next, exit);
+                if (door == null)
+                {
+                    if (seen.Add((next, exit, false))) queue.Enqueue((next, exit, false));
+                    continue;
+                }
+                var partner = level.Partner(door);
+                foreach (var h in ArrivalHeadings(partner))
+                {
+                    var from = h == partner.side ? partner.cell : partner.Neighbor;
+                    if (seen.Add((from, h, true))) queue.Enqueue((from, h, true));
+                }
+            }
         }
         return false;
     }
@@ -334,7 +419,7 @@ public class GameManager : MonoBehaviour
     bool AnyEmptyCell()
     {
         foreach (var c in Cells)
-            if (!c.obstacle && c.tile == null) return true;
+            if (c != null && !c.obstacle && c.tile == null) return true;
         return false;
     }
 
@@ -355,8 +440,8 @@ public class GameManager : MonoBehaviour
         string summary =
             (reason != null ? reason + "\n" : "") +
             (ended && finalComboNote != null ? finalComboNote + "\n" : "") +
-            $"Delivered {Delivered} / {objects.Count}   Score {Score} (3rd star: {level.targetScore})\n" +
-            $"<size=80%>Deliveries {deliveryPoints} | Combos {comboPoints} | Unused tiles {unusedPoints}</size>" +
+            $"Delivered {Delivered} / {objects.Count}\n" +
+            ScoreBreakdown(ended) +
             (stars == 0 ? "\nEarn at least 1 star to unlock the next level." : "") +
             (isLast && stars > 0 ? "\nThat was the last level!" : "");
 
@@ -370,12 +455,36 @@ public class GameManager : MonoBehaviour
             showNext: ended && stars >= 1 && !isLast);
     }
 
+    // one line per source: what, how many x points, and the subtotal, then the total against the target
+    string ScoreBreakdown(bool ended)
+    {
+        string Line(string what, string count, int points) =>
+            $"{what}<pos=58%>{count}<pos=86%>{points}\n";
+
+        bool allDelivered = objects.All(o => o.completed);
+        string unused =
+            allDelivered ? Line("Unused tiles", $"{unusedTiles} x {pointsPerUnusedTile}", unusedPoints)
+            : ended ? "Unused tiles<pos=58%>not counted\n" // only counted when everything is delivered
+            : "Unused tiles<pos=58%>counted at the end\n";
+
+        return
+            "<align=left><indent=3%>" +
+            Line("Deliveries", $"{Delivered} x {pointsPerDelivery}", deliveryPoints) +
+            Line("Delivered together", $"{comboObjects} x {comboPointsPerObject}", comboPoints) +
+            Line("Doors to other boards", $"{teleports} x {pointsPerTeleport}", teleportPoints) +
+            unused +
+            $"<b>Total<pos=86%>{Score}</b>\n" +
+            $"<color=#A0A2A8>3rd star target<pos=86%>{level.targetScore}</color>" +
+            "</indent></align>";
+    }
+
     public void ShowStartScreen()
     {
         StopAllCoroutines();
         board.ClearChoices();
         hud.SetChoiceMode(false);
         menu.ShowStart();
+        menu.BuildLevelButtons(Levels.All.Count, LoadLevel);
     }
 
     public void StartGame() => LoadLevel(0);
