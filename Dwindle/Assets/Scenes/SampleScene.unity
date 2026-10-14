@@ -5371,13 +5371,14 @@ MonoBehaviour:
   m_text: "BUILD THE PATH\n\nGoal\nGuide every colored object to the ring of the
     same color. The triangle shows the direction the object is facing.\n\nPlace Tiles\n1.
     Select a tile from the top bar.\n2. Click an empty cell to place it.\n3. Tiles
-    are pre-oriented. Once placed, you cannot move, rotate, or manually remove them.\n\nObject
-    Movement\n\u2022 After every placement, objects automatically follow connected
-    paths.\n\u2022 An object stops when the path ends.\n\u2022 On a T or + tile,
-    choose an arrow to determine its direction. It cannot turn backward.\n\u2022
-    The bridge (a variation of + tile) lets two straight roads cross without meeting.\n\u2022
-    Dark cells are obstacles and cannot hold tiles.\n\u2022 A crossed-out object
-    is blocked by the board edge, an obstacle, a door, or an incompatible tile.\r\n"
+    are pre-oriented. Once placed, you cannot move or rotate them. Undo button takes
+    back your last move(s).\n\nObject Movement\n\u2022 After every placement, objects
+    automatically follow connected paths.\n\u2022 An object stops when the path ends.\n\u2022
+    On a T or + tile, choose an arrow to determine its direction. It cannot turn
+    backward.\n\u2022 The bridge (a variation of + tile) lets two straight roads
+    cross without meeting.\n\u2022 Dark cells are obstacles and cannot hold tiles.\n\u2022
+    A crossed-out object is blocked by the board edge, an obstacle, a door, or an
+    incompatible tile.\r\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -6229,9 +6230,10 @@ MonoBehaviour:
     the object through it and out of the matching door.\r\n\u2022 Coming out of a
     door between two squares, choose which way the object faces.\n\nAfter a Delivery\nEvery
     time an object reaches its matching ring:\n\u2022 One random tile from its path
-    is removed.\n\u2022 One random unused tile is removed from your supply.\n\nRecover
-    a Tile\nIf one placement delivers two or more objects and the level continues,
-    choose one tile from the Removed panel to recover."
+    is removed.\n\u2022 One random unused tile is removed from your supply.\nNo tiles
+    are removed on the move that completes the level.\n\nRecover a Tile\nIf one placement
+    delivers two or more objects and the level continues, choose one tile from the
+    Removed panel to recover."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
