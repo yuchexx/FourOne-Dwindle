@@ -12,8 +12,8 @@ public class DestinationView : MonoBehaviour
     {
         ring.color = color;
         ((RectTransform)transform).sizeDelta = Vector2.one * size;
-        hole.enabled = true;
+        SetDelivered(false);
     }
 
-    public void MarkDelivered() => hole.enabled = false;
+    public void SetDelivered(bool delivered) => hole.enabled = !delivered;
 }
