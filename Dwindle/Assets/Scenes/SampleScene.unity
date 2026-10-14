@@ -1168,11 +1168,11 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 963371393}
-  m_Father: {fileID: 1846566952}
+  m_Father: {fileID: 1720826680}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -359.26865, y: 409}
+  m_AnchoredPosition: {x: -359.26865, y: 0}
   m_SizeDelta: {x: 95, y: 95}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &374498824
@@ -1301,7 +1301,7 @@ MonoBehaviour:
   board: {fileID: 1426677529}
   hud: {fileID: 445354903}
   menu: {fileID: 1454499147}
-  endPopupDelay: 1.2
+  endPopupDelay: 0
   pointsPerDelivery: 100
   comboPointsPerObject: 50
   pointsPerTeleport: 50
@@ -1386,6 +1386,7 @@ MonoBehaviour:
   slotColor: {r: 0.32, g: 0.34, b: 0.4, a: 1}
   selectedSlotColor: {r: 0.95, g: 0.78, b: 0.25, a: 1}
   emptySlotColor: {r: 0.22, g: 0.23, b: 0.27, a: 1}
+  emptySlotDarken: 0.121
   emptyLabelColor: {r: 0.55, g: 0.56, b: 0.6, a: 1}
   recoverySelectedColor: {r: 0.95, g: 0.78, b: 0.25, a: 1}
   flashColor: {r: 1, g: 0.45, b: 0.45, a: 1}
@@ -6483,7 +6484,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -56.268616, y: 0}
+  m_AnchoredPosition: {x: -56.268677, y: 0}
   m_SizeDelta: {x: 95, y: 95}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1659954739
@@ -6676,6 +6677,7 @@ RectTransform:
   - {fileID: 119921664}
   - {fileID: 1093446371}
   - {fileID: 1659954738}
+  - {fileID: 374498823}
   m_Father: {fileID: 1846566952}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
@@ -7296,7 +7298,6 @@ RectTransform:
   - {fileID: 1431757427}
   - {fileID: 1318185124}
   - {fileID: 494582652}
-  - {fileID: 374498823}
   m_Father: {fileID: 835069422}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}

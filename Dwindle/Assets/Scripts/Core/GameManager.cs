@@ -87,14 +87,14 @@ public partial class GameManager : MonoBehaviour
         if (busy) return;
         var cell = Cells[p.x, p.y];
         if (cell.obstacle) { Log("That space is blocked."); return; }
-        if (cell.tile != null) { Log("There's already a tile there. Placed tiles are permanent."); return; }
+        if (cell.tile != null) { Log("There's already a tile there."); return; }
         if (selected == null) { Log("Select a tile from the top bar first."); return; }
 
         var t = selected.Value;
         history.Record(Capture()); // the only point undo saves at
         inventory[t]--;
         board.SetTile(p, t);
-        Log($"Placed {Tiles.Name(t)} at {Where(p)}.");
+        Log($"Placed a {Tiles.Name(t)}.");
         RefreshAll();
         StartCoroutine(ResolveRound());
     }
@@ -242,9 +242,12 @@ public partial class GameManager : MonoBehaviour
     // tile loss and recovery
     IEnumerator HandleDeliveries(List<MovingObject> deliveredNow)
     {
+        // the move that completes the level loses no tiles (and so gets none back)
+        bool levelComplete = objects.All(o => o.completed);
         var removedNow = new List<RemovedEntry>();
         foreach (var o in deliveredNow)
         {
+            if (levelComplete) break;
             // one random tile from the completed path.
             var candidates = o.path.Distinct()
                 .Where(c => Cells[c.x, c.y].tile != null)
@@ -256,7 +259,7 @@ public partial class GameManager : MonoBehaviour
                 board.ClearTile(c);
                 removed.Add(entry);
                 removedNow.Add(entry);
-                Log($"Removed {Tiles.Name(entry.type)} from the board at {Where(c)}.");
+                Log($"Lost a {Tiles.Name(entry.type)} from the path.");
             }
 
             // one random unused tile from the supply.
@@ -266,7 +269,7 @@ public partial class GameManager : MonoBehaviour
                 var entry = new RemovedEntry { type = lost.Value, source = "unused supply" };
                 removed.Add(entry);
                 removedNow.Add(entry);
-                Log($"Lost an unused {Tiles.Name(entry.type)}.");
+                Log($"Lost a {Tiles.Name(entry.type)} from the supply.");
                 hud.FlashSlot(lost.Value);
             }
         }
@@ -305,7 +308,7 @@ public partial class GameManager : MonoBehaviour
         var picked = removed.First(e => e.type == pendingRecovery.Value);
         inventory[picked.type]++;
         removed.Remove(picked);
-        Log($"Recovered {Tiles.Name(picked.type)} to your supply.");
+        Log($"Got a {Tiles.Name(picked.type)} back to your supply.");
         RefreshAll();
     }
 
@@ -343,6 +346,7 @@ public partial class GameManager : MonoBehaviour
         // unused tiles only score when everything was delivered
         if (objects.All(o => o.completed))
         {
+            // a multi-delivery that ends the level counts as getting one tile back
             unusedTiles = inventory.Values.Sum();
             unusedPoints = unusedTiles * pointsPerUnusedTile;
             if (unusedTiles > 0) Log($"{unusedTiles} unused tiles. +{unusedPoints}");
@@ -445,7 +449,6 @@ public partial class GameManager : MonoBehaviour
         bool isLast = levelIndex >= Levels.All.Count - 1;
         string summary =
             (reason != null ? reason + "\n" : "") +
-            (ended && finalComboNote != null ? finalComboNote + "\n" : "") +
             $"Delivered {Delivered} / {objects.Count}\n" +
             ScoreBreakdown(ended) +
             (stars == 0 ? "\nEarn at least 1 star to unlock the next level." : "") +

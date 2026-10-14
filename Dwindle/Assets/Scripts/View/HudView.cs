@@ -41,6 +41,7 @@ public class HudView : MonoBehaviour
     public Color slotColor = new Color(0.32f, 0.34f, 0.40f);
     public Color selectedSlotColor = new Color(0.95f, 0.78f, 0.25f);
     public Color emptySlotColor = new Color(0.22f, 0.23f, 0.27f); // a tile type you have none of
+    [Range(0f, 1f)] public float emptySlotDarken = 0.6f; // how much darker a slot with none left is (0 = not at all)
     public Color emptyLabelColor = new Color(0.55f, 0.56f, 0.60f);
     public Color recoverySelectedColor = new Color(0.95f, 0.78f, 0.25f); // the card you click to get back
     public Color flashColor = new Color(1f, 0.45f, 0.45f);
@@ -103,6 +104,7 @@ public class HudView : MonoBehaviour
         {
             slots[t].label.text = "x" + inventory[t];
             slots[t].label.color = inventory[t] > 0 ? slotPrefab.label.color : emptyLabelColor;
+            slots[t].SetAvailable(inventory[t] > 0, emptySlotDarken);
             if (flashingSlots.Contains(t)) continue;
             slots[t].background.color = SlotColor(t);
         }
