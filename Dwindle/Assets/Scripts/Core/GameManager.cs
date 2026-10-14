@@ -242,9 +242,12 @@ public partial class GameManager : MonoBehaviour
     // tile loss and recovery
     IEnumerator HandleDeliveries(List<MovingObject> deliveredNow)
     {
+        // the move that completes the level loses no tiles (and so gets none back)
+        bool levelComplete = objects.All(o => o.completed);
         var removedNow = new List<RemovedEntry>();
         foreach (var o in deliveredNow)
         {
+            if (levelComplete) break;
             // one random tile from the completed path.
             var candidates = o.path.Distinct()
                 .Where(c => Cells[c.x, c.y].tile != null)
@@ -284,7 +287,6 @@ public partial class GameManager : MonoBehaviour
             {
                 finalComboNote = string.Join(" and ", deliveredNow.Select(o => o.spec.name)) + " arrived together!";
                 Log(finalComboNote);
-                Log("Delivered together on the last move: +1 unused tile.");
             }
             else if (removed.Count > 0) yield return RecoveryChoice();
         }
@@ -345,7 +347,7 @@ public partial class GameManager : MonoBehaviour
         if (objects.All(o => o.completed))
         {
             // a multi-delivery that ends the level counts as getting one tile back
-            unusedTiles = inventory.Values.Sum() + (finalComboNote != null ? 1 : 0);
+            unusedTiles = inventory.Values.Sum();
             unusedPoints = unusedTiles * pointsPerUnusedTile;
             if (unusedTiles > 0) Log($"{unusedTiles} unused tiles. +{unusedPoints}");
         }
@@ -447,7 +449,6 @@ public partial class GameManager : MonoBehaviour
         bool isLast = levelIndex >= Levels.All.Count - 1;
         string summary =
             (reason != null ? reason + "\n" : "") +
-            (ended && finalComboNote != null ? finalComboNote + "\n" : "") +
             $"Delivered {Delivered} / {objects.Count}\n" +
             ScoreBreakdown(ended) +
             (stars == 0 ? "\nEarn at least 1 star to unlock the next level." : "") +
