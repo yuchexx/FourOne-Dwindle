@@ -33,6 +33,9 @@ public class HudView : MonoBehaviour
     public GameObject choiceDimmer;  // darkens everything except the removed panel
     public TMP_Text removedHeader;   // "Removed:" / "Pick one to get back:"
 
+    [Header("Undo")]
+    public Button undoButton; // sits after ChoiceDimmer in the hierarchy, so it stays clickable during a recovery choice
+
     [Header("Colors")]
     public Color tileColor = new Color(0.28f, 0.31f, 0.38f);
     public Color slotColor = new Color(0.32f, 0.34f, 0.40f);
@@ -205,6 +208,11 @@ public class HudView : MonoBehaviour
         removedHeader.text = choosing ? "Pick one to get back:" : "Removed:";
     }
 
+    public void SetUndoAvailable(bool available)
+    {
+        if (undoButton != null) undoButton.interactable = available;
+    }
+
     public void Log(string msg)
     {
         log.Insert(0, "- " + msg); // newest first
@@ -212,10 +220,16 @@ public class HudView : MonoBehaviour
         logText.text = string.Join("\n", log);
     }
 
-    public void ClearLog()
+    public void ClearLog() => SetLog(new List<string>());
+
+    // a copy of the log lines, for an undo snapshot
+    public List<string> GetLog() => new List<string>(log);
+
+    public void SetLog(List<string> lines)
     {
         log.Clear();
-        logText.text = "";
+        log.AddRange(lines);
+        logText.text = string.Join("\n", log);
     }
 
     static void Clear(Transform root)

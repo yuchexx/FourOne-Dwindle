@@ -4,7 +4,8 @@ using System.Linq;
 using UnityEngine;
 
 // holds the state of the level, handles clicks, and applies the rules
-public class GameManager : MonoBehaviour
+// the undo part is in GameManager.Undo.cs
+public partial class GameManager : MonoBehaviour
 {
     [Header("Views")]
     public BoardView board;
@@ -61,6 +62,7 @@ public class GameManager : MonoBehaviour
         finalComboNote = null;
         deliveryPoints = comboPoints = teleportPoints = unusedPoints = 0;
         comboObjects = teleports = unusedTiles = 0;
+        history.Clear();
 
         hud.BuildSlots(Tiles.All, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
         objects = board.Build(level, OnCellClicked, OnDoorClicked);
@@ -89,6 +91,7 @@ public class GameManager : MonoBehaviour
         if (selected == null) { Log("Select a tile from the top bar first."); return; }
 
         var t = selected.Value;
+        history.Record(Capture()); // the only point undo saves at
         inventory[t]--;
         board.SetTile(p, t);
         Log($"Placed {Tiles.Name(t)} at {Where(p)}.");
@@ -511,6 +514,7 @@ public class GameManager : MonoBehaviour
         hud.RefreshInventory(inventory, selected);
         hud.RefreshInfo(level, Delivered, objects.Count, inventory.Values.Sum(), Score, ScoreStar);
         hud.RefreshRemoved(removed);
+        hud.SetUndoAvailable(!levelOver && history.CanUndo);
     }
 
     void Log(string msg) => hud.Log(msg);

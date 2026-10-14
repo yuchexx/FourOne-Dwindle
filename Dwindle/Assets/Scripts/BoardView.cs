@@ -200,11 +200,33 @@ public class BoardView : MonoBehaviour
     public void ClearTile(Vector2Int p)
     {
         var cell = Cells[p.x, p.y];
+        RemoveTile(cell);
+        StartCoroutine(Flash(cell.view.background));
+    }
+
+    static void RemoveTile(Cell cell)
+    {
         cell.tile = null;
         if (cell.tileView != null) Destroy(cell.tileView.gameObject);
         cell.tileView = null;
-        StartCoroutine(Flash(cell.view.background));
     }
+
+    // for undo: puts every cell's tile back without the removal flash, and gives every cell its own color again
+    public void RestoreTiles(TileType?[,] tiles)
+    {
+        for (int x = 0; x < Cells.GetLength(0); x++)
+        for (int y = 0; y < Cells.GetLength(1); y++)
+        {
+            var cell = Cells[x, y];
+            if (cell == null) continue;
+            cell.view.background.color = cell.obstacle ? obstacleColor : cellColor; // a flash or junction highlight cut short
+            if (cell.tile == tiles[x, y]) continue;
+            if (tiles[x, y] is TileType t) SetTile(new Vector2Int(x, y), t);
+            else RemoveTile(cell);
+        }
+    }
+
+    public void StopFlashes() => StopAllCoroutines();
 
     // where an object rests
     public Vector2 WaitPos(MovingObject o) =>
@@ -262,7 +284,18 @@ public class BoardView : MonoBehaviour
     public void MarkDelivered(MovingObject o)
     {
         o.view.gameObject.SetActive(false);
-        o.dest.MarkDelivered();
+        o.dest.SetDelivered(true);
+    }
+
+    // for undo: matches an object's view to its state - shown or delivered, facing, full size, crossed out if blocked.
+    // where it stands is set by LayoutWaitingObjects
+    public void SyncObject(MovingObject o)
+    {
+        o.view.gameObject.SetActive(!o.completed);
+        o.dest.SetDelivered(o.completed);
+        o.view.Face(o.heading);
+        o.view.Rect.localScale = Vector3.one; // a teleport cut short
+        o.view.SetBlocked(o.blocked);
     }
 
     // the object waits at the center of a + or T tile or a door, with one arrow per way it may go
