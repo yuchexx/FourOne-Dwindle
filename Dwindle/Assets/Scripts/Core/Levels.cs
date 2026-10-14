@@ -29,7 +29,7 @@ public static class Levels
     // 1 board, 3x3
     static LevelData Level2()
     {
-        var l = new LevelData { title = "Level 2", targetScore = 700 };
+        var l = new LevelData { title = "Level 2", targetScore = 750 };
         l.SetBoards((3, 3));
         l.inventory = Inv(cross: 2, ne: 2, es: 1, sw: 2, wn: 2, h: 4, v: 2);
         Obj(l, "Red", Red, 0, 1, -1, Dir.N, 0, 0, 3);
@@ -41,7 +41,7 @@ public static class Levels
     // 1 board, 4x4 with an obstacle
     static LevelData Level3()
     {
-        var l = new LevelData { title = "Level 3", targetScore = 625 };
+        var l = new LevelData { title = "Level 3", targetScore = 675 };
         l.SetBoards((4, 4));
         l.inventory = Inv(cross: 3, ne: 2, es: 2, sw: 2, wn: 2, h: 3, v: 3);
         l.obstacles.Add(l.At(0, 0, 2));
@@ -83,7 +83,7 @@ public static class Levels
     // 2 boards, 3x3
     static LevelData Level6()
     {
-        var l = new LevelData { title = "Level 6", targetScore = 900 };
+        var l = new LevelData { title = "Level 6", targetScore = 975 };
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(bridge: 1, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1, ne: 1, es: 1, sw: 2, wn: 1, h: 3, v: 1);
         Door(l, "A", 0, 1, 1, Dir.E); // inside board 1
@@ -100,7 +100,7 @@ public static class Levels
     // 4 boards, 2x2 (1 2 on top, 3 4 below)
     static LevelData Level7()
     {
-        var l = new LevelData { title = "Level 7", targetScore = 850 };
+        var l = new LevelData { title = "Level 7", targetScore = 900 };
         l.SetBoards((2, 2), (2, 2), (2, 2), (2, 2));
         l.inventory = Inv(tNES: 1, tESW: 1, tWNE: 1, ne: 1, es: 1, sw: 1, wn: 1, h: 2, v: 3);
         Door(l, "A", 0, 0, 1, Dir.E); // inside board 1
@@ -120,7 +120,7 @@ public static class Levels
     // 2 boards, 5x5, two obstacles
     static LevelData Level8()
     {
-        var l = new LevelData { title = "Level 8", targetScore = 1100 };
+        var l = new LevelData { title = "Level 8", targetScore = 1175 };
         l.SetBoards((5, 5), (5, 5));
         l.inventory = Inv(cross: 1, bridge: 1, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1, ne: 1, es: 3, sw: 2, wn: 3, h: 8, v: 3);
         l.obstacles.Add(l.At(0, 1, 1));

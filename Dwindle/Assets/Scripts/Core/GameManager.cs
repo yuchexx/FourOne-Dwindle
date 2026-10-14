@@ -284,6 +284,7 @@ public partial class GameManager : MonoBehaviour
             {
                 finalComboNote = string.Join(" and ", deliveredNow.Select(o => o.spec.name)) + " arrived together!";
                 Log(finalComboNote);
+                Log("Delivered together on the last move: +1 unused tile.");
             }
             else if (removed.Count > 0) yield return RecoveryChoice();
         }
@@ -343,7 +344,8 @@ public partial class GameManager : MonoBehaviour
         // unused tiles only score when everything was delivered
         if (objects.All(o => o.completed))
         {
-            unusedTiles = inventory.Values.Sum();
+            // a multi-delivery that ends the level counts as getting one tile back
+            unusedTiles = inventory.Values.Sum() + (finalComboNote != null ? 1 : 0);
             unusedPoints = unusedTiles * pointsPerUnusedTile;
             if (unusedTiles > 0) Log($"{unusedTiles} unused tiles. +{unusedPoints}");
         }
