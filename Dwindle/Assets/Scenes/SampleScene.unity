@@ -1301,7 +1301,7 @@ MonoBehaviour:
   board: {fileID: 1426677529}
   hud: {fileID: 445354903}
   menu: {fileID: 1454499147}
-  endPopupDelay: 1.2
+  endPopupDelay: 0
   pointsPerDelivery: 100
   comboPointsPerObject: 50
   pointsPerTeleport: 50
