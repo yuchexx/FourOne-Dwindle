@@ -78,7 +78,9 @@ public partial class GameManager : MonoBehaviour
 
             menu.ShowTutorial(
                 "Planning Tip",
-                "Delivering an object removes one tile from its path and one unused tile from your supply.\n\nPlan your delivery order carefully!"
+                "Delivering an object removes one tile from its path and one unused tile from your supply.\n\n" +
+                "Plan your delivery order carefully!\n\n" +
+                "You can review all rules anytime using the Rules button in the upper-right corner."
             );
         }
     }
