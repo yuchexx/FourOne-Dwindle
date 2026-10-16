@@ -5204,36 +5204,15 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'SCORE AND STARS
-
-
-    Score
-
-    +100 each delivery
-
-    +50 per object,
-    when one placement delivers two or more
-
-    +50 per door, once the object reaches
-    a ring on another board
-
-    +75 each unused tile, only if every object is delivered
-
-
-
-    Stars
-
-    1st:
-    Deliver all objects but one.
-
-    2nd: Deliver every object.
-
-    3rd: Reach
-    the target score.
-
-
-    The level ends when all objects are delivered, no object
-    can reach its destination, no tiles remain, or no empty cells remain.'
+  m_text: "SCORE AND STARS\n\nPoints\n\u2022 Delivery: +100 per object.\n\u2022 Combo:
+    +50 per object when one placement delivers two or more.\n\u2022 Door travel:
+    +50 per traversal, awarded upon delivery when the destination board differs from
+    the starting board.\n\u2022 Unused supply: +75 per tile, only when every object
+    is delivered.\n\nStar Goals\n1st: Deliver all objects but one.\n2nd: Deliver
+    every object.\n3rd: Reach the target score.\n\nLevel End\nThe level ends when:\n\u2022
+    Every object is delivered.\n\u2022 All remaining objects are blocked or cannot
+    reach their destinations.\n\u2022 No supply tiles remain.\n\u2022 No empty playable
+    cells remain."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -6879,17 +6858,15 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "BUILD THE PATH\n\nGoal\nGuide every colored object to the ring of the
-    same color. The triangle shows the direction the object is facing.\n\nPlace Tiles\n1.
-    Select a tile from the top bar.\n2. Click an empty cell to place it.\n3. Tiles
-    are pre-oriented. Once placed, you cannot move or rotate them. Undo button takes
-    back your last move(s).\n\nObject Movement\n\u2022 After every placement, objects
-    automatically follow connected paths.\n\u2022 An object stops when the path ends.\n\u2022
-    On a T or + tile, choose an arrow to determine its direction. It cannot turn
-    backward.\n\u2022 The bridge (a variation of + tile) lets two straight roads
-    cross without meeting.\n\u2022 Dark cells are obstacles and cannot hold tiles.\n\u2022
-    A crossed-out object is blocked by the board edge, an obstacle, a door, or an
-    incompatible tile.\r\n"
+  m_text: "BUILD THE PATH\n\nGoal\nGuide each colored object to its matching ring.\n\nPlace
+    Tiles\nSelect a tile from the supply, then select an empty cell. Tiles have fixed
+    orientations and cannot be moved or rotated.\n\nMovement\nEach placement makes
+    unfinished objects follow connected paths. They stop when the path ends.\n\n\u2022
+    T and Cross: Choose an exit arrow. Objects cannot reverse direction.\n\u2022
+    Bridge: Objects travel straight through the crossing.\n\u2022 Dark cells: Obstacles
+    that cannot hold tiles.\n\u2022 Crossed-out objects: Their next step is blocked.\n\nUndo\nUndo
+    restores the state before your last placement. It is available until the level
+    ends."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -7867,17 +7844,16 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "BOARDS, DOORS, DWINDLE, AND RECOVERY\r\n\r\nBoards\r\nSome levels have
-    two or more boards. An object's ring can be on a different board from where it
-    starts.\r\n\r\nDoors\r\nDoors with the same letter are linked, in both directions,
-    and any object can use any door.\r\n\u2022 A road that leads onto a door takes
-    the object through it and out of the matching door.\r\n\u2022 Coming out of a
-    door between two squares, choose which way the object faces.\n\nAfter a Delivery\nEvery
-    time an object reaches its matching ring:\n\u2022 One random tile from its path
-    is removed.\n\u2022 One random unused tile is removed from your supply.\nNo tiles
-    are removed on the move that completes the level.\n\nRecover a Tile\nIf one placement
-    delivers two or more objects and the level continues, choose one tile from the
-    Removed panel to recover."
+  m_text: "DOORS AND DWINDLING TILES\n\nLinked Doors\nDoors with matching letters
+    connect in both directions. Any object can use them.\n\nGuide an object into
+    a door to teleport it to its partner. At an exit between two cells, choose which
+    direction the object faces.\n\nTile Loss\nAfter each delivery, when available:\n\u2022
+    One random tile is removed from that object\u2019s traveled path.\n\u2022 One
+    random unused tile is removed from your supply.\n\nRemoval happens after all
+    objects finish moving for that placement. A missing tile leaves a gap you can
+    rebuild.\n\nNo tiles are removed when a placement delivers every remaining object.\n\nRecover
+    a Tile\nDeliver two or more objects with one placement to earn a combo. If play
+    continues, choose one tile from the Removed panel to return to your supply."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
