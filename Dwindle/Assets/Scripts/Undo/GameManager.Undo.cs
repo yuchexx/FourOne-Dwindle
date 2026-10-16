@@ -11,8 +11,8 @@ public partial class GameManager
     {
         var tiles = new TileType?[Cells.GetLength(0), Cells.GetLength(1)];
         for (int x = 0; x < tiles.GetLength(0); x++)
-        for (int y = 0; y < tiles.GetLength(1); y++)
-            tiles[x, y] = Cells[x, y]?.tile;
+            for (int y = 0; y < tiles.GetLength(1); y++)
+                tiles[x, y] = Cells[x, y]?.tile;
 
         return new Snapshot
         {
@@ -20,14 +20,22 @@ public partial class GameManager
             tiles = tiles,
             objects = objects.Select(o => new ObjectState
             {
-                pos = o.pos, heading = o.heading,
-                completed = o.completed, blocked = o.blocked, viaDoor = o.viaDoor,
-                teleports = o.teleports, path = new List<Vector2Int>(o.path),
+                pos = o.pos,
+                heading = o.heading,
+                completed = o.completed,
+                blocked = o.blocked,
+                viaDoor = o.viaDoor,
+                teleports = o.teleports,
+                path = new List<Vector2Int>(o.path),
             }).ToArray(),
             removed = new List<RemovedEntry>(removed),
-            deliveryPoints = deliveryPoints, comboPoints = comboPoints,
-            teleportPoints = teleportPoints, unusedPoints = unusedPoints,
-            comboObjects = comboObjects, teleports = teleports, unusedTiles = unusedTiles,
+            deliveryPoints = deliveryPoints,
+            comboPoints = comboPoints,
+            teleportPoints = teleportPoints,
+            unusedPoints = unusedPoints,
+            comboObjects = comboObjects,
+            teleports = teleports,
+            unusedTiles = unusedTiles,
             finalComboNote = finalComboNote,
             log = hud.GetLog(),
         };
@@ -78,6 +86,8 @@ public partial class GameManager
             board.SyncObject(o);
         }
         board.LayoutWaitingObjects(objects);
+
+        TelemetryManager.Instance.RemovePiece();
 
         hud.SetLog(s.log);
         RefreshAll();

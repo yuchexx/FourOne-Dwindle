@@ -48,6 +48,7 @@ public partial class GameManager : MonoBehaviour
     public void LoadLevel(int index)
     {
         StopAllCoroutines();
+        TelemetryManager.Instance.StartLevel(index);
         board.ClearChoices();
         hud.SetChoiceMode(false);
         hud.ResetSlotFlashes();
@@ -107,6 +108,7 @@ public partial class GameManager : MonoBehaviour
         history.Record(Capture()); // the only point undo saves at
         inventory[t]--;
         board.SetTile(p, t);
+        TelemetryManager.Instance.AddPiece();
         Log($"Placed a {Tiles.Name(t)}.");
         RefreshAll();
         StartCoroutine(ResolveRound());
@@ -510,8 +512,19 @@ public partial class GameManager : MonoBehaviour
     }
 
     public void StartGame() => LoadLevel(0);
-    public void Restart() => LoadLevel(levelIndex);
-    public void NextLevel() { if (levelIndex + 1 < Levels.All.Count) LoadLevel(levelIndex + 1); }
+    public void Restart()
+    {
+        TelemetryManager.Instance.EndLevel(Score, Stars());
+        LoadLevel(levelIndex);
+    }
+    public void NextLevel()
+    {
+        if (levelIndex + 1 < Levels.All.Count)
+        {
+            TelemetryManager.Instance.EndLevel(Score, Stars());
+            LoadLevel(levelIndex + 1);
+        }
+    }
     public void OpenMenu() => ShowMenu(levelOver, null);
     public void Resume() => menu.HideMenu();
 

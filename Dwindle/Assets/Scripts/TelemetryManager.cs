@@ -47,15 +47,27 @@ public class TelemetryManager : MonoBehaviour
 
     public void StartLevel(int level)
     {
-        currLevel = level;
-        levelStartTime = Time.realtimeSinceStartup;
+        if (level > 1)
+        {
+            currLevel = level;
+            levelStartTime = Time.realtimeSinceStartup;
+        }
     }
 
-    public void EndLevel(int score, int starLevel, int piecesUsed)
+    public void AddPiece()
+    {
+        finalPiecesUsed++;
+    }
+
+    public void RemovePiece()
+    {
+        finalPiecesUsed--;
+    }
+
+    public void EndLevel(int score, int starLevel)
     {
         finalScore = score;
         finalStarLevel = starLevel;
-        finalPiecesUsed = piecesUsed;
         StartCoroutine(FillOutAnalytics("LevelComplete"));
     }
 
