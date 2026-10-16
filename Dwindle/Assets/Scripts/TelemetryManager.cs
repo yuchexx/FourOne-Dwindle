@@ -1,34 +1,43 @@
+using System;
 using System.IO;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Networking;
+
 
 // Persistent metric tracker that operates all throughout a
 // gameplay session and writes findings to disk
 
 public class TelemetryManager : MonoBehaviour
 {
-    [Header("Tweaks")]
+    [Header("Google Form URLS")]
     [SerializeField]
-    private bool generateFilesInEditor = false;
+    private string levelCompletionForm = "https://docs.google.com/forms/d/e/1FAIpQLScsOUa-nAnfAcUCfXClZVxhDMw3WuBDLeh9d9UVdUEIBGq4KA/formResponse";
 
 
-    private static TelemetryManager instance;
+    public static TelemetryManager Instance { get; private set; }
 
-    private string filePath;
-    private StreamWriter fileWriter;
+    //private string filePath;
+    //private StreamWriter fileWriter;
 
+    private string sessionID;
     private float levelStartTime = 0.0f;
     private int currLevel = 0;
+    private int finalStarLevel = 0;
+    private int finalScore = 0;
+    private int finalPiecesUsed = 0;
 
     // Can change manager to intercept actions rather than get them passed in at the end
 
     private void Awake()
     {
-        if (instance == null)
+        if (Instance == null)
         {
-            instance = this;
+            Instance = this;
             DontDestroyOnLoad(gameObject);
+            sessionID = Guid.NewGuid().ToString();
         }
         else
         {
@@ -36,6 +45,55 @@ public class TelemetryManager : MonoBehaviour
         }
     }
 
+    public void StartLevel(int level)
+    {
+        currLevel = level;
+        levelStartTime = Time.realtimeSinceStartup;
+    }
+
+    public void EndLevel(int score, int starLevel, int piecesUsed)
+    {
+        finalScore = score;
+        finalStarLevel = starLevel;
+        finalPiecesUsed = piecesUsed;
+        StartCoroutine(FillOutAnalytics("LevelComplete"));
+    }
+
+    private IEnumerator FillOutAnalytics(string formType)
+    {
+        Dictionary<string, string> formData = new Dictionary<string, string>();
+        // All questions are listed in order of how they are in
+        // their respective Google Form
+        if (formType.Equals("LevelComplete"))
+        {
+            formData.Add("entry.825569823", sessionID);
+            formData.Add("entry.1775572003", currLevel.ToString());
+            formData.Add("entry.348468337", (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"));
+            formData.Add("entry.1155704640", finalPiecesUsed.ToString());
+            formData.Add("entry.1940427468", finalStarLevel.ToString());
+            formData.Add("entry.1679653451", finalScore.ToString());
+
+            using (UnityWebRequest webReq = UnityWebRequest.Post(levelCompletionForm, formData))
+            {
+                yield return webReq.SendWebRequest();
+
+                if (webReq.result == UnityWebRequest.Result.Success)
+                {
+                    Debug.Log("Level Completion Form Successfully Sent");
+                }
+                else
+                {
+                    Debug.LogError($"Error when submitting Level Completion Form: {webReq.error}");
+                }
+            }
+        }
+
+    }
+
+
+
+    // ONLY USED FOR DOWNLOADABLE BUILDS, NOT WEBGL
+    /*
     private void Start()
     {
         if (!Application.isEditor || (Application.isEditor && generateFilesInEditor))
@@ -50,6 +108,7 @@ public class TelemetryManager : MonoBehaviour
             fileWriter.Flush();
         }
     }
+    
 
     public void LevelStart(int level)
     {
@@ -74,4 +133,5 @@ public class TelemetryManager : MonoBehaviour
         }
 
     }
+    */
 }
