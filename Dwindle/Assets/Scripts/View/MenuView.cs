@@ -12,6 +12,7 @@ public class MenuView : MonoBehaviour
     public GameObject gameScreen;
     public GameObject rulesPopup;
     public GameObject levelMenu;
+    public GameObject tutorialPopup;
 
     [Header("Rules pages")]
     public GameObject[] rulesPages;
@@ -53,6 +54,10 @@ public class MenuView : MonoBehaviour
     public Color starOffColor = new Color(0.32f, 0.33f, 0.37f);
     public Color bonusStarOnColor = new Color(0.45f, 0.80f, 0.95f); // the third star, for the score
 
+    [Header("Tutorial")]
+    public TMP_Text tutorialTitle;
+    public TMP_Text tutorialBody;
+
     readonly List<Button> levelButtons = new List<Button>();
     float summaryFontSize = -1; // the summary's font size from the editor, kept as the largest it can grow to
     bool layoutChanged;
@@ -85,6 +90,21 @@ public class MenuView : MonoBehaviour
     {
         rulesPopup.SetActive(false);
         levelMenu.SetActive(false);
+
+        if (tutorialPopup != null)
+            tutorialPopup.SetActive(false);
+    }
+
+    public void ShowTutorial(string title, string body)
+    {
+        tutorialTitle.text = title;
+        tutorialBody.text = body;
+        tutorialPopup.SetActive(true);
+    }
+
+    public void HideTutorial()
+    {
+        tutorialPopup.SetActive(false);
     }
 
     // one button per level, cloned from the template, in rows centered where the template sits

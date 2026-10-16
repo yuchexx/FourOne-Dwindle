@@ -31,6 +31,7 @@ public partial class GameManager : MonoBehaviour
     TileType? pendingRecovery; // the card the player clicked during a recovery choice
     string finalComboNote; // set when the last objects arrive together
     bool levelOver;
+    bool level1TutorialShown;
 
     // score, kept per source so the end window can show where it came from
     int deliveryPoints, comboPoints, teleportPoints, unusedPoints;
@@ -70,6 +71,16 @@ public partial class GameManager : MonoBehaviour
         if (level.doors.Count > 0)
             Log("Doors with the same letter are linked: a road into one comes out of the other.");
         RefreshAll();
+
+        if (index == 0 && !level1TutorialShown)
+        {
+            level1TutorialShown = true;
+
+            menu.ShowTutorial(
+                "Planning Tip",
+                "Delivering an object removes one tile from its path and one unused tile from your supply.\n\nPlan your delivery order carefully!"
+            );
+        }
     }
 
     // player input
