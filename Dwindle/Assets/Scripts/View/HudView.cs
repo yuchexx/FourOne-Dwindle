@@ -147,15 +147,15 @@ public class HudView : MonoBehaviour
 
         goalText.text =
             "Match objects to their colored rings.\n\n" +
-            "<b>Progress</b>\n" +
+            "<b><color=#3EE6B0>PROGRESS</color></b>\n" +
             $"{delivered}/{total} delivered | {tilesLeft} tiles left\n\n" +
-            "<b>Star Goals</b>\n" +
+            "<b><color=#3EE6B0>STAR GOALS</color></b>\n" +
             $"1st star: Deliver {level.Required}\n" +
             $"2nd star: Deliver all {total}";
 
         bonusText.text =
             $"3rd star: Score {level.targetScore}\n" +
-            $"<b>Score: {score}</b>{(scoreStar ? "  (target reached)" : "")}";
+            $"<size=20><b>Score: {score}</b></size>{(scoreStar ? "  (target reached)" : "")}";
     }
 
     // 3 sections of the panel: junctions (+, bridge, T) on top, the four L tiles, then the two I tiles
