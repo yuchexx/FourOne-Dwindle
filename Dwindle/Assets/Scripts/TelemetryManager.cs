@@ -47,11 +47,8 @@ public class TelemetryManager : MonoBehaviour
 
     public void StartLevel(int level)
     {
-        if (level > 1)
-        {
-            currLevel = level;
-            levelStartTime = Time.realtimeSinceStartup;
-        }
+        currLevel = level + 1;
+        levelStartTime = Time.realtimeSinceStartup;
     }
 
     public void AddPiece()
@@ -68,22 +65,33 @@ public class TelemetryManager : MonoBehaviour
     {
         finalScore = score;
         finalStarLevel = starLevel;
-        StartCoroutine(FillOutAnalytics("LevelComplete"));
+        StartCoroutine(FillOutAnalytics("LevelComplete",
+                      sessionID.ToString(),
+                      currLevel.ToString(),
+                      (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
+                      finalPiecesUsed.ToString(), finalStarLevel.ToString(), finalScore.ToString()));
     }
 
-    private IEnumerator FillOutAnalytics(string formType)
+    private IEnumerator FillOutAnalytics(string formType, string mySession, string finalLevel,
+                                         string timeElapsed, string totalPieces, string totalStars, string totalScore)
     {
+        // Members must be passed in to copy values from start of coroutine so they aren't modified immediately after it's
+        // called due to levelStart overwriting their values in the class right after EndLevel is called
+        // Only really a problem when level is reset because these calls are on the same frame
+
         Dictionary<string, string> formData = new Dictionary<string, string>();
+
         // All questions are listed in order of how they are in
         // their respective Google Form
+
         if (formType.Equals("LevelComplete"))
         {
-            formData.Add("entry.825569823", sessionID);
-            formData.Add("entry.1775572003", currLevel.ToString());
-            formData.Add("entry.348468337", (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"));
-            formData.Add("entry.1155704640", finalPiecesUsed.ToString());
-            formData.Add("entry.1940427468", finalStarLevel.ToString());
-            formData.Add("entry.1679653451", finalScore.ToString());
+            formData.Add("entry.825569823", mySession);
+            formData.Add("entry.1775572003", finalLevel);
+            formData.Add("entry.348468337", timeElapsed);
+            formData.Add("entry.1155704640", totalPieces);
+            formData.Add("entry.1940427468", totalStars);
+            formData.Add("entry.1679653451", totalScore);
 
             using (UnityWebRequest webReq = UnityWebRequest.Post(levelCompletionForm, formData))
             {
