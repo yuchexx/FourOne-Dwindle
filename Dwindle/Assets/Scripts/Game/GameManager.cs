@@ -22,8 +22,18 @@ public partial class GameManager : MonoBehaviour
     public int pointsPerUnusedTile = 75;  // per tile left in the supply, only if every object was delivered
 
     [Header("Stuck notice")]
-    [Tooltip("Seconds without placing a tile, while stuck, before the notice shows (0 = right away)")]
+    [Tooltip("Seconds without placing a tile, while stuck close to a ring, before the notice shows (0 = right away)")]
     [Min(0f)] public float stuckSecondsBeforeNotice = 8f;
+    [Tooltip("Close = filling this many squares or fewer would connect some object to its ring. used when the level's biggest board is smaller than Large Board Squares")]
+    [Min(1)] public int closeGapSmallBoards = 2;
+    [Tooltip("Close = filling this many squares or fewer would connect some object to its ring. used when the level's biggest board has at least Large Board Squares")]
+    [Min(1)] public int closeGapLargeBoards = 3;
+    [Tooltip("A board with at least this many squares counts as large (4x3 = 12)")]
+    [Min(1)] public int largeBoardSquares = 12;
+    [Tooltip("Show the notice too when stuck far from every ring")]
+    public bool noticeWhenFar = true;
+    [Tooltip("Seconds without placing a tile, while stuck far from every ring, before the notice shows")]
+    [Min(0f)] public float farSecondsBeforeNotice = 20f;
 
     int levelIndex;
     LevelData level;
@@ -526,22 +536,75 @@ public partial class GameManager : MonoBehaviour
 
     // stuck: nobody left can be delivered with the tiles there are
     bool stuck;
+    bool stuckClose;  // some object is only a few squares short of its ring
     float stuckSince; // when the player got stuck, or last placed a tile while stuck
+
+    float StuckWait => stuckClose ? stuckSecondsBeforeNotice : noticeWhenFar ? farSecondsBeforeNotice : float.PositiveInfinity;
+    int CloseGap => level.boards.Max(b => b.width * b.height) >= largeBoardSquares ? closeGapLargeBoards : closeGapSmallBoards;
 
     // afterPlacement: called after a tile was placed (restarts the count)
     void UpdateStuck(bool afterPlacement = false)
     {
-        bool now = !levelOver && !busy && objects.Any(o => !o.completed) && !objects.Any(o => !o.completed && CanStillFinish(o));
+        bool now = !levelOver && !busy && objects.Any(o => !o.completed) && !AnyoneCanFinish();
         if (!now) { stuck = false; HideStuckNotice(); return; }
         if (!stuck || afterPlacement) stuckSince = Time.time;
         stuck = true;
-        if (Time.time - stuckSince >= stuckSecondsBeforeNotice) ShowStuckNotice(); // only when the wait is 0
+        stuckClose = objects.Any(o => !o.completed && GapToRing(o) <= CloseGap);
+        if (Time.time - stuckSince >= StuckWait) ShowStuckNotice(); // only when the wait is 0
     }
 
     // the wait, while stuck and the notice isn't up yet
     void Update()
     {
-        if (stuck && !levelOver && !busy && !hud.StuckNoticeShowing && Time.time - stuckSince >= stuckSecondsBeforeNotice) ShowStuckNotice();
+        if (stuck && !levelOver && !busy && !hud.StuckNoticeShowing && Time.time - stuckSince >= StuckWait) ShowStuckNotice();
+    }
+
+    // the fewest squares still to fill to connect the object to its ring
+    int GapToRing(MovingObject o)
+    {
+        var best = new Dictionary<(Vector2Int, Dir, bool), int>();
+        var queue = new LinkedList<((Vector2Int pos, Dir heading, bool viaDoor) state, int gap)>(); // cheapest first
+        void Push((Vector2Int, Dir, bool) state, int gap, bool filled)
+        {
+            if (best.TryGetValue(state, out var known) && known <= gap) return;
+            best[state] = gap;
+            if (filled) queue.AddLast((state, gap)); else queue.AddFirst((state, gap));
+        }
+        Push((o.pos, o.heading, o.viaDoor), 0, false);
+        while (queue.Count > 0)
+        {
+            var ((pos, heading, viaDoor), gap) = queue.First.Value;
+            queue.RemoveFirst();
+            if (best[(pos, heading, viaDoor)] < gap) continue; // a cheaper way here was found since
+            if (!CanCross(pos, heading, viaDoor)) continue;
+            var next = pos + DirUtil.Offset(heading);
+            if (!board.InGrid(next))
+            {
+                if (next == o.spec.dest) return gap;
+                continue;
+            }
+            var cell = Cells[next.x, next.y];
+            if (cell.obstacle) continue;
+            var entry = DirUtil.Opposite(heading);
+
+            // follow the tile that's there for free; fill the square (or swap an unused tile) for 1
+            var ways = new List<(Dir exit, bool filled)>();
+            if (cell.tile != null && Tiles.Has(cell.tile.Value, entry))
+                ways.AddRange(Tiles.Exits(cell.tile.Value, entry).Select(x => (x, false)));
+            if (cell.tile == null || !cell.locked)
+                ways.AddRange(DirUtil.All.Where(d => d != entry).Select(x => (x, true)));
+
+            foreach (var (exit, filled) in ways)
+            {
+                int cost = gap + (filled ? 1 : 0);
+                var door = level.DoorOnEdge(next, exit);
+                if (door == null) { Push((next, exit, false), cost, filled); continue; }
+                var partner = level.Partner(door);
+                foreach (var h in ArrivalHeadings(partner))
+                    Push((h == partner.side ? partner.cell : partner.Neighbor, h, true), cost, filled);
+            }
+        }
+        return int.MaxValue;
     }
 
     void ShowStuckNotice()
@@ -564,17 +627,25 @@ public partial class GameManager : MonoBehaviour
         FinishLevel("You ended the level.");
     }
 
-    // could the object still reach its ring with the tiles there are? generous on purpose, so it never says no
-    // while the level can still be won: it looks at this object alone (ignoring what the others need), adds every
-    // + that could still be earned and every placed tile that could still be taken back, and ignores future breaks.
-    // a depth-first search over routes, spending supply tiles on empty squares; past its step budget it says yes
-    bool CanStillFinish(MovingObject o)
+    // can anyone still be delivered?
+    bool AnyoneCanFinish()
+    {
+        var hopeful = objects.Where(o => !o.completed && CanStillReach(o, ignoreUnlocked: true)).ToList();
+        bool dropped = true;
+        while (dropped && hopeful.Count > 0)
+        {
+            int before = hopeful.Count;
+            hopeful = hopeful.Where(o => CanStillFinish(o, (before - 1) / 2)).ToList(); // pairs among the other hopefuls
+            dropped = hopeful.Count < before;
+        }
+        return hopeful.Count > 0;
+    }
+
+    // could the object still reach its ring with the tiles there are? generous on purpose, so it never says no while the level can still be won
+    bool CanStillFinish(MovingObject o, int plusFromOthers)
     {
         var left = new Dictionary<TileType, int>(inventory);
-        // each group delivery earns a +, but it arrives with the delivery, so it can only help this object if the group is
-        // made of OTHER objects arriving before it. count pairs among the others that could still reach their ring at all
-        int othersCanArrive = objects.Count(w => w != o && !w.completed && CanStillReach(w, ignoreUnlocked: true));
-        left[TileType.Cross] += othersCanArrive / 2;
+        left[TileType.Cross] += plusFromOthers;
         foreach (var c in Cells)
             if (c != null && c.tile != null && !c.locked) left[c.tile.Value]++; // right-click could return it
 
@@ -599,9 +670,16 @@ public partial class GameManager : MonoBehaviour
                     : planned.TryGetValue(next, out var p) ? p : (TileType?)null;
                 if (fixedTile != null)
                     return Tiles.Has(fixedTile.Value, entry) && Tiles.Exits(fixedTile.Value, entry).Any(x => Leave(next, x));
-                // an unused tile can be followed, or taken back and replaced (it's already counted in `left`)
-                if (cell.tile != null && Tiles.Has(cell.tile.Value, entry) && Tiles.Exits(cell.tile.Value, entry).Any(x => Leave(next, x)))
-                    return true;
+                // an unused tile can be followed where it is, or taken back and replaced. it's counted in `left` as one
+                // that could come back, so following it in place uses that copy up: one tile can't be in both places
+                if (cell.tile != null && left[cell.tile.Value] > 0 && Tiles.Has(cell.tile.Value, entry))
+                {
+                    var t = cell.tile.Value;
+                    left[t]--; planned[next] = t;
+                    bool ok = Tiles.Exits(t, entry).Any(x => Leave(next, x));
+                    left[t]++; planned.Remove(next);
+                    if (ok) return true;
+                }
                 // an empty square (or an unused tile's square): try each tile that's left and opens toward where the object comes from
                 foreach (var t in Tiles.All)
                 {
@@ -709,6 +787,8 @@ public partial class GameManager : MonoBehaviour
     {
         ReportLevel(); // Home from a level: a finished last level has no Next, so this is its only report
         StopAllCoroutines();
+        stuck = false; // nothing keeps timing the stuck notice on the start screen
+        HideStuckNotice();
         board.ClearChoices();
         hud.SetChoiceMode(false);
         menu.ShowStart();

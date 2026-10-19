@@ -7,14 +7,14 @@ static class Export
     {
         "Two separate routes: pick a tile, click a square.",
         "The bridge: Red and Green cross over each other on it and arrive together, and the + you earn is the straight Blue is missing.",
-        "A 4x3 board: Red and Orange arrive together first, but Blue and Green both still have to cross their tiles. Build Blue's road and Green's road ahead so both pass first. Fixing only one isn't enough.",
+        "A 4x3 board: Blue and Orange arrive together first, but Red and Green both still have to cross their tiles. Build Red's road and Green's road ahead so both pass first. Fixing only one isn't enough.",
         "The first pairs trap: the starts are spread out and two pairs look best on paper (900), but each pair's delivery breaks a junction someone still needs. All four have to arrive together on the last T.",
         "Two pairs: the first pair's + becomes the corner Green is missing. No single extra tile would let all four arrive together, so the pairs plan is the way.",
         "Doors: every door sits between two squares, so each time an object comes out it picks which way to face. All three meet on one T and arrive together.",
         "The bridge again, on two boards: Blue goes north and Green goes west through the same square without meeting. Red's ring is on its own board, but its road goes out through a door and back.",
         "Four small boards, a pairs trap: pairs look best on paper but break junctions someone still needs. Build Blue's road first (through doors A and C), then Red, Green and Orange arrive together, and Blue finishes.",
         "An advanced detour on two 4x3 boards: everyone crosses boards, and Blue and Green share one long road out through the doors and back, which saves a tile. Without the detour the best is 1075, short of the 3rd star.",
-        "Two 4x4 boards: Blue and Orange arrive together first, but Red and Green both still have to cross their T tiles on board 1. Build both roads ahead, and the + the pair earns is the straight Red needs at the end.",
+        "Two 4x4 boards: Blue and Orange arrive together first, but Red and Green both still have to cross their tiles. Build both roads ahead (Red's goes through three doors), and the + the pair earns is the corner Red needs at the end. Green's ring is on its own board, so its road goes out through a door and back.",
         "Four 3x3 boards, every door inside a board: two pairs, a detour, a route to build ahead, and the + the first pair earns is the corner Red needs.",
         "The finale on two 5x5 boards: the bridge, a detour Red and Orange can't do without, a road to build ahead, and an earned + at the junction where Red and Orange meet. Door B is a decoy.",
     };
@@ -26,13 +26,38 @@ static class Export
         TileType.TeeNES => "T N-E-S", TileType.TeeESW => "T E-S-W", TileType.TeeSWN => "T S-W-N", _ => "T W-N-E",
     };
 
-    public static string Hint(Props p) =>
-        p.pairTrap ? "Splitting into pairs breaks a junction someone still needs. The best plan brings more of them in together."
-        : p.detour ? "The best plan uses a door as a shortcut back to an object's own board."
-        : p.buildsAhead ? "The best plan builds part of one route early, so it passes a shared tile before anyone is delivered."
-        : p.earnedCrossUsed ? "The best plan delivers two objects together early to earn a + tile."
-        : p.groups.Any(g => g > 1) ? "The best plan delivers some objects together."
-        : "The best plan uses fewer tiles.";
+    const string PairsHint = "Splitting into pairs breaks a junction someone still needs. The best plan brings more of them in together.";
+    const string DetourHint = "The best plan uses a door as a shortcut back to an object's own board.";
+    const string TwoRoutesHint = "The best plan builds parts of two routes early, so both pass shared tiles before anyone is delivered.";
+    const string OneRouteHint = "The best plan builds part of one route early, so it passes a shared tile before anyone is delivered.";
+    const string EarnedHint = "The best plan delivers two objects together early to earn a + tile.";
+    const string GroupHint = "The best plan delivers some objects together.";
+    const string FewerTilesHint = "The best plan uses fewer tiles.";
+
+    // the end-window nudge for a player who finished below the target. without the level: the first trick the best
+    // plan uses. with it: the first trick a player can skip and still finish, just not at the target, since that's
+    // what someone who finished is missing (a trick needed just to finish, they've already done)
+    public static string Hint(Props p, LevelData l = null)
+    {
+        if (l == null)
+            return p.pairTrap ? PairsHint : p.detour ? DetourHint : p.buildsAhead ? OneRouteHint
+                : p.earnedCrossUsed ? EarnedHint : p.groups.Any(g => g > 1) ? GroupHint : FewerTilesHint;
+
+        // finishable without the trick, but only below this score
+        bool ForTarget(Func<Plan, bool> without = null, Action<Solver2> setup = null)
+        {
+            var solver = new Solver2(l) { filter = without };
+            setup?.Invoke(solver);
+            var w = solver.Best();
+            return w != null && w.score < p.score;
+        }
+        if (p.pairTrap) return PairsHint;
+        if (p.detour && ForTarget(setup: s => s.noDetours = true)) return DetourHint;
+        if (p.buildsAhead && Gen.Abcd(l, p.best) && ForTarget(x => !Gen.Abcd(l, x))) return TwoRoutesHint;
+        if (p.buildsAhead && ForTarget(x => !x.BuildsAhead)) return OneRouteHint;
+        if (p.earnedCrossUsed && ForTarget(x => !LevelMaker.UsesEarnedPlus(l, x))) return EarnedHint;
+        return p.groups.Any(g => g > 1) ? GroupHint : FewerTilesHint;
+    }
 
     public static void Run(string levelsPath)
     {
@@ -69,8 +94,8 @@ static class Export
             int lineEnd = text.IndexOf('\n', text.IndexOf("};", newLevel));
             text = text.Substring(0, newLevel) +
                 $"        var l = new LevelData {{ title = \"Level {n}\", targetScore = {p.score}, bestTiles = {p.tiles},\n" +
-                $"            bestPlanHint = \"{Hint(p)}\" }};" + text.Substring(lineEnd);
-            Console.WriteLine($"Level {n}: {p.score}, {p.tiles} tiles, {Hint(p)}");
+                $"            bestPlanHint = \"{Hint(p, l)}\" }};" + text.Substring(lineEnd);
+            Console.WriteLine($"Level {n}: {p.score}, {p.tiles} tiles, {Hint(p, l)}");
         }
         File.WriteAllText(levelsPath, text.Replace("\n", "\r\n"));
     }

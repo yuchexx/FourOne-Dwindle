@@ -1,7 +1,12 @@
 using System; using System.Collections.Generic; using System.IO; using System.Linq; using System.Text; using UnityEngine;
 
 public enum Want { Any, Yes, No }
-public enum DetourWant { Any, None, Used, Optional, Required }
+// for a trick the best plan can use: Required = no plan without it reaches the target; UsedByBestPlan = the best plan
+// uses it, though skipping it may still reach the target; No = the best plan doesn't use it
+public enum Need { Any, Required, UsedByBestPlan, No }
+// a detour (out through a door and back to the object's own board): RequiredForTarget = the level can be finished
+// without one, but not at the target score; RequiredToFinish = it can't be finished without one at all
+public enum DetourWant { Any, No, UsedByBestPlan, RequiredForTarget, RequiredToFinish }
 public enum StartPlacement { Any, Spread, Cluster }
 
 // what the Level Maker window asks for
@@ -15,7 +20,8 @@ public class MakerSettings
     // supply
     public int startCross = 1, startBridge; public bool noTees; public int spareTiles = 2;
     // what the best plan must (or must not) have
-    public Want groupDelivery = Want.Yes, sharedTiles = Want.Yes, buildAhead, doubleBuildAhead, earnedPlus, pairsTrap, breakTrap, decoyDoor, bridge;
+    public Want pairsTrap, breakTrap, decoyDoor;
+    public Need groupDelivery = Need.Required, sharedTiles = Need.UsedByBestPlan, buildAhead, doubleBuildAhead, earnedPlus, bridge;
     public DetourWant detour;
     public bool facingChoice, everyBoardUsed, noNearMiss; public int minWays;
     public bool luckProof = true; // undo re-rolls the break, so no plan may beat the target by undoing until the break misses
@@ -30,6 +36,7 @@ class MakerResult
     public List<string> steps = new(), found = new();
     public List<int> wayScores; // best score of every finishing layout, null if counting ran out of time
     public int tries; public float seconds;
+    public bool full; // false: the quick report (no required checks, luck check or ways list)
 }
 
 class MakerProgress
@@ -41,14 +48,17 @@ class MakerProgress
 static class LevelMaker
 {
     static bool Is(Want w, bool v) => w == Want.Any || (w == Want.Yes) == v;
+    static bool Wanted(Need n) => n == Need.Required || n == Need.UsedByBestPlan;
+    // the best plan uses it (Required or Used by best plan), doesn't (No), or either (Any); Required is checked further down
+    static bool Uses(Need n, bool used) => n == Need.Any || Wanted(n) == used;
 
     public static Spec ToSpec(MakerSettings s) => new Spec
     {
         boards = Enumerable.Repeat((s.width, s.height), s.boards).ToArray(),
         objects = s.objects, doorPairs = s.doorPairs, obstacles = s.obstacles,
-        startCross = s.startCross, startBridge = s.bridge == Want.Yes ? Math.Max(1, s.startBridge) : s.bridge == Want.No ? 0 : s.startBridge,
+        startCross = s.startCross, startBridge = Wanted(s.bridge) ? Math.Max(1, s.startBridge) : s.bridge == Need.No ? 0 : s.startBridge,
         slack = s.spareTiles, crossBoard = s.ringsOnOtherBoards, noTees = s.noTees,
-        earnedNeeded = s.earnedPlus == Want.Yes ? 1 : 0, minRoute = s.minRoute, requireBridge = s.bridge == Want.Yes,
+        earnedNeeded = Wanted(s.earnedPlus) ? 1 : 0, minRoute = s.minRoute, requireBridge = s.bridge == Need.Required,
         spread = s.starts == StartPlacement.Spread, cluster = s.starts == StartPlacement.Cluster,
         insideEnds = s.randomDoorMix ? -1 : s.insideEnds, type = "any",
     };
@@ -58,13 +68,13 @@ static class LevelMaker
     {
         var res = new List<string>();
         bool doors = s.doorPairs > 0;
-        if (!doors && (s.detour is DetourWant.Used or DetourWant.Optional or DetourWant.Required)) res.Add("A detour needs at least one door pair.");
+        if (!doors && (s.detour is DetourWant.UsedByBestPlan or DetourWant.RequiredForTarget or DetourWant.RequiredToFinish)) res.Add("A detour needs at least one door pair.");
         if (!doors && s.decoyDoor == Want.Yes) res.Add("A decoy door needs at least one door pair.");
         if (!doors && s.facingChoice) res.Add("A facing choice needs at least one door pair.");
         if (s.facingChoice && !s.randomDoorMix && s.insideEnds == 0) res.Add("A facing choice needs a door end inside a board.");
-        if (s.groupDelivery == Want.No && (s.earnedPlus == Want.Yes || s.pairsTrap == Want.Yes)) res.Add("Earned + and the pairs trap need group deliveries.");
-        if (s.doubleBuildAhead == Want.Yes && s.buildAhead == Want.No) res.Add("Double build ahead is a kind of build ahead.");
-        if (s.doubleBuildAhead == Want.Yes && s.objects < 3) res.Add("Double build ahead needs at least 3 objects.");
+        if (s.groupDelivery == Need.No && (Wanted(s.earnedPlus) || s.pairsTrap == Want.Yes)) res.Add("Earned + and the pairs trap need group deliveries.");
+        if (Wanted(s.doubleBuildAhead) && s.buildAhead == Need.No) res.Add("Double build ahead is a kind of build ahead.");
+        if (Wanted(s.doubleBuildAhead) && s.objects < 3) res.Add("Double build ahead needs at least 3 objects.");
         if (s.pairsTrap == Want.Yes && s.objects < 4) res.Add("A pairs trap needs at least 4 objects (two pairs on paper).");
         return res;
     }
@@ -74,30 +84,36 @@ static class LevelMaker
     {
         if (p == null || !p.replayOk || l.doors.Count != 2 * s.doorPairs) return false;
         var b = p.best;
-        if (s.groupDelivery == Want.Yes && !p.comboNeeded) return false;
-        if (s.groupDelivery == Want.No && p.groups.Any(g => g > 1)) return false;
-        if (!Is(s.sharedTiles, p.tiles < p.fewestSum)) return false;
-        if (!Is(s.buildAhead, p.buildsAhead)) return false;
-        if (!Is(s.earnedPlus, p.earnedCrossUsed)) return false;
+        // cheap first: what the best plan uses (Required also needs it used)
+        if (!Uses(s.groupDelivery, GroupDelivery(b))) return false;
+        if (!Uses(s.sharedTiles, SharesTiles(b))) return false;
+        if (!Uses(s.buildAhead, p.buildsAhead)) return false;
+        if (!Uses(s.earnedPlus, p.earnedCrossUsed)) return false;
+        if (!Uses(s.bridge, b.tiles.Values.Contains(TileType.Bridge))) return false;
         if (!Is(s.pairsTrap, p.pairTrap)) return false;
         if (!Is(s.breakTrap, p.trap)) return false;
-        if (s.bridge == Want.No && b.tiles.Values.Contains(TileType.Bridge)) return false;
-        if (s.bridge == Want.Yes && !BridgeNeeded(l, p)) return false;
         if (s.doorPairs > 0 && !Is(s.decoyDoor, UnusedDoors(l, b).Count > 0)) return false;
         if (s.everyBoardUsed && !Gen.AllBoardsUsed(l, b)) return false;
         if (s.facingChoice && !Gen.Facing(l, b)) return false;
-        if (s.doubleBuildAhead != Want.Any && Gen.Abcd(l, b) != (s.doubleBuildAhead == Want.Yes)) return false;
+        if (!Uses(s.doubleBuildAhead, Gen.Abcd(l, b))) return false;
         switch (s.detour)
         {
-            case DetourWant.None: if (p.detour) return false; break;
-            case DetourWant.Used: if (!p.detour) return false; break;
-            case DetourWant.Optional:
-            case DetourWant.Required:
+            case DetourWant.No: if (p.detour) return false; break;
+            case DetourWant.UsedByBestPlan: if (!p.detour) return false; break;
+            case DetourWant.RequiredForTarget:
+            case DetourWant.RequiredToFinish:
                 if (!p.detour) return false;
                 var without = new Solver2(l) { noDetours = true }.Best();
-                if (s.detour == DetourWant.Required ? without != null : without == null || without.score >= p.score) return false;
+                if (s.detour == DetourWant.RequiredToFinish ? without != null : without == null || without.score >= p.score) return false;
                 break;
         }
+        // Required: without the trick, no plan reaches this score (a plan using it isn't enough)
+        if (s.groupDelivery == Need.Required && !Required(l, p, setup: x => x.allowCombos = false)) return false;
+        if (s.sharedTiles == Need.Required && !Required(l, p, setup: x => x.noSharing = true)) return false;
+        if (s.bridge == Need.Required && !BridgeNeeded(l, p)) return false;
+        if (s.buildAhead == Need.Required && !Required(l, p, x => !x.BuildsAhead)) return false;
+        if (s.doubleBuildAhead == Need.Required && !Required(l, p, x => !Gen.Abcd(l, x))) return false;
+        if (s.earnedPlus == Need.Required && !Required(l, p, x => !UsesEarnedPlus(l, x))) return false;
         if (s.minWays > 0 && Ways(l).Count < s.minWays) return false;
         if (s.noNearMiss && !Gen.NoNearMiss(l, p.score)) return false;
         if (s.luckProof && LuckyBest(l) > p.score) return false;
@@ -122,7 +138,7 @@ static class LevelMaker
                 bool fits = Check(s, l, p);
                 Gen.Trace?.Invoke($"  checks {(fits ? "passed" : "failed")} in {checkClock.ElapsedMilliseconds} ms");
                 if (!fits) continue;
-                l.targetScore = p.score; l.bestTiles = p.tiles; l.bestPlanHint = Export.Hint(p);
+                l.targetScore = p.score; l.bestTiles = p.tiles; l.bestPlanHint = Export.Hint(p, l);
                 pr.result = Finish(l, p);
                 pr.result.tries = pr.tries; pr.result.seconds = (float)clock.Elapsed.TotalSeconds;
                 return;
@@ -133,15 +149,16 @@ static class LevelMaker
         finally { pr.done = true; }
     }
 
-    // solves a level that already exists (from Levels.cs), without changing it
-    public static void Solve(LevelData l, MakerProgress pr)
+    // solves a level that already exists (from Levels.cs), without changing it.
+    // full: also check which tricks are required, the luck check and the ways list (each is another whole search)
+    public static void Solve(LevelData l, MakerProgress pr, bool full = true)
     {
         var clock = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             var p = Gen.Analyze(l);
             if (p == null) { pr.error = $"{l.title} has no solution within the solver's limits."; return; }
-            pr.result = Finish(l, p);
+            pr.result = Finish(l, p, full);
             pr.result.seconds = (float)clock.Elapsed.TotalSeconds;
         }
         catch (OperationCanceledException) { }
@@ -149,9 +166,9 @@ static class LevelMaker
         finally { pr.done = true; }
     }
 
-    static MakerResult Finish(LevelData l, Props p)
+    static MakerResult Finish(LevelData l, Props p, bool full = true)
     {
-        var r = new MakerResult { level = l, props = p, replay = new Replay2(l).Run(p.best) };
+        var r = new MakerResult { level = l, props = p, replay = new Replay2(l).Run(p.best), full = full };
         for (int k = 0; k < r.replay.placements.Count; k++)
         {
             var (c, t) = r.replay.placements[k];
@@ -159,26 +176,68 @@ static class LevelMaker
             r.steps.Add($"{LB.Local(l, c)} {Export.TileText(t)}" + (ev.Count > 0 ? " -> " + string.Join("; ", ev) : ""));
         }
         var b = p.best;
-        if (p.comboNeeded) r.found.Add("Group delivery pays off");
-        if (p.tiles < p.fewestSum) r.found.Add("Objects share tiles");
-        if (p.buildsAhead) r.found.Add(Gen.Abcd(l, b) ? "Double build ahead (two later objects)" : "Build ahead");
-        if (p.earnedCrossUsed) r.found.Add("Earned + needed (as " + string.Join(", ", EarnedUse.Roles(l, b).Distinct()) + ")");
+        // full: each trick says whether it's required (no plan without it reaches this score) or only used by the best
+        // plan. quick: the tricks the best plan uses, with no extra searches
+        const string NotRequired = " (used, but not required)";
+        string Label(Func<bool> required) => !full ? "" : required() ? "" : NotRequired;
+        if (GroupDelivery(b)) r.found.Add("Group delivery" + Label(() => Required(l, p, setup: x => x.allowCombos = false)));
+        if (SharesTiles(b)) r.found.Add("Objects share tiles" + Label(() => Required(l, p, setup: x => x.noSharing = true)));
+        if (p.buildsAhead)
+        {
+            bool dbl = Gen.Abcd(l, b) && (!full || Required(l, p, x => !Gen.Abcd(l, x)));
+            r.found.Add((dbl ? "Double build ahead (two later objects)" : "Build ahead") + Label(() => Required(l, p, x => !x.BuildsAhead)));
+        }
+        if (p.earnedCrossUsed)
+            r.found.Add("Earned + (as " + string.Join(", ", EarnedUse.Roles(l, b).Distinct()) + ")" + Label(() => Required(l, p, x => !UsesEarnedPlus(l, x))));
         if (p.pairTrap) r.found.Add("Pairs trap");
         else if (p.trap) r.found.Add($"Break trap (the best plan on paper scores {p.unsafeRaw}, but its deliveries break tiles)");
         if (p.detour)
         {
-            var without = new Solver2(l) { noDetours = true }.Best();
-            r.found.Add(without == null ? "Required detour (can't finish without it)" : $"Optional detour ({without.score} without it)");
+            if (!full) r.found.Add("Detour");
+            else
+            {
+                var without = new Solver2(l) { noDetours = true }.Best();
+                r.found.Add(without == null ? "Required detour (can't finish without it)" : $"Optional detour ({without.score} without it)");
+            }
         }
-        if (b.tiles.Values.Contains(TileType.Bridge)) r.found.Add("Bridge");
-        int lucky = LuckyBest(l);
-        if (lucky > p.score) r.found.Add($"NOT luck-proof: undoing until the break misses reaches {lucky}");
+        if (b.tiles.Values.Contains(TileType.Bridge)) r.found.Add("Bridge" + Label(() => BridgeNeeded(l, p)));
+        if (full)
+        {
+            int lucky = LuckyBest(l);
+            if (lucky > p.score) r.found.Add($"NOT luck-proof: undoing until the break misses reaches {lucky}");
+        }
         var unused = UnusedDoors(l, b);
         if (unused.Count > 0) r.found.Add($"Decoy door (the best plan doesn't use door {string.Join(", ", unused)})");
         if (l.doors.Count > 0 && Gen.Facing(l, b)) r.found.Add("Door facing choice");
-        try { r.wayScores = Ways(l); } catch (OperationCanceledException) { r.wayScores = null; }
+        if (full) try { r.wayScores = Ways(l); } catch (OperationCanceledException) { r.wayScores = null; }
         return r;
     }
+
+    // the trick is required: the best plan without it (as `without` accepts) scores less, or there is none
+    // setup: a faster way to forbid it, when the solver has one (e.g. no group deliveries at all)
+    public static bool Required(LevelData l, Props p, Func<Plan, bool> without = null, Action<Solver2> setup = null)
+    {
+        var solver = new Solver2(l) { filter = without };
+        setup?.Invoke(solver);
+        var w = solver.Best();
+        return w == null || w.score < p.score;
+    }
+
+    // two or more objects arrive on the same placement
+    public static bool GroupDelivery(Plan x) => x.events.Any(e => e.Count >= 2);
+
+    // two routes pass through the same square (one tile serves both)
+    public static bool SharesTiles(Plan x)
+    {
+        var seen = new HashSet<Vector2Int>();
+        foreach (var r in x.routes)
+            foreach (var c in r.cells)
+                if (!seen.Add(c)) return true;
+        return false;
+    }
+
+    // the plan uses more + tiles than the level starts with, so at least one is earned
+    public static bool UsesEarnedPlus(LevelData l, Plan x) => x.tiles.Values.Count(t => t == TileType.Cross) > l.inventory.GetValueOrDefault(TileType.Cross);
 
     // the best score a player can reach by undoing until each break misses (undo re-rolls it)
     public static int LuckyBest(LevelData l) => new Solver2(l) { requireSafe = false, penalize = false, lucky = true }.Best()?.score ?? 0;
@@ -225,7 +284,7 @@ static class LevelMaker
         sb.Append($"    // Score {r.props.score} with {r.props.tiles} tiles (target).\n");
         sb.Append($"    static LevelData Level{number}()\n    {{\n");
         sb.Append($"        var l = new LevelData {{ title = \"Level {number}\", targetScore = {r.props.score}, bestTiles = {r.props.tiles},\n");
-        sb.Append($"            bestPlanHint = \"{Export.Hint(r.props)}\" }};\n");
+        sb.Append($"            bestPlanHint = \"{r.level.bestPlanHint ?? Export.Hint(r.props)}\" }};\n");
         sb.Append($"        l.SetBoards({string.Join(", ", l.boards.Select(b => $"({b.width}, {b.height})"))});\n");
         sb.Append("        l.inventory = Inv(" + string.Join(", ", Tiles.All.Where(t => l.inventory.GetValueOrDefault(t) > 0).Select(t => $"{InvNames[t]}: {l.inventory[t]}")) + ");\n");
         foreach (var o in l.obstacles) { int b = l.BoardOf(o); var p = o - l.boards[b].origin; sb.Append($"        l.obstacles.Add(l.At({b}, {p.x}, {p.y}));\n"); }

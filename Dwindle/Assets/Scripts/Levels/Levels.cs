@@ -34,7 +34,7 @@ public static class Levels
     static LevelData Level2()
     {
         var l = new LevelData { title = "Level 2", targetScore = 550, bestTiles = 8,
-            bestPlanHint = "The best plan delivers two objects together early to earn a + tile." };
+            bestPlanHint = "The best plan delivers some objects together." };
         l.SetBoards((3, 3));
         l.inventory = Inv(bridge: 1, es: 2, sw: 1, wn: 2, v: 3);
         Obj(l, "Red", Red, 0, 2, 3, Dir.S, 0, 2, -1);
@@ -43,18 +43,18 @@ public static class Levels
         return l;
     }
 
-    // A 4x3 board: Red and Orange arrive together first, but Blue and Green both still have to cross their tiles. Build Blue's road and Green's road ahead so both pass first. Fixing only one isn't enough.
+    // A 4x3 board: Blue and Orange arrive together first, but Red and Green both still have to cross their tiles. Build Red's road and Green's road ahead so both pass first. Fixing only one isn't enough.
     // Score 900 with 9 tiles (target).
     static LevelData Level3()
     {
         var l = new LevelData { title = "Level 3", targetScore = 900, bestTiles = 9,
-            bestPlanHint = "The best plan builds part of one route early, so it passes a shared tile before anyone is delivered." };
+            bestPlanHint = "The best plan builds parts of two routes early, so both pass shared tiles before anyone is delivered." };
         l.SetBoards((4, 3));
-        l.inventory = Inv(cross: 1, es: 1, sw: 1, h: 2, v: 2, tNES: 2, tESW: 1, tWNE: 1);
-        Obj(l, "Red", Red, 0, 4, 1, Dir.W, 0, 1, -1);
-        Obj(l, "Blue", Blue, 0, 4, 2, Dir.W, 0, -1, 1);
-        Obj(l, "Green", Green, 0, 1, 3, Dir.S, 0, 0, -1);
-        Obj(l, "Orange", Orange, 0, 4, 0, Dir.W, 0, 2, -1);
+        l.inventory = Inv(cross: 1, sw: 1, wn: 1, h: 4, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
+        Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 4, 0);
+        Obj(l, "Blue", Blue, 0, -1, 1, Dir.E, 0, 1, 3);
+        Obj(l, "Green", Green, 0, 3, 3, Dir.S, 0, 2, -1);
+        Obj(l, "Orange", Orange, 0, 1, -1, Dir.N, 0, 2, 3);
         return l;
     }
 
@@ -78,7 +78,7 @@ public static class Levels
     static LevelData Level5()
     {
         var l = new LevelData { title = "Level 5", targetScore = 825, bestTiles = 10,
-            bestPlanHint = "The best plan delivers two objects together early to earn a + tile." };
+            bestPlanHint = "The best plan delivers some objects together." };
         l.SetBoards((4, 4));
         l.inventory = Inv(ne: 3, es: 1, wn: 1, tNES: 1, tESW: 2, tSWN: 1, tWNE: 2);
         l.obstacles.Add(l.At(0, 1, 2));
@@ -112,7 +112,7 @@ public static class Levels
     static LevelData Level7()
     {
         var l = new LevelData { title = "Level 7", targetScore = 675, bestTiles = 9,
-            bestPlanHint = "The best plan uses a door as a shortcut back to an object's own board." };
+            bestPlanHint = "The best plan delivers some objects together." };
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(bridge: 1, ne: 2, es: 2, wn: 2, h: 1, v: 1, tNES: 1, tESW: 1);
         Door(l, "A", 0, 2, 0, Dir.S);
@@ -167,24 +167,24 @@ public static class Levels
         return l;
     }
 
-    // Two 4x4 boards: Blue and Orange arrive together first, but Red and Green both still have to cross their T tiles on board 1. Build both roads ahead, and the + the pair earns is the straight Red needs at the end.
-    // Score 1025 with 14 tiles (target).
+    // Two 4x4 boards: Blue and Orange arrive together first, but Red and Green both still have to cross their tiles. Build both roads ahead (Red's goes through three doors), and the + the pair earns is the corner Red needs at the end. Green's ring is on its own board, so its road goes out through a door and back.
+    // Score 1025 with 11 tiles (target).
     static LevelData Level10()
     {
-        var l = new LevelData { title = "Level 10", targetScore = 1025, bestTiles = 14,
-            bestPlanHint = "The best plan builds part of one route early, so it passes a shared tile before anyone is delivered." };
+        var l = new LevelData { title = "Level 10", targetScore = 1025, bestTiles = 11,
+            bestPlanHint = "The best plan builds parts of two routes early, so both pass shared tiles before anyone is delivered." };
         l.SetBoards((4, 4), (4, 4));
-        l.inventory = Inv(ne: 1, sw: 1, h: 3, v: 3, tNES: 1, tESW: 2, tSWN: 2, tWNE: 2);
-        Door(l, "A", 0, 3, 3, Dir.N);
-        Door(l, "A", 1, 0, 3, Dir.W);
-        Door(l, "B", 1, 1, 3, Dir.E);
-        Door(l, "B", 0, 1, 3, Dir.S);
-        Door(l, "C", 0, 1, 1, Dir.W);
-        Door(l, "C", 1, 3, 1, Dir.W);
-        Obj(l, "Red", Red, 0, 0, 4, Dir.S, 1, -1, 1);
-        Obj(l, "Blue", Blue, 1, 4, 3, Dir.W, 0, 1, -1);
-        Obj(l, "Green", Green, 0, 4, 3, Dir.W, 1, 2, -1);
-        Obj(l, "Orange", Orange, 1, 2, 4, Dir.S, 0, 2, 4);
+        l.inventory = Inv(es: 1, sw: 1, wn: 2, h: 1, v: 1, tESW: 3, tSWN: 1, tWNE: 2);
+        Door(l, "A", 1, 1, 2, Dir.W);
+        Door(l, "A", 0, 3, 0, Dir.E);
+        Door(l, "B", 0, 0, 3, Dir.W);
+        Door(l, "B", 1, 1, 1, Dir.N);
+        Door(l, "C", 0, 1, 3, Dir.N);
+        Door(l, "C", 1, 0, 1, Dir.E);
+        Obj(l, "Red", Red, 0, 2, -1, Dir.N, 1, -1, 0);
+        Obj(l, "Blue", Blue, 1, -1, 3, Dir.E, 0, 2, 4);
+        Obj(l, "Green", Green, 1, 2, 4, Dir.S, 1, -1, 1);
+        Obj(l, "Orange", Orange, 1, 0, 4, Dir.S, 0, 3, -1);
         return l;
     }
 
@@ -193,7 +193,7 @@ public static class Levels
     static LevelData Level11()
     {
         var l = new LevelData { title = "Level 11", targetScore = 1025, bestTiles = 15,
-            bestPlanHint = "The best plan uses a door as a shortcut back to an object's own board." };
+            bestPlanHint = "The best plan builds part of one route early, so it passes a shared tile before anyone is delivered." };
         l.SetBoards((3, 3), (3, 3), (3, 3), (3, 3));
         l.inventory = Inv(ne: 3, sw: 1, h: 2, v: 4, tNES: 3, tESW: 1, tSWN: 2);
         Door(l, "A", 0, 1, 0, Dir.W);
@@ -216,7 +216,7 @@ public static class Levels
     static LevelData Level12()
     {
         var l = new LevelData { title = "Level 12", targetScore = 975, bestTiles = 14,
-            bestPlanHint = "The best plan uses a door as a shortcut back to an object's own board." };
+            bestPlanHint = "The best plan builds part of one route early, so it passes a shared tile before anyone is delivered." };
         l.SetBoards((5, 5), (5, 5));
         l.inventory = Inv(cross: 1, bridge: 1, ne: 1, es: 1, sw: 1, wn: 2, h: 1, v: 3, tNES: 2, tESW: 1, tWNE: 1);
         l.obstacles.Add(l.At(1, 1, 3));

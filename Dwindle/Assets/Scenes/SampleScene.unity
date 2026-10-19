@@ -1571,6 +1571,11 @@ MonoBehaviour:
   pointsPerTeleport: 50
   pointsPerUnusedTile: 75
   stuckSecondsBeforeNotice: 4
+  closeGapSmallBoards: 2
+  closeGapLargeBoards: 3
+  largeBoardSquares: 12
+  noticeWhenFar: 1
+  farSecondsBeforeNotice: 20
 --- !u!4 &434519280
 Transform:
   m_ObjectHideFlags: 0

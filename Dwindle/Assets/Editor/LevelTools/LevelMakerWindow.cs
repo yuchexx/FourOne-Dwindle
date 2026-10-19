@@ -15,6 +15,7 @@ public class LevelMakerWindow : EditorWindow
     [SerializeField] int levelNumber = 13;
     [SerializeField] string comment = "";
     [SerializeField] int existing;
+    [SerializeField] bool fullReport;
 
     Vector2 settingsScroll, resultScroll, codeScroll;
     MakerProgress progress; double startTime; bool solvingExisting;
@@ -83,6 +84,11 @@ public class LevelMakerWindow : EditorWindow
 
     static Want WantField(string label, string tip, Want value) => (Want)EditorGUILayout.EnumPopup(new GUIContent(label, tip), value);
 
+    const string NeedTip = "\nRequired: no plan without it reaches the target." +
+        "\nUsed by best plan: the best plan uses it, but skipping it may still reach the target." +
+        "\nNo: the best plan doesn't use it.";
+    static Need NeedField(string label, string tip, Need value) => (Need)EditorGUILayout.EnumPopup(new GUIContent(label, tip + NeedTip), value);
+
     void DrawSettings()
     {
         var s = settings;
@@ -115,23 +121,23 @@ public class LevelMakerWindow : EditorWindow
 
         Section("Supply");
         s.startCross = EditorGUILayout.IntSlider("Starting + tiles", s.startCross, 0, 3);
-        EditorGUI.BeginDisabledGroup(s.bridge == Want.No);
-        s.startBridge = EditorGUILayout.IntSlider("Bridge tiles", s.bridge == Want.Yes ? Mathf.Max(1, s.startBridge) : s.startBridge, 0, 2);
+        EditorGUI.BeginDisabledGroup(s.bridge == Need.No);
+        s.startBridge = EditorGUILayout.IntSlider("Bridge tiles", s.bridge == Need.Required || s.bridge == Need.UsedByBestPlan ? Mathf.Max(1, s.startBridge) : s.startBridge, 0, 2);
         EditorGUI.EndDisabledGroup();
         s.noTees = EditorGUILayout.Toggle(new GUIContent("No T tiles", "Junctions have to be + tiles"), s.noTees);
         s.spareTiles = EditorGUILayout.IntSlider(new GUIContent("Spare tiles", "Plain tiles added beyond what the best plan places"), s.spareTiles, 0, 4);
 
         Section("Traps and checks (for the best plan)");
-        s.groupDelivery = WantField("Group delivery pays off", "Yes: the best plan needs objects arriving together. No: everyone arrives alone.", s.groupDelivery);
-        s.sharedTiles = WantField("Objects share tiles", "The best plan uses fewer tiles than separate routes would", s.sharedTiles);
-        s.buildAhead = WantField("Build ahead", "A later object's road must be built (and passed) before an earlier delivery breaks a tile it needs", s.buildAhead);
-        s.doubleBuildAhead = WantField("Double build ahead", "One delivery needs TWO later objects built ahead (fixing one isn't enough)", s.doubleBuildAhead);
-        s.earnedPlus = WantField("Earned + needed", "The + earned by a group delivery fills a tile the supply doesn't have", s.earnedPlus);
+        s.groupDelivery = NeedField("Group delivery", "Two or more objects arrive on the same placement", s.groupDelivery);
+        s.sharedTiles = NeedField("Objects share tiles", "Two routes go through the same square, so one tile serves both", s.sharedTiles);
+        s.buildAhead = NeedField("Build ahead", "A later object's road is built (and passed) before an earlier delivery breaks a tile it needs", s.buildAhead);
+        s.doubleBuildAhead = NeedField("Double build ahead", "One delivery has TWO later objects built ahead", s.doubleBuildAhead);
+        s.earnedPlus = NeedField("Earned +", "The + earned by a group delivery fills a tile the supply doesn't have", s.earnedPlus);
         s.pairsTrap = WantField("Pairs trap", "Pairs look best on paper, but their deliveries break tiles; the safe plan groups differently and stays better even if you re-place broken tiles", s.pairsTrap);
         s.breakTrap = WantField("Break trap", "The best plan on paper scores more, but its deliveries break tiles someone still needs", s.breakTrap);
-        s.detour = (DetourWant)EditorGUILayout.EnumPopup(new GUIContent("Detour", "An object whose ring is on its own board goes out through a door and back.\nUsed: the best plan has one. Optional: it can finish without, but scores less. Required: can't finish without."), s.detour);
+        s.detour = (DetourWant)EditorGUILayout.EnumPopup(new GUIContent("Detour", "An object whose ring is on its own board goes out through a door and back.\nUsed by best plan: the best plan has one.\nRequired for target: it can finish without one, but not at the target.\nRequired to finish: it can't finish without one.\nNo: the best plan has none."), s.detour);
         s.decoyDoor = WantField("Decoy door", "Yes: a door the best plan doesn't use. No: every door is used.", s.decoyDoor);
-        s.bridge = WantField("Bridge", "Yes: the best plan uses the bridge and does worse without it", s.bridge);
+        s.bridge = NeedField("Bridge", "The best plan puts a bridge down", s.bridge);
         s.facingChoice = EditorGUILayout.Toggle(new GUIContent("Door facing choice", "An object comes out of a door between two squares, so it picks a direction"), s.facingChoice);
         s.everyBoardUsed = EditorGUILayout.Toggle("Every board used", s.everyBoardUsed);
         s.noNearMiss = EditorGUILayout.Toggle(new GUIContent("No near miss", "One extra tile of any type wouldn't let everyone arrive together (slow check)"), s.noNearMiss);
@@ -169,6 +175,11 @@ public class LevelMakerWindow : EditorWindow
         if (GUILayout.Button("Solve", GUILayout.Width(80))) StartSolve(Levels.All[existing]);
         EditorGUI.EndDisabledGroup();
         EditorGUILayout.EndHorizontal();
+        EditorGUI.BeginDisabledGroup(running);
+        fullReport = EditorGUILayout.Toggle(new GUIContent("Full report (slow)",
+            "Also check which tricks are required (not just used by the best plan), whether a detour is required, " +
+            "the luck check and the ways to finish. Each is another whole search."), fullReport);
+        EditorGUI.EndDisabledGroup();
         EditorGUILayout.Space(10);
     }
 
@@ -178,7 +189,11 @@ public class LevelMakerWindow : EditorWindow
         Begin(false, pr => LevelMaker.Run(copy, pr));
     }
 
-    void StartSolve(LevelData level) => Begin(true, pr => LevelMaker.Solve(level, pr));
+    void StartSolve(LevelData level)
+    {
+        bool full = fullReport;
+        Begin(true, pr => LevelMaker.Solve(level, pr, full));
+    }
 
     void Begin(bool existingLevel, System.Action<MakerProgress> work)
     {
@@ -211,12 +226,13 @@ public class LevelMakerWindow : EditorWindow
             (b.doorObjects > 0 ? $" + doors {Solver2.DoorPer * b.doorObjects}" : "") +
             $" + {unused} unused tiles {Solver2.Unused * unused}", EditorStyles.wordWrappedLabel);
         EditorGUILayout.LabelField("Supply: " + string.Join(", ", Tiles.All.Where(t => l.inventory.GetValueOrDefault(t) > 0).Select(t => $"{Export.TileText(t)} x{l.inventory[t]}")), EditorStyles.wordWrappedLabel);
-        if (r.wayScores == null) EditorGUILayout.LabelField("Ways to finish: counting ran out of time.");
+        if (!r.full) EditorGUILayout.LabelField("Ways to finish: not counted (turn on Full report).");
+        else if (r.wayScores == null) EditorGUILayout.LabelField("Ways to finish: counting ran out of time.");
         else EditorGUILayout.LabelField($"Ways to finish: {r.wayScores.Count} ({r.wayScores.Count(x => x >= p.score)} reach the target)  " +
             string.Join(" ", r.wayScores.GroupBy(x => x).Select(g => g.Count() > 1 ? $"{g.Key}x{g.Count()}" : $"{g.Key}")), EditorStyles.wordWrappedLabel);
 
         EditorGUILayout.Space(4);
-        EditorGUILayout.LabelField("Has", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField(r.full ? "Has" : "Has (used by the best plan; turn on Full report to see which are required)", EditorStyles.boldLabel);
         if (r.found.Count == 0) EditorGUILayout.LabelField("  nothing special: separate routes");
         foreach (var f in r.found) EditorGUILayout.LabelField("  • " + f, EditorStyles.wordWrappedLabel);
 
