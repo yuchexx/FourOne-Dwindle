@@ -26,11 +26,14 @@ public class MenuView : MonoBehaviour
     public Button levelButtonTemplate; // left empty, the Level1Button on the start screen is used
     public float levelButtonSpacing = 20f;
     [Min(1)] public int levelButtonsPerRow = 4;
+    [Tooltip("Level numbers (from 1) whose buttons get the tutorial color")]
+    public int[] tutorialLevels = { 1, 6 };
+    public Color tutorialButtonColor = new Color(0.30f, 0.66f, 0.58f);
 
     [Header("Level menu")]
     public TMP_Text menuTitle;
     public TMP_Text menuSummary;
-    public Image[] menuStars;
+    public Graphic[] menuStars; // StarGraphics
     public GameObject resumeButton;
     public Button nextButton;
 
@@ -139,6 +142,8 @@ public class MenuView : MonoBehaviour
 
             var label = button.GetComponentInChildren<TMP_Text>(true);
             if (label != null) label.text = $"Level {i + 1}";
+            if (Array.IndexOf(tutorialLevels, i + 1) >= 0 && button.targetGraphic != null)
+                button.targetGraphic.color = tutorialButtonColor; // a tutorial level
             levelButtons.Add(button);
         }
     }
