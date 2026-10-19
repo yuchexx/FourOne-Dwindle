@@ -56,6 +56,7 @@ public class MenuView : MonoBehaviour
     public Color starOnColor = new Color(1f, 0.82f, 0.2f);
     public Color starOffColor = new Color(0.32f, 0.33f, 0.37f);
     public Color bonusStarOnColor = new Color(0.45f, 0.80f, 0.95f); // the third star, for the score
+    public bool outlineMissedScoreStar = true; // a missed third star is outlined in its color (width: Outline Width on the star)
 
     [Header("Tutorial")]
     public TMP_Text tutorialTitle;
@@ -205,7 +206,12 @@ public class MenuView : MonoBehaviour
         LayOutMenu();
         if (menuStars.Length > 0) menuStars[0].color = star1 ? starOnColor : starOffColor;
         if (menuStars.Length > 1) menuStars[1].color = star2 ? starOnColor : starOffColor;
-        if (menuStars.Length > 2) menuStars[2].color = scoreStar ? bonusStarOnColor : starOffColor;
+        if (menuStars.Length > 2)
+        {
+            menuStars[2].color = scoreStar ? bonusStarOnColor : starOffColor;
+            // a missed 3rd star keeps its own color as an outline, so it reads as the score star still to get
+            if (menuStars[2] is StarGraphic third) third.outlineColor = scoreStar || !outlineMissedScoreStar ? Color.clear : bonusStarOnColor;
+        }
 
         menuTitle.text = title;
         menuSummary.text = summary;

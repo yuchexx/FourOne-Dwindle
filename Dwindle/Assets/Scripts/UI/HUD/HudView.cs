@@ -47,6 +47,7 @@ public class HudView : MonoBehaviour
     public Color recoverySelectedColor = new Color(0.95f, 0.78f, 0.25f); // the card you click to get back
     public Color flashColor = new Color(1f, 0.45f, 0.45f);
     public Color earnedFlashColor = new Color(0.45f, 0.85f, 0.55f); // the + slot when delivering together earns one
+    public Color headingColor = new Color(1f, 0.82f, 0.2f);         // PROGRESS and STAR GOALS in the info panel (#FFD133)
     public float flashHoldSeconds = 0.2f;
     public float flashFadeSeconds = 0.2f;
 
@@ -160,11 +161,12 @@ public class HudView : MonoBehaviour
     {
         levelTitleText.text = level.title;
 
+        string heading = ColorUtility.ToHtmlStringRGB(headingColor);
         goalText.text =
             "Match objects to their colored rings.\n\n" +
-            "<b><color=#3EE6B0>PROGRESS</color></b>\n" +
+            $"<b><color=#{heading}>PROGRESS</color></b>\n" +
             $"{delivered}/{total} delivered | {tilesLeft} tiles left\n\n" +
-            "<b><color=#3EE6B0>STAR GOALS</color></b>\n" +
+            $"<b><color=#{heading}>STAR GOALS</color></b>\n" +
             $"1st star: Deliver {level.Required}\n" +
             $"2nd star: Deliver all {total}";
 

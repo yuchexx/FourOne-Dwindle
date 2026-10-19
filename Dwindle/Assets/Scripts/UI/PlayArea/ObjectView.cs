@@ -4,7 +4,7 @@ using UnityEngine.UI;
 // a colored circle with a direction that shows which way it faces.
 public class ObjectView : MonoBehaviour
 {
-    public Image body;
+    public Graphic body; // a CircleGraphic
     public GameObject blockedMark; // the cross shown while the object is blocked
     public RectTransform Rect => (RectTransform)transform;
 

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5389143622170529013}
   - component: {fileID: 5895012405850301537}
-  - component: {fileID: 6324917348627717688}
+  - component: {fileID: 1844754615564247084}
   m_Layer: 5
   m_Name: Hole
   m_TagString: Untagged
@@ -45,7 +45,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3028120216476423433}
   m_CullTransparentMesh: 1
---- !u!114 &6324917348627717688
+--- !u!114 &1844754615564247084
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -54,27 +54,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 3028120216476423433}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Script: {fileID: 11500000, guid: 176f273df425a0743847afea05beac9b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_EditorClassIdentifier: Assembly-CSharp::CircleGraphic
   m_Material: {fileID: 0}
   m_Color: {r: 0.1882353, g: 0.2, b: 0.23921569, a: 1}
-  m_RaycastTarget: 0
+  m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
+  scale: 0.9
+  thickness: 1
+  segments: 72
+  softness: 1.2
 --- !u!1 &8154703977895485549
 GameObject:
   m_ObjectHideFlags: 0
@@ -85,8 +79,8 @@ GameObject:
   m_Component:
   - component: {fileID: 9027097582582371270}
   - component: {fileID: 5853760009460962932}
-  - component: {fileID: 345602068764156476}
   - component: {fileID: 169439478486752816}
+  - component: {fileID: 780498157812418110}
   m_Layer: 5
   m_Name: Destination
   m_TagString: Untagged
@@ -122,36 +116,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8154703977895485549}
   m_CullTransparentMesh: 1
---- !u!114 &345602068764156476
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8154703977895485549}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
 --- !u!114 &169439478486752816
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -164,5 +128,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 281f5a082fa0a2042be6f8393dab9fe0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DestinationView
-  ring: {fileID: 345602068764156476}
-  hole: {fileID: 6324917348627717688}
+  ring: {fileID: 780498157812418110}
+  hole: {fileID: 1844754615564247084}
+--- !u!114 &780498157812418110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8154703977895485549}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 176f273df425a0743847afea05beac9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CircleGraphic
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  scale: 0.82
+  thickness: 1
+  segments: 72
+  softness: 1.2

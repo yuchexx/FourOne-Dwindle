@@ -5,8 +5,8 @@ using UnityEngine.UI;
 // when its object arrives, the hole is hidden so the ring looks filled
 public class DestinationView : MonoBehaviour
 {
-    public Image ring;
-    public Image hole;
+    public Graphic ring; // CircleGraphics
+    public Graphic hole;
 
     public void Setup(Color color, float size)
     {
