@@ -61,6 +61,7 @@ public partial class GameManager
         selected = null; // undo leaves no tile selected
 
         Restore(history.Pop());
+        UpdateStuck(); // the banner goes if this made the level winnable again
     }
 
     void Restore(Snapshot s)

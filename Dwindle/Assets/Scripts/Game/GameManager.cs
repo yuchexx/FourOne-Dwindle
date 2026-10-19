@@ -21,6 +21,10 @@ public partial class GameManager : MonoBehaviour
     public int pointsPerTeleport = 50;    // once per delivered object that went through at least one door
     public int pointsPerUnusedTile = 75;  // per tile left in the supply, only if every object was delivered
 
+    [Header("Stuck notice")]
+    [Tooltip("Seconds without placing a tile, while stuck, before the notice shows (0 = right away)")]
+    [Min(0f)] public float stuckSecondsBeforeNotice = 8f;
+
     int levelIndex;
     LevelData level;
     Dictionary<TileType, int> inventory;
@@ -49,6 +53,8 @@ public partial class GameManager : MonoBehaviour
         StopAllCoroutines();
         TelemetryManager.Instance.StartLevel(index);
         levelReported = false;
+        stuck = false;
+        HideStuckNotice();
         board.ClearChoices();
         hud.SetChoiceMode(false);
         hud.ResetSlotFlashes();
@@ -130,6 +136,7 @@ public partial class GameManager : MonoBehaviour
     void OnCellRightClicked(Vector2Int p)
     {
         if (levelOver || busy) return;
+        menu.HideMenu(); // pressed from the paused menu: the end window replaces it
         var cell = Cells[p.x, p.y];
         if (cell.tile == null) return;
         if (cell.locked) { Log("That tile has been used, so it stays."); return; }
@@ -143,6 +150,7 @@ public partial class GameManager : MonoBehaviour
         TelemetryManager.Instance.RemovePiece();
         Log($"Put a {Tiles.Name(t)} back.");
         UpdateBlocked(); // a tile in an object's way may have been the one taken back
+        UpdateStuck();
         RefreshAll();
     }
 
@@ -401,22 +409,56 @@ public partial class GameManager : MonoBehaviour
     {
         if (levelOver) return;
         UpdateBlocked();
+        // the level ends on its own only when it's plainly over and a right-click take-back couldn't change that
+        // (a tile no object has used can still be returned); the subtler dead ends get the stuck notice instead
+        bool canTakeBack = AnyUnusedTile();
         string reason = null;
         if (objects.All(o => o.completed)) reason = "Every object was delivered!";
-        else if (objects.All(o => o.completed || o.blocked)) reason = "Every remaining object is blocked.";
-        else if (objects.All(o => o.completed || !CanStillReach(o))) reason = "No remaining object can reach its destination.";
-        else if (inventory.Values.Sum() == 0) reason = "You ran out of tiles.";
-        else if (!AnyEmptyCell()) reason = "There are no empty cells left.";
-        if (reason == null) return;
+        else if (objects.All(o => o.completed || BlockedForGood(o))) reason = "Every remaining object is blocked.";
+        else if (objects.All(o => o.completed || !CanStillReach(o, ignoreUnlocked: true))) reason = "No remaining object can reach its destination.";
+        else if (inventory.Values.Sum() == 0 && !canTakeBack) reason = "You ran out of tiles.";
+        else if (!AnyEmptyCell() && !canTakeBack) reason = "There are no empty cells left.";
+        if (reason == null) { UpdateStuck(afterPlacement: true); return; }
+        FinishLevel(reason);
+    }
 
+    // blocked, and nothing the player can do changes it: a used tile, a blocked square, a door's wall or the board's
+    // edge in front. a tile no object has used could be taken back, so that block isn't for good
+    bool BlockedForGood(MovingObject o)
+    {
+        if (!IsBlocked(o)) return false;
+        if (!CanCross(o.pos, o.heading, o.viaDoor)) return true;
+        var next = o.pos + DirUtil.Offset(o.heading);
+        if (!board.InGrid(next)) return true;
+        var cell = Cells[next.x, next.y];
+        return cell.obstacle || cell.locked;
+    }
+
+    // a placed tile no object has gone through, which right-click could still return
+    bool AnyUnusedTile()
+    {
+        foreach (var c in Cells)
+            if (c != null && c.tile != null && !c.locked) return true;
+        return false;
+    }
+
+    // the level is over: count the unused tiles and show the end window
+    void FinishLevel(string reason)
+    {
+        stuck = false;
+        HideStuckNotice();
         levelOver = true;
         selected = null;
         Log(reason);
 
-        // every tile left in the supply scores at the end
-        unusedTiles = inventory.Values.Sum();
-        unusedPoints = unusedTiles * pointsPerUnusedTile;
-        if (unusedTiles > 0) Log($"{unusedTiles} unused tiles. +{unusedPoints}");
+        // unused tiles only score when everything was delivered (otherwise ending early, e.g. with End level,
+        // would score every tile not spent on the objects left behind)
+        if (objects.All(o => o.completed))
+        {
+            unusedTiles = inventory.Values.Sum();
+            unusedPoints = unusedTiles * pointsPerUnusedTile;
+            if (unusedTiles > 0) Log($"{unusedTiles} unused tiles. +{unusedPoints}");
+        }
         RefreshAll();
         StartCoroutine(ShowEndMenuAfterDelay(reason));
     }
@@ -438,8 +480,9 @@ public partial class GameManager : MonoBehaviour
         return cell.tile != null && !Tiles.Has(cell.tile.Value, DirUtil.Opposite(o.heading));
     }
 
-    // could the object still reach its ring by some route, doors included - breadth-first search
-    bool CanStillReach(MovingObject o)
+    // could the object still reach its ring by some route, doors included - breadth-first search.
+    // ignoreUnlocked: treat tiles no object has used as empty, since right-click could still take them back
+    bool CanStillReach(MovingObject o, bool ignoreUnlocked = false)
     {
         var seen = new HashSet<(Vector2Int, Dir, bool)>();
         var queue = new Queue<(Vector2Int pos, Dir heading, bool viaDoor)>();
@@ -457,10 +500,11 @@ public partial class GameManager : MonoBehaviour
             var cell = Cells[next.x, next.y];
             if (cell.obstacle) continue;
             var entry = DirUtil.Opposite(heading);
-            if (cell.tile != null && !Tiles.Has(cell.tile.Value, entry)) continue;
+            var tile = ignoreUnlocked && !cell.locked ? null : cell.tile;
+            if (tile != null && !Tiles.Has(tile.Value, entry)) continue;
 
             // an empty cell could still hold any tile: every way except straight back
-            var exits = cell.tile == null ? DirUtil.All.Where(d => d != entry).ToList() : Tiles.Exits(cell.tile.Value, entry);
+            var exits = tile == null ? DirUtil.All.Where(d => d != entry).ToList() : Tiles.Exits(tile.Value, entry);
             foreach (var exit in exits)
             {
                 var door = level.DoorOnEdge(next, exit);
@@ -478,6 +522,112 @@ public partial class GameManager : MonoBehaviour
             }
         }
         return false;
+    }
+
+    // stuck: nobody left can be delivered with the tiles there are
+    bool stuck;
+    float stuckSince; // when the player got stuck, or last placed a tile while stuck
+
+    // afterPlacement: called after a tile was placed (restarts the count)
+    void UpdateStuck(bool afterPlacement = false)
+    {
+        bool now = !levelOver && !busy && objects.Any(o => !o.completed) && !objects.Any(o => !o.completed && CanStillFinish(o));
+        if (!now) { stuck = false; HideStuckNotice(); return; }
+        if (!stuck || afterPlacement) stuckSince = Time.time;
+        stuck = true;
+        if (Time.time - stuckSince >= stuckSecondsBeforeNotice) ShowStuckNotice(); // only when the wait is 0
+    }
+
+    // the wait, while stuck and the notice isn't up yet
+    void Update()
+    {
+        if (stuck && !levelOver && !busy && !hud.StuckNoticeShowing && Time.time - stuckSince >= stuckSecondsBeforeNotice) ShowStuckNotice();
+    }
+
+    void ShowStuckNotice()
+    {
+        if (hud.StuckNoticeShowing) return;
+        hud.ShowStuckNotice(Undo, Restart, EndLevelNow); // the wording is the notice's own, set in the scene
+        Log("No object can reach its ring with the tiles left. Undo, Restart, or End level.");
+    }
+
+    void HideStuckNotice()
+    {
+        hud.HideStuckNotice();
+    }
+
+    // the End level button: finish now and count what's been earned
+    public void EndLevelNow()
+    {
+        if (levelOver || busy) return;
+        menu.HideMenu(); // pressed from the paused menu: the end window replaces it
+        FinishLevel("You ended the level.");
+    }
+
+    // could the object still reach its ring with the tiles there are? generous on purpose, so it never says no
+    // while the level can still be won: it looks at this object alone (ignoring what the others need), adds every
+    // + that could still be earned and every placed tile that could still be taken back, and ignores future breaks.
+    // a depth-first search over routes, spending supply tiles on empty squares; past its step budget it says yes
+    bool CanStillFinish(MovingObject o)
+    {
+        var left = new Dictionary<TileType, int>(inventory);
+        // each group delivery earns a +, but it arrives with the delivery, so it can only help this object if the group is
+        // made of OTHER objects arriving before it. count pairs among the others that could still reach their ring at all
+        int othersCanArrive = objects.Count(w => w != o && !w.completed && CanStillReach(w, ignoreUnlocked: true));
+        left[TileType.Cross] += othersCanArrive / 2;
+        foreach (var c in Cells)
+            if (c != null && c.tile != null && !c.locked) left[c.tile.Value]++; // right-click could return it
+
+        var planned = new Dictionary<Vector2Int, TileType>(); // tiles this route has put on empty squares
+        var onRoute = new HashSet<(Vector2Int, Dir)>();       // (square, side entered) already on this route, so it can't loop
+        int budget = 20000;
+
+        bool Step(Vector2Int pos, Dir heading, bool viaDoor)
+        {
+            if (--budget < 0) return true; // too big to check: assume it can
+            if (!CanCross(pos, heading, viaDoor)) return false;
+            var next = pos + DirUtil.Offset(heading);
+            if (!board.InGrid(next)) return next == o.spec.dest;
+            var cell = Cells[next.x, next.y];
+            if (cell.obstacle) return false;
+            var entry = DirUtil.Opposite(heading);
+            if (!onRoute.Add((next, entry))) return false;
+            try
+            {
+                // a used tile (or one this route already put here) has to be followed
+                TileType? fixedTile = cell.tile != null && cell.locked ? cell.tile
+                    : planned.TryGetValue(next, out var p) ? p : (TileType?)null;
+                if (fixedTile != null)
+                    return Tiles.Has(fixedTile.Value, entry) && Tiles.Exits(fixedTile.Value, entry).Any(x => Leave(next, x));
+                // an unused tile can be followed, or taken back and replaced (it's already counted in `left`)
+                if (cell.tile != null && Tiles.Has(cell.tile.Value, entry) && Tiles.Exits(cell.tile.Value, entry).Any(x => Leave(next, x)))
+                    return true;
+                // an empty square (or an unused tile's square): try each tile that's left and opens toward where the object comes from
+                foreach (var t in Tiles.All)
+                {
+                    if (left[t] <= 0 || !Tiles.Has(t, entry)) continue;
+                    left[t]--; planned[next] = t;
+                    bool ok = Tiles.Exits(t, entry).Any(x => Leave(next, x));
+                    left[t]++; planned.Remove(next);
+                    if (ok) return true;
+                }
+                return false;
+            }
+            finally { onRoute.Remove((next, entry)); }
+        }
+
+        // leaving a square by a side: onward, or through a door and out of its partner facing either way
+        bool Leave(Vector2Int cellPos, Dir exit)
+        {
+            var door = level.DoorOnEdge(cellPos, exit);
+            if (door == null) return Step(cellPos, exit, false);
+            var partner = level.Partner(door);
+            foreach (var h in ArrivalHeadings(partner))
+                if (Step(h == partner.side ? partner.cell : partner.Neighbor, h, true)) return true;
+            return false;
+        }
+
+        return Step(o.pos, o.heading, o.viaDoor);
     }
 
     // crosses out blocked objects, and logs when one becomes blocked or free again
@@ -527,7 +677,7 @@ public partial class GameManager : MonoBehaviour
             summary,
             Delivered >= level.Required,
             Delivered >= objects.Count,
-            ScoreStar,
+            stars == 3, // the score only earns the 3rd star once everyone is delivered
             showResume: !ended,
             showNext: ended && stars >= 1 && !isLast);
     }
@@ -538,8 +688,10 @@ public partial class GameManager : MonoBehaviour
         string Line(string what, string count, int points) =>
             $"{what}<pos=58%>{count}<pos=86%>{points}\n";
 
-        string unused = ended
-            ? Line("Unused tiles", $"{unusedTiles} x {pointsPerUnusedTile}", unusedPoints)
+        bool allDelivered = objects.All(o => o.completed);
+        string unused =
+            allDelivered ? Line("Unused tiles", $"{unusedTiles} x {pointsPerUnusedTile}", unusedPoints)
+            : ended ? "Unused tiles<pos=58%>not counted\n" // only counted when everything is delivered
             : "Unused tiles<pos=58%>counted at the end\n";
 
         return

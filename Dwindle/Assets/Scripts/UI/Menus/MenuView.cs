@@ -36,6 +36,8 @@ public class MenuView : MonoBehaviour
     public Graphic[] menuStars; // StarGraphics
     public GameObject resumeButton;
     public Button nextButton;
+    [Tooltip("Shown in Next's place while paused mid-level; its On Click calls GameManager.EndLevelNow")]
+    public Button endLevelButton;
 
     [Header("Level menu layout (in Play mode, changes show right away)")]
     public Vector2 menuPanelSize = new Vector2(700, 640);
@@ -218,6 +220,7 @@ public class MenuView : MonoBehaviour
 
         resumeButton.SetActive(showResume);
         nextButton.gameObject.SetActive(showNext);
+        if (endLevelButton != null) endLevelButton.gameObject.SetActive(showResume); // paused mid-level: End level where Next goes
         levelMenu.SetActive(true);
     }
 

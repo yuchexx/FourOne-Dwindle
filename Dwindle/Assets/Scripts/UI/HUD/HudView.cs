@@ -36,6 +36,9 @@ public class HudView : MonoBehaviour
     [Header("Undo")]
     public Button undoButton; // sits after ChoiceDimmer in the hierarchy, so it stays clickable during a recovery choice
 
+    [Header("Stuck notice (nobody left can be delivered)")]
+    public StuckBanner stuckNotice;
+
     [Header("Colors")]
     public Color tileColor = new Color(0.28f, 0.31f, 0.38f);
     public Color slotColor = new Color(0.32f, 0.34f, 0.40f);
@@ -226,6 +229,19 @@ public class HudView : MonoBehaviour
     {
         choiceDimmer.SetActive(choosing);
         removedHeader.text = choosing ? "Pick one to get back:" : "Removed:";
+    }
+
+    // the stuck notice (nobody left can be delivered)
+    public bool StuckNoticeShowing => stuckNotice != null && stuckNotice.Showing;
+
+    public void ShowStuckNotice(Action onUndo, Action onRestart, Action onEnd)
+    {
+        if (stuckNotice != null) stuckNotice.Show(onUndo, onRestart, onEnd);
+    }
+
+    public void HideStuckNotice()
+    {
+        if (stuckNotice != null) stuckNotice.Hide();
     }
 
     public void SetUndoAvailable(bool available)
