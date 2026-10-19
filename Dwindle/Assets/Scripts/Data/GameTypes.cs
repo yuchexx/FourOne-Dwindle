@@ -8,6 +8,7 @@ public class Cell
     public TileType? tile; // null = empty
     public bool obstacle;
     public TileView tileView;
+    public bool locked;    // an object has gone through this tile, so it can no longer be returned to the supply
 }
 
 // one object being guided to its ring

@@ -40,11 +40,13 @@ public class HudView : MonoBehaviour
     public Color tileColor = new Color(0.28f, 0.31f, 0.38f);
     public Color slotColor = new Color(0.32f, 0.34f, 0.40f);
     public Color selectedSlotColor = new Color(0.95f, 0.78f, 0.25f);
-    public Color emptySlotColor = new Color(0.22f, 0.23f, 0.27f); // a tile type you have none of
+    public Color emptySlotColor = new Color(0.22f, 0.23f, 0.27f); // a tile type you have none of (when the bar's own color isn't used)
+    public bool emptySlotUsesBarColor = true; // an empty slot's background is the top bar's color, so it blends in
     [Range(0f, 1f)] public float emptySlotDarken = 0.6f; // how much darker a slot with none left is (0 = not at all)
     public Color emptyLabelColor = new Color(0.55f, 0.56f, 0.60f);
     public Color recoverySelectedColor = new Color(0.95f, 0.78f, 0.25f); // the card you click to get back
     public Color flashColor = new Color(1f, 0.45f, 0.45f);
+    public Color earnedFlashColor = new Color(0.45f, 0.85f, 0.55f); // the + slot when delivering together earns one
     public float flashHoldSeconds = 0.2f;
     public float flashFadeSeconds = 0.2f;
 
@@ -54,8 +56,18 @@ public class HudView : MonoBehaviour
     TileType? lastSelected;
     Dictionary<TileType, int> lastInventory;
 
+    // nothing is picked from the Removed panel any more, and the log and the board show what broke, so it's hidden
+    void Awake()
+    {
+        if (crossRemovedRoot != null && crossRemovedRoot.parent != null) crossRemovedRoot.parent.gameObject.SetActive(false);
+    }
+
+    // every tile type gets a slot with its count, x0 for the ones the level doesn't hand out
     public void BuildSlots(IEnumerable<TileType> types, Action<TileType> onSelect)
     {
+        // the top bar's color, for empty slots: the nearest image behind the slots
+        var bar = slotsRoot.GetComponentInParent<Image>();
+        barColor = bar != null ? bar.color : emptySlotColor;
         Clear(slotsRoot);
         slots.Clear();
         var list = types.ToList();
@@ -106,7 +118,7 @@ public class HudView : MonoBehaviour
             slots[t].label.color = inventory[t] > 0 ? slotPrefab.label.color : emptyLabelColor;
             slots[t].SetAvailable(inventory[t] > 0, emptySlotDarken);
             if (flashingSlots.Contains(t)) continue;
-            slots[t].background.color = SlotColor(t);
+            slots[t].SetBackground(SlotColor(t));
         }
         selectedText.text = "Selected: " + (selected == null ? "none" : Tiles.Name(selected.Value));
     }
@@ -114,25 +126,28 @@ public class HudView : MonoBehaviour
     // yellow when selected, darker when there are none of it left
     Color SlotColor(TileType t) =>
         lastSelected == t ? selectedSlotColor :
-        lastInventory != null && lastInventory[t] <= 0 ? emptySlotColor : slotColor;
+        lastInventory != null && lastInventory[t] <= 0 ? (emptySlotUsesBarColor ? barColor : emptySlotColor) : slotColor;
 
-    public void FlashSlot(TileType t)
+    Color barColor;
+
+    // red by default (a tile lost), or another color, e.g. green for the + earned by delivering together
+    public void FlashSlot(TileType t, Color? color = null)
     {
-        if (slots.ContainsKey(t)) StartCoroutine(FlashSlotRoutine(t));
+        if (slots.ContainsKey(t)) StartCoroutine(FlashSlotRoutine(t, color ?? flashColor));
     }
 
-    IEnumerator FlashSlotRoutine(TileType t)
+    IEnumerator FlashSlotRoutine(TileType t, Color flash)
     {
         var img = slots[t].background;
         flashingSlots.Add(t);
-        img.color = flashColor;
+        img.color = flash;
         for (float f = 0; f < flashHoldSeconds + flashFadeSeconds; f += Time.deltaTime)
         {
-            img.color = Color.Lerp(flashColor, slotColor, Mathf.Clamp01((f - flashHoldSeconds) / flashFadeSeconds));
+            img.color = Color.Lerp(flash, slotColor, Mathf.Clamp01((f - flashHoldSeconds) / flashFadeSeconds));
             yield return null;
         }
         flashingSlots.Remove(t);
-        img.color = SlotColor(t);
+        slots[t].SetBackground(SlotColor(t));
     }
 
     public void ResetSlotFlashes()
@@ -154,7 +169,8 @@ public class HudView : MonoBehaviour
             $"2nd star: Deliver all {total}";
 
         bonusText.text =
-            $"3rd star: Score {level.targetScore}\n" +
+            $"3rd star: Score {level.targetScore}" +
+            (level.bestTiles > 0 ? $" (best plans use {level.bestTiles} tiles)" : "") + "\n" +
             $"<size=20><b>Score: {score}</b></size>{(scoreStar ? "  (target reached)" : "")}";
     }
 

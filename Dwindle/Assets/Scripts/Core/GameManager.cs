@@ -18,7 +18,7 @@ public partial class GameManager : MonoBehaviour
     [Header("Scoring")]
     public int pointsPerDelivery = 100;
     public int comboPointsPerObject = 50; // per object, when one placement delivers 2 or more
-    public int pointsPerTeleport = 50;    // per door gone through, paid when the object reaches a ring on another board
+    public int pointsPerTeleport = 50;    // once per delivered object that went through at least one door
     public int pointsPerUnusedTile = 75;  // per tile left in the supply, only if every object was delivered
 
     int levelIndex;
@@ -28,14 +28,13 @@ public partial class GameManager : MonoBehaviour
     bool busy; // true while objects are moving or waiting for a choice
     List<MovingObject> objects;
     List<RemovedEntry> removed;
-    TileType? pendingRecovery; // the card the player clicked during a recovery choice
     string finalComboNote; // set when the last objects arrive together
     bool levelOver;
     bool level1TutorialShown;
 
     // score, kept per source so the end window can show where it came from
     int deliveryPoints, comboPoints, teleportPoints, unusedPoints;
-    int comboObjects, teleports, unusedTiles; // how many of each, for the breakdown
+    int comboObjects, teleports, unusedTiles; // how many of each, for the breakdown (teleports: objects that used a door)
     int Score => deliveryPoints + comboPoints + teleportPoints + unusedPoints;
 
     Cell[,] Cells => board.Cells;
@@ -49,6 +48,7 @@ public partial class GameManager : MonoBehaviour
     {
         StopAllCoroutines();
         TelemetryManager.Instance.StartLevel(index);
+        levelReported = false;
         board.ClearChoices();
         hud.SetChoiceMode(false);
         hud.ResetSlotFlashes();
@@ -67,7 +67,7 @@ public partial class GameManager : MonoBehaviour
         history.Clear();
 
         hud.BuildSlots(Tiles.All, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
-        objects = board.Build(level, OnCellClicked, OnDoorClicked);
+        objects = board.Build(level, OnCellClicked, OnDoorClicked, OnCellRightClicked, PreviewTile);
         Log($"{level.title}: pick a tile, then click an empty cell.");
         if (level.doors.Count > 0)
             Log("Doors with the same letter are linked: a road into one comes out of the other.");
@@ -79,8 +79,9 @@ public partial class GameManager : MonoBehaviour
 
             menu.ShowTutorial(
                 "Planning Tip",
-                "Delivering an object removes one tile from its path and one unused tile from your supply.\n\n" +
-                "Plan your delivery order carefully!\n\n" +
+                "Each delivery breaks one tile of its path - often a junction someone else still needs.\n" +
+                "Delivering two or more objects at once earns you a + tile.\n\n" +
+                "Right-click a tile no object has used yet to put it back.\n\n" +
                 "You can review all rules anytime using the Rules button in the upper-right corner."
             );
         }
@@ -125,6 +126,29 @@ public partial class GameManager : MonoBehaviour
     // clicking a door names it
     void OnDoorClicked(DoorSpec door) => Log($"Door {door.label}");
 
+    // right-click puts a tile back in the supply, as long as no object has gone through it yet
+    void OnCellRightClicked(Vector2Int p)
+    {
+        if (levelOver || busy) return;
+        var cell = Cells[p.x, p.y];
+        if (cell.tile == null) return;
+        if (cell.locked) { Log("That tile has been used, so it stays."); return; }
+
+        var t = cell.tile.Value;
+        var snapshot = Capture(); // undo can bring it back
+        snapshot.takeBack = true;
+        history.Record(snapshot);
+        board.TakeBackTile(p);
+        inventory[t]++;
+        TelemetryManager.Instance.RemovePiece();
+        Log($"Put a {Tiles.Name(t)} back.");
+        UpdateBlocked(); // a tile in an object's way may have been the one taken back
+        RefreshAll();
+    }
+
+    // the tile the hover preview shows: the selected one, while the player can place
+    TileType? PreviewTile() => levelOver || busy ? null : selected;
+
     // movement that happens after one tile placement
     IEnumerator ResolveRound()
     {
@@ -140,13 +164,12 @@ public partial class GameManager : MonoBehaviour
                 deliveredNow.Add(o);
                 deliveryPoints += pointsPerDelivery;
                 Log($"{o.spec.name} reached its destination! +{pointsPerDelivery}");
-                // doors only score for an object whose ring is on another board, once it gets there
-                if (o.spec.destBoard != o.spec.startBoard && o.teleports > 0)
+                // +50 once for an object that went through any door on its way, on whatever board its ring is
+                if (o.teleports > 0)
                 {
-                    int bonus = pointsPerTeleport * o.teleports;
-                    teleports += o.teleports;
-                    teleportPoints += bonus;
-                    Log($"{o.spec.name} crossed boards through {o.teleports} door(s). +{bonus}");
+                    teleports++; // objects that used a door
+                    teleportPoints += pointsPerTeleport;
+                    Log($"{o.spec.name} used a door. +{pointsPerTeleport}");
                 }
                 RefreshAll();
             }
@@ -191,6 +214,7 @@ public partial class GameManager : MonoBehaviour
             yield return board.Slide(o, board.CellPos(next));
             o.pos = next;
             o.path.Add(next);
+            board.SetLocked(next, true); // used now, so it can't be put back
 
             // L, I and the bridge have one way out; + and T tiles let the player choose.
             // a way out onto a door teleports
@@ -254,91 +278,122 @@ public partial class GameManager : MonoBehaviour
 
     int Delivered => objects.Count(o => o.completed);
 
-    // tile loss and recovery
+    // after deliveries: each delivered object breaks one tile of its path, and delivering 2 or more with one
+    // placement scores the combo and earns a + tile. this happens on every delivery, the last one too
     IEnumerator HandleDeliveries(List<MovingObject> deliveredNow)
     {
-        // the move that completes the level loses no tiles (and so gets none back)
-        bool levelComplete = objects.All(o => o.completed);
-        var removedNow = new List<RemovedEntry>();
         foreach (var o in deliveredNow)
         {
-            if (levelComplete) break;
-            // one random tile from the completed path.
-            var candidates = o.path.Distinct()
-                .Where(c => Cells[c.x, c.y].tile != null)
-                .ToList();
-            if (candidates.Count > 0)
-            {
-                var c = candidates[Random.Range(0, candidates.Count)];
-                var entry = new RemovedEntry { type = Cells[c.x, c.y].tile.Value, source = $"{o.spec.name}'s path" };
-                board.ClearTile(c);
-                removed.Add(entry);
-                removedNow.Add(entry);
-                Log($"Lost a {Tiles.Name(entry.type)} from the path.");
-            }
-
-            // one random unused tile from the supply.
-            var lost = TakeRandomFromSupply();
-            if (lost != null)
-            {
-                var entry = new RemovedEntry { type = lost.Value, source = "unused supply" };
-                removed.Add(entry);
-                removedNow.Add(entry);
-                Log($"Lost a {Tiles.Name(entry.type)} from the supply.");
-                hud.FlashSlot(lost.Value);
-            }
+            var (c, neededBy) = PickRemoval(o);
+            if (c == null) continue;
+            var cell = Cells[c.Value.x, c.Value.y];
+            var entry = new RemovedEntry { type = cell.tile.Value, source = $"{o.spec.name}'s path" };
+            board.ClearTile(c.Value);
+            removed.Add(entry);
+            Log(neededBy != null
+                ? $"Lost the {Tiles.Name(entry.type)} that {neededBy} still needed!"
+                : $"Lost a {Tiles.Name(entry.type)} from {o.spec.name}'s path.");
         }
         RefreshAll();
 
-        // 2 or more deliveries from one placement - combo points, and the player gets one removed tile back
         if (deliveredNow.Count >= 2)
         {
             int bonus = comboPointsPerObject * deliveredNow.Count;
             comboPoints += bonus;
             comboObjects += deliveredNow.Count;
-            Log($"{deliveredNow.Count} delivered in one move! Combo +{bonus}");
-            RefreshAll();
+            inventory[TileType.Cross]++;
+            hud.FlashSlot(TileType.Cross, hud.earnedFlashColor);
+            Log($"{deliveredNow.Count} delivered together! Combo +{bonus}, and a + tile for your supply.");
             if (objects.All(o => o.completed))
             {
                 finalComboNote = string.Join(" and ", deliveredNow.Select(o => o.spec.name)) + " arrived together!";
                 Log(finalComboNote);
             }
-            else if (removed.Count > 0) yield return RecoveryChoice();
+            RefreshAll();
         }
+        yield break;
     }
 
-    // the player picks a tile straight from the Removed panel - any tile lost so far this level
-    IEnumerator RecoveryChoice()
+    // which tile of a delivered object's path breaks. if some of them are still needed by an object that hasn't
+    // arrived (it can reach them along the tiles ahead of it), one of those breaks; otherwise any of them.
+    // within that, junctions are the likeliest, then tiles near a board's middle or next to a door
+    (Vector2Int?, string) PickRemoval(MovingObject o)
     {
-        pendingRecovery = null;
-        hud.SetChoiceMode(true);
-        hud.RefreshRemoved(removed, type => pendingRecovery = type);
-        Log("Multiple deliveries with one tile! Pick any tile in the Removed panel to get it back.");
+        var candidates = o.path.Distinct().Where(c => Cells[c.x, c.y].tile != null).ToList();
+        if (candidates.Count == 0) return (null, null);
 
-        while (pendingRecovery == null) yield return null; // wait for a click on a card
-        yield return new WaitForSeconds(0.25f); // let the highlight register
+        var neededBy = new Dictionary<Vector2Int, string>();
+        foreach (var w in objects.Where(w => !w.completed))
+            foreach (var c in ReachableTiles(w))
+                if (!neededBy.ContainsKey(c)) neededBy[c] = w.spec.name;
+        var group = candidates.Where(neededBy.ContainsKey).ToList();
+        if (group.Count == 0) group = candidates;
 
-        hud.SetChoiceMode(false);
-
-        var picked = removed.First(e => e.type == pendingRecovery.Value);
-        inventory[picked.type]++;
-        removed.Remove(picked);
-        Log($"Got a {Tiles.Name(picked.type)} back to your supply.");
-        RefreshAll();
-    }
-
-    // picks a random unused tile, weighted by how many of each you hold.
-    TileType? TakeRandomFromSupply()
-    {
-        int total = inventory.Values.Sum();
-        if (total == 0) return null;
-        int r = Random.Range(0, total);
-        foreach (var t in Tiles.All)
+        var weights = group.Select(RemovalWeight).ToList();
+        float r = Random.value * weights.Sum();
+        for (int i = 0; i < group.Count; i++)
         {
-            if (r < inventory[t]) { inventory[t]--; return t; }
-            r -= inventory[t];
+            r -= weights[i];
+            if (r <= 0 || i == group.Count - 1)
+                return (group[i], neededBy.TryGetValue(group[i], out var who) ? who : null);
         }
-        return null;
+        return (null, null);
+    }
+
+    float RemovalWeight(Vector2Int c)
+    {
+        var t = Cells[c.x, c.y].tile.Value;
+        if (Tiles.Category(t) == TileCategory.Cross || Tiles.Category(t) == TileCategory.Tee) return 4f;
+        if (NextToDoor(c) || NearMiddle(c)) return 2f;
+        return 1f;
+    }
+
+    bool NextToDoor(Vector2Int c) => DirUtil.All.Any(d => level.DoorOnEdge(c, d) != null);
+
+    // the inner squares of a board (not on its outer edge), on boards bigger than 2x2
+    bool NearMiddle(Vector2Int c)
+    {
+        int b = level.BoardOf(c);
+        var bd = level.boards[b];
+        var p = c - bd.origin;
+        return bd.width > 2 && bd.height > 2 && p.x > 0 && p.y > 0 && p.x < bd.width - 1 && p.y < bd.height - 1;
+    }
+
+    // the placed tiles an object could still reach by following the tiles ahead of it - every branch of a
+    // junction, through doors too - before it comes to an empty square
+    HashSet<Vector2Int> ReachableTiles(MovingObject o)
+    {
+        var cells = new HashSet<Vector2Int>();
+        var seen = new HashSet<(Vector2Int, Dir, bool)>();
+        var queue = new Queue<(Vector2Int pos, Dir heading, bool viaDoor)>();
+        queue.Enqueue((o.pos, o.heading, o.viaDoor));
+        while (queue.Count > 0)
+        {
+            var (pos, heading, viaDoor) = queue.Dequeue();
+            if (!CanCross(pos, heading, viaDoor)) continue;
+            var next = pos + DirUtil.Offset(heading);
+            if (!board.InGrid(next)) continue;
+            var cell = Cells[next.x, next.y];
+            var entry = DirUtil.Opposite(heading);
+            if (cell.tile == null || !Tiles.Has(cell.tile.Value, entry)) continue;
+            cells.Add(next);
+            foreach (var exit in Tiles.Exits(cell.tile.Value, entry))
+            {
+                var door = level.DoorOnEdge(next, exit);
+                if (door == null)
+                {
+                    if (seen.Add((next, exit, false))) queue.Enqueue((next, exit, false));
+                    continue;
+                }
+                var partner = level.Partner(door);
+                foreach (var h in ArrivalHeadings(partner))
+                {
+                    var from = h == partner.side ? partner.cell : partner.Neighbor;
+                    if (seen.Add((from, h, true))) queue.Enqueue((from, h, true));
+                }
+            }
+        }
+        return cells;
     }
 
     // end of level and stars
@@ -358,14 +413,10 @@ public partial class GameManager : MonoBehaviour
         selected = null;
         Log(reason);
 
-        // unused tiles only score when everything was delivered
-        if (objects.All(o => o.completed))
-        {
-            // a multi-delivery that ends the level counts as getting one tile back
-            unusedTiles = inventory.Values.Sum();
-            unusedPoints = unusedTiles * pointsPerUnusedTile;
-            if (unusedTiles > 0) Log($"{unusedTiles} unused tiles. +{unusedPoints}");
-        }
+        // every tile left in the supply scores at the end
+        unusedTiles = inventory.Values.Sum();
+        unusedPoints = unusedTiles * pointsPerUnusedTile;
+        if (unusedTiles > 0) Log($"{unusedTiles} unused tiles. +{unusedPoints}");
         RefreshAll();
         StartCoroutine(ShowEndMenuAfterDelay(reason));
     }
@@ -467,6 +518,8 @@ public partial class GameManager : MonoBehaviour
             $"Delivered {Delivered} / {objects.Count}\n" +
             ScoreBreakdown(ended) +
             (stars == 0 ? "\nEarn at least 1 star to unlock the next level." : "") +
+            // a nudge toward the 3rd star, without giving the solution away
+            (ended && stars == 2 && !string.IsNullOrEmpty(level.bestPlanHint) ? "\n" + level.bestPlanHint : "") +
             (isLast && stars > 0 ? "\nThat was the last level!" : "");
 
         menu.ShowMenu(
@@ -485,17 +538,15 @@ public partial class GameManager : MonoBehaviour
         string Line(string what, string count, int points) =>
             $"{what}<pos=58%>{count}<pos=86%>{points}\n";
 
-        bool allDelivered = objects.All(o => o.completed);
-        string unused =
-            allDelivered ? Line("Unused tiles", $"{unusedTiles} x {pointsPerUnusedTile}", unusedPoints)
-            : ended ? "Unused tiles<pos=58%>not counted\n" // only counted when everything is delivered
+        string unused = ended
+            ? Line("Unused tiles", $"{unusedTiles} x {pointsPerUnusedTile}", unusedPoints)
             : "Unused tiles<pos=58%>counted at the end\n";
 
         return
             "<align=left><indent=3%>" +
             Line("Deliveries", $"{Delivered} x {pointsPerDelivery}", deliveryPoints) +
             Line("Delivered together", $"{comboObjects} x {comboPointsPerObject}", comboPoints) +
-            Line("Doors to other boards", $"{teleports} x {pointsPerTeleport}", teleportPoints) +
+            Line("Used a door", $"{teleports} x {pointsPerTeleport}", teleportPoints) +
             unused +
             $"<b>Total<pos=86%>{Score}</b>\n" +
             $"<color=#A0A2A8>3rd star target<pos=86%>{level.targetScore}</color>" +
@@ -504,6 +555,7 @@ public partial class GameManager : MonoBehaviour
 
     public void ShowStartScreen()
     {
+        ReportLevel(); // Home from a level: a finished last level has no Next, so this is its only report
         StopAllCoroutines();
         board.ClearChoices();
         hud.SetChoiceMode(false);
@@ -514,16 +566,25 @@ public partial class GameManager : MonoBehaviour
     public void StartGame() => LoadLevel(0);
     public void Restart()
     {
-        TelemetryManager.Instance.EndLevel(Score, Stars());
+        ReportLevel();
         LoadLevel(levelIndex);
     }
     public void NextLevel()
     {
         if (levelIndex + 1 < Levels.All.Count)
         {
-            TelemetryManager.Instance.EndLevel(Score, Stars());
+            ReportLevel();
             LoadLevel(levelIndex + 1);
         }
+    }
+
+    // the analytics row for the level being left (Next, Restart or Home), sent once per attempt
+    bool levelReported = true; // nothing to report until a level is loaded
+    void ReportLevel()
+    {
+        if (levelReported) return;
+        levelReported = true;
+        TelemetryManager.Instance.EndLevel(Score, Stars());
     }
     public void OpenMenu() => ShowMenu(levelOver, null);
     public void Resume() => menu.HideMenu();
@@ -542,7 +603,6 @@ public partial class GameManager : MonoBehaviour
         if (selected != null && inventory[selected.Value] <= 0) selected = null;
         hud.RefreshInventory(inventory, selected);
         hud.RefreshInfo(level, Delivered, objects.Count, inventory.Values.Sum(), Score, ScoreStar);
-        hud.RefreshRemoved(removed);
         hud.SetUndoAvailable(!levelOver && history.CanUndo);
     }
 

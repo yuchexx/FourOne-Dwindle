@@ -49,6 +49,8 @@ public class LevelData
     public string title;
     public int width, height; // the shared grid that holds every board
     public int targetScore; // score needed for the 3rd star
+    public int bestTiles;   // the fewest tiles among the plans that reach the target, shown as a hint
+    public string bestPlanHint; // shown in the end window when the 3rd star is missed, e.g. "The best plan delivers some objects together."
     public Dictionary<TileType, int> inventory = new();
     public List<BoardSpec> boards = new();
     public List<DoorSpec> doors = new();

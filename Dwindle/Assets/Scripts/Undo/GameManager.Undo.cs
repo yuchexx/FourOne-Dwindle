@@ -10,14 +10,19 @@ public partial class GameManager
     Snapshot Capture()
     {
         var tiles = new TileType?[Cells.GetLength(0), Cells.GetLength(1)];
+        var locked = new bool[Cells.GetLength(0), Cells.GetLength(1)];
         for (int x = 0; x < tiles.GetLength(0); x++)
             for (int y = 0; y < tiles.GetLength(1); y++)
+            {
                 tiles[x, y] = Cells[x, y]?.tile;
+                locked[x, y] = Cells[x, y]?.locked ?? false;
+            }
 
         return new Snapshot
         {
             inventory = new Dictionary<TileType, int>(inventory),
             tiles = tiles,
+            locked = locked,
             objects = objects.Select(o => new ObjectState
             {
                 pos = o.pos,
@@ -52,7 +57,7 @@ public partial class GameManager
         hud.ResetSlotFlashes();
         hud.SetChoiceMode(false);
         busy = false;
-        pendingRecovery = null;
+        board.HideGhost();
         selected = null; // undo leaves no tile selected
 
         Restore(history.Pop());
@@ -72,6 +77,7 @@ public partial class GameManager
         finalComboNote = s.finalComboNote;
 
         board.RestoreTiles(s.tiles);
+        board.RestoreLocks(s.locked);
         for (int i = 0; i < objects.Count; i++)
         {
             var o = objects[i];
@@ -87,7 +93,9 @@ public partial class GameManager
         }
         board.LayoutWaitingObjects(objects);
 
-        TelemetryManager.Instance.RemovePiece();
+        // undoing a placement takes its piece back off the count; undoing a take-back puts it back on
+        if (s.takeBack) TelemetryManager.Instance.AddPiece();
+        else TelemetryManager.Instance.RemovePiece();
 
         hud.SetLog(s.log);
         RefreshAll();
