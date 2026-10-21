@@ -16,16 +16,19 @@ public static class Levels
         Level7(), Level8(), Level9(), Level10(), Level11(), Level12(),
     };
 
-    // Two separate routes: pick a tile, click a square.
-    // Score 350 with 4 tiles (target).
+    // Laid out for the level 1 tutorial (Tutorials.Level1): Red and Blue both need the top-left square.
+    // The tutorial first delivers Red alone with an L there, undoes that, then shows the better plan:
+    // a + on the shared square, placed last, delivers both together.
+    // Score 675 with 3 tiles (target): 2 x 100 + combo 2 x 50 + 5 unused x 75 (4 left, plus the + the combo earns).
+    // worked out by hand for the tutorial layout; check it with the Level Maker's solver
     static LevelData Level1()
     {
-        var l = new LevelData { title = "Level 1", targetScore = 350, bestTiles = 4,
-            bestPlanHint = "The best plan uses fewer tiles." };
+        var l = new LevelData { title = "Level 1", targetScore = 675, bestTiles = 3,
+            bestPlanHint = "The best plan delivers some objects together." };
         l.SetBoards((2, 2));
-        l.inventory = Inv(ne: 1, sw: 1, h: 1, v: 3);
+        l.inventory = Inv(cross: 1, ne: 1, sw: 1, h: 1, v: 3); // the + is for the tutorial's better plan
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, -1, 1);
-        Obj(l, "Blue", Blue, 0, 2, 0, Dir.W, 0, 1, 2);
+        Obj(l, "Blue", Blue, 0, 2, 1, Dir.W, 0, 0, 2); // for the tutorial: shares the top-left square with Red
         return l;
     }
 

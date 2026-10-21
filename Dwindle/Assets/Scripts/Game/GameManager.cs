@@ -48,6 +48,23 @@ public partial class GameManager : MonoBehaviour
     string finalComboNote; // set when the last objects arrive together
     bool levelOver;
     // bool level1TutorialShown; // the old text pop-up, replaced by TutorialController
+    Vector2Int? forcedRemoval; // for the tutorial (see ForceNextRemoval): the cell the next delivery breaks
+
+    // for the tutorial (TutorialController): every player action, once it has taken effect. a click that changed
+    // nothing (blocked, missed, ignored while objects move) reports nothing
+    public event System.Action<GameAction> ActionDone;
+    void Report(GameAction action) => ActionDone?.Invoke(action);
+
+    // for the tutorial: an action on a square, in its board's own coordinates
+    GameAction OnSquare(GameActionKind kind, Vector2Int p, TileType tile)
+    {
+        int b = level.BoardOf(p);
+        return new GameAction { kind = kind, tile = tile, board = b, square = p - level.boards[b].origin };
+    }
+
+    // for the tutorial: an object's direction, just chosen at a junction or coming out of a door
+    void ReportChoice(MovingObject o) =>
+        Report(new GameAction { kind = GameActionKind.ChooseDirection, objectName = o.spec.name, direction = o.heading });
 
     // score, kept per source so the end window can show where it came from
     int deliveryPoints, comboPoints, teleportPoints, unusedPoints;
@@ -85,6 +102,8 @@ public partial class GameManager : MonoBehaviour
         deliveryPoints = comboPoints = teleportPoints = unusedPoints = 0;
         comboObjects = teleports = unusedTiles = 0;
         history.Clear();
+        forcedRemoval = null; // for the tutorial: a forced removal never outlives its level
+        endWindowHeld = false; // for the tutorial: nor does a held end window
 
         hud.BuildSlots(Tiles.All, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
         objects = board.Build(level, OnCellClicked, OnDoorClicked, OnCellRightClicked, PreviewTile);
@@ -107,7 +126,7 @@ public partial class GameManager : MonoBehaviour
         //     );
         // }
 
-        if (tutorial != null) tutorial.TryStart(index);
+        if (tutorial != null) tutorial.TryStart(index, this); // the tutorial's steps can call back into the game
     }
 
     // player input
@@ -117,6 +136,7 @@ public partial class GameManager : MonoBehaviour
         if (inventory[t] <= 0) { Log($"No {Tiles.Name(t)} tiles left."); return; }
         selected = selected == t ? (TileType?)null : t; // clicking the selected tile again deselects it
         hud.RefreshInventory(inventory, selected);
+        Report(new GameAction { kind = GameActionKind.SelectTile, tile = selected }); // for the tutorial
     }
 
     void OnCellClicked(Vector2Int p)
@@ -136,6 +156,7 @@ public partial class GameManager : MonoBehaviour
         Log($"Placed a {Tiles.Name(t)}.");
         RefreshAll();
         StartCoroutine(ResolveRound());
+        Report(OnSquare(GameActionKind.PlaceTile, p, t)); // for the tutorial
     }
 
     // a cell as the player sees it: its board's own coordinate, plus the board when there are several
@@ -147,7 +168,11 @@ public partial class GameManager : MonoBehaviour
     }
 
     // clicking a door names it
-    void OnDoorClicked(DoorSpec door) => Log($"Door {door.label}");
+    void OnDoorClicked(DoorSpec door)
+    {
+        Log($"Door {door.label}");
+        Report(new GameAction { kind = GameActionKind.ClickDoor, door = door.label }); // for the tutorial
+    }
 
     // right-click puts a tile back in the supply, as long as no object has gone through it yet
     void OnCellRightClicked(Vector2Int p)
@@ -169,6 +194,7 @@ public partial class GameManager : MonoBehaviour
         UpdateBlocked(); // a tile in an object's way may have been the one taken back
         UpdateStuck();
         RefreshAll();
+        Report(OnSquare(GameActionKind.TakeBack, p, t)); // for the tutorial
     }
 
     // the tile the hover preview shows: the selected one, while the player can place
@@ -254,6 +280,7 @@ public partial class GameManager : MonoBehaviour
                     ? $"{o.spec.name} is next to a door. Click an arrow: the one on the door teleports."
                     : $"{o.spec.name} is at a junction. Click an arrow to choose its direction.");
                 yield return board.AskDirection(o, ways); // sets o.heading from the arrow the player clicks
+                ReportChoice(o); // for the tutorial
             }
             o.view.Face(o.heading);
 
@@ -281,6 +308,7 @@ public partial class GameManager : MonoBehaviour
         {
             Log($"Pick the way {o.spec.name} faces as it comes out of door {partner.label}.");
             yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into);
+            ReportChoice(o); // for the tutorial
         }
 
         // stand on the far side of the door's edge, facing the square it'll enter next
@@ -339,6 +367,11 @@ public partial class GameManager : MonoBehaviour
         yield break;
     }
 
+    // for the tutorial (Tutorials.cs), so a scripted lesson can't break the wrong tile: the next delivery whose path
+    // has (x, y) on the given board breaks that tile instead of a random one. one time only. it isn't part of undo's
+    // snapshots, so undoing that delivery doesn't bring it back: a redone delivery breaks a random tile as usual
+    public void ForceNextRemoval(int board, int x, int y) => forcedRemoval = level.At(board, x, y);
+
     // which tile of a delivered object's path breaks. if some of them are still needed by an object that hasn't
     // arrived (it can reach them along the tiles ahead of it), one of those breaks; otherwise any of them.
     // within that, junctions are the likeliest, then tiles near a board's middle or next to a door
@@ -346,6 +379,13 @@ public partial class GameManager : MonoBehaviour
     {
         var candidates = o.path.Distinct().Where(c => Cells[c.x, c.y].tile != null).ToList();
         if (candidates.Count == 0) return (null, null);
+
+        // for the tutorial: a forced cell on this path breaks instead of a random one (see ForceNextRemoval)
+        if (forcedRemoval is Vector2Int forced && candidates.Contains(forced))
+        {
+            forcedRemoval = null;
+            return (forced, null);
+        }
 
         var neededBy = new Dictionary<Vector2Int, string>();
         foreach (var w in objects.Where(w => !w.completed))
@@ -483,8 +523,14 @@ public partial class GameManager : MonoBehaviour
     IEnumerator ShowEndMenuAfterDelay(string reason)
     {
         yield return new WaitForSeconds(endPopupDelay);
+        while (endWindowHeld) yield return null; // for the tutorial (see HoldEndWindow)
         ShowMenu(true, reason);
     }
+
+    // for the tutorial (Tutorials.cs): while held, a finished level waits to show its end window, so a step can
+    // point at the board or the top bar first (the window's backdrop dims the whole screen)
+    bool endWindowHeld;
+    public void HoldEndWindow(bool hold) => endWindowHeld = hold;
 
     // blocked = the square in front can't be entered right now
     bool IsBlocked(MovingObject o)

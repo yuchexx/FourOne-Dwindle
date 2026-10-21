@@ -62,6 +62,7 @@ public partial class GameManager
 
         Restore(history.Pop());
         UpdateStuck(); // the banner goes if this made the level winnable again
+        Report(new GameAction { kind = GameActionKind.Undo }); // for the tutorial
     }
 
     void Restore(Snapshot s)

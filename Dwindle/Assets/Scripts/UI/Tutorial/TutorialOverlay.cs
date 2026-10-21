@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -9,8 +11,10 @@ using UnityEngine.UI;
 public class TutorialStyle
 {
     public Color dimColor = new Color(0f, 0f, 0f, 0.65f);
-    public Color frameColor = new Color(0.95f, 0.78f, 0.25f); // the frame just outside the area
+    public Color frameColor = new Color(0.95f, 0.78f, 0.25f); // the frame just outside each area
     public float frameWidth = 4f;                              // 0 = no frame
+    public float shakeDistance = 8f;  // how far the frames swing when the dim is clicked; 0 = no shake
+    public float shakeSeconds = 0.35f;
     public Color bubbleColor = new Color(0.13f, 0.14f, 0.17f);
     public Color textColor = Color.white;
     public Color buttonColor = new Color(0.95f, 0.78f, 0.25f);
@@ -19,10 +23,10 @@ public class TutorialStyle
     public float bubbleWidth = 560f;
     public float padding = 20f;  // inside the bubble
     public Vector2 buttonSize = new Vector2(120f, 44f);
-    public float gap = 16f;      // between the area and the bubble, and between the bubble and the screen edge
+    public float gap = 16f;      // between the areas and the bubble, and between the bubble and the screen edge
 }
 
-// dims the screen except one area, blocks clicks, and shows a text bubble with an optional Next button.
+// dims the screen except the step's areas, blocks clicks, and shows a text bubble with an optional Next button.
 // made entirely from code, as the last child of the canvas
 public class TutorialOverlay : MonoBehaviour
 {
@@ -31,24 +35,24 @@ public class TutorialOverlay : MonoBehaviour
     Vector2 design; // the canvas reference resolution areas are written in
     TutorialStyle style;
 
-    Image top, bottom, left, right; // the dim, in four pieces around the area
-    Image[] frame;                  // the frame's top, bottom, left and right edges, around the area
-    Image blocker;                 // see-through, over everything but the bubble, for look-only steps
+    RectTransform dimLayer, frameLayer;      // hold the pieces below, so the dim stays under the frames
+    readonly List<Image> dims = new();      // the dim, in as many pieces as the areas cut the screen into
+    readonly List<Image> frames = new();    // four edges per area
+    Image blocker;                          // see-through, over everything but the bubble, for look-only steps
     Image bubble, button;
     TMP_Text text, buttonLabel;
 
     TutorialStep step;
     Vector2 bubbleSize;
     bool nextClicked;
+    float shakeStart = -1; // when the frames started shaking; -1 = still
 
     public static TutorialOverlay Create(Canvas canvas, TutorialStyle style)
     {
         var go = new GameObject("TutorialOverlay", typeof(RectTransform));
         var rt = (RectTransform)go.transform;
         rt.SetParent(canvas.transform, false);
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = rt.offsetMax = Vector2.zero;
+        Stretch(rt);
 
         var overlay = go.AddComponent<TutorialOverlay>();
         overlay.Build(canvas, style);
@@ -70,26 +74,13 @@ public class TutorialOverlay : MonoBehaviour
         root = (RectTransform)transform;
         design = DesignSize(canvas);
 
-        // drawn in this order: dim, frame, blocker, bubble
-        top = MakeImage("DimTop", root, raycast: true);
-        bottom = MakeImage("DimBottom", root, raycast: true);
-        left = MakeImage("DimLeft", root, raycast: true);
-        right = MakeImage("DimRight", root, raycast: true);
-        foreach (var piece in new[] { top, bottom, left, right }) FromBottomLeft(piece.rectTransform);
-
-        frame = new[]
-        {
-            MakeImage("FrameTop", root, raycast: false), MakeImage("FrameBottom", root, raycast: false),
-            MakeImage("FrameLeft", root, raycast: false), MakeImage("FrameRight", root, raycast: false),
-        };
-        foreach (var edge in frame) FromBottomLeft(edge.rectTransform);
+        // drawn in this order: dim, frames, blocker, bubble
+        dimLayer = MakeLayer("Dim", root);
+        frameLayer = MakeLayer("Frames", root);
 
         blocker = MakeImage("Blocker", root, raycast: true);
         blocker.color = Color.clear; // still takes clicks
-        var brt = blocker.rectTransform;
-        brt.anchorMin = Vector2.zero;
-        brt.anchorMax = Vector2.one;
-        brt.offsetMin = brt.offsetMax = Vector2.zero;
+        Stretch(blocker.rectTransform);
 
         bubble = MakeImage("Bubble", root, raycast: true); // clicks on the bubble don't reach the game
         FromBottomLeft(bubble.rectTransform);
@@ -111,21 +102,17 @@ public class TutorialOverlay : MonoBehaviour
         buttonLabel = MakeText("Label", nrt); // the text is set per step in Show
         buttonLabel.fontStyle = FontStyles.Bold;
         buttonLabel.alignment = TextAlignmentOptions.Center;
-        var lrt = buttonLabel.rectTransform;
-        lrt.anchorMin = Vector2.zero;
-        lrt.anchorMax = Vector2.one;
-        lrt.offsetMin = lrt.offsetMax = Vector2.zero;
+        Stretch(buttonLabel.rectTransform);
     }
 
     public void Show(TutorialStep s)
     {
         step = s;
         nextClicked = false;
+        StopShake();
         bool hasNext = s.advance == Advance.NextButton;
 
-        // the style again each step, so Inspector changes in Play mode show up
-        foreach (var piece in new[] { top, bottom, left, right }) piece.color = style.dimColor;
-        foreach (var edge in frame) edge.color = style.frameColor;
+        // the style again each step, so Inspector changes in Play mode show up (the dim and frames take theirs in Layout)
         bubble.color = style.bubbleColor;
         button.color = style.buttonColor;
         text.color = style.textColor;
@@ -159,12 +146,14 @@ public class TutorialOverlay : MonoBehaviour
     {
         gameObject.SetActive(false);
         step = null;
+        StopShake();
     }
 
     // for the wait before a step: nothing is dimmed or shown, but nothing can be clicked either
     public void Block()
     {
         step = null;
+        StopShake();
         SetDimAndBubble(false);
         blocker.gameObject.SetActive(true);
         root.SetAsLastSibling();
@@ -173,8 +162,8 @@ public class TutorialOverlay : MonoBehaviour
 
     void SetDimAndBubble(bool visible)
     {
-        foreach (var piece in new[] { top, bottom, left, right }) piece.enabled = visible;
-        foreach (var edge in frame) edge.enabled = visible; // Layout turns them off again when there's no frame
+        dimLayer.gameObject.SetActive(visible);
+        frameLayer.gameObject.SetActive(visible);
         bubble.gameObject.SetActive(visible);
     }
 
@@ -186,24 +175,69 @@ public class TutorialOverlay : MonoBehaviour
         return clicked;
     }
 
-    // a click (press and release) just ended inside the area. checked after the UI has handled that click,
+    // a click (press and release) just ended inside one of the areas. checked after the UI has handled that click,
     // so the click still reaches whatever is under the area
     public bool ReleasedInArea()
     {
         var pointer = Pointer.current; // mouse or touch
-        if (step?.area == null || pointer == null || !pointer.press.wasReleasedThisFrame) return false;
+        if (step == null || pointer == null || !pointer.press.wasReleasedThisFrame) return false;
+        return PointerAt(pointer, out var p) && Holes().Any(h => h.Contains(p));
+    }
+
+    // where the pointer is, in this overlay's units from the bottom-left corner
+    bool PointerAt(Pointer pointer, out Vector2 p)
+    {
         var cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
-        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(root, pointer.position.ReadValue(), cam, out var local))
-            return false;
-        return Hole().Contains(local - root.rect.min);
+        bool inside = RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            root, pointer.position.ReadValue(), cam, out var local);
+        p = local - root.rect.min;
+        return inside;
     }
 
     // the screen can be resized, so the pieces are placed again every frame
-    void LateUpdate() => Layout();
+    void LateUpdate()
+    {
+        if (DimPressed()) Shake();
+        Layout();
+        UpdateShake();
+    }
 
-    // the step's area in this overlay's units, from the bottom-left corner.
-    // the same as the area on a 16:9 screen; on other screens it's stretched to keep its place roughly
-    Rect Hole() => ToOverlay(step.area.Value);
+    // the frames swing to point the player back at the areas; a new shake starts over
+    public void Shake() => shakeStart = Time.unscaledTime;
+
+    // a press just went down on the dim: outside every area and outside the bubble
+    bool DimPressed()
+    {
+        var pointer = Pointer.current;
+        if (step == null || pointer == null || !pointer.press.wasPressedThisFrame || !PointerAt(pointer, out var p))
+            return false;
+        var b = bubble.rectTransform;
+        return !Holes().Any(h => h.Contains(p)) && !new Rect(b.anchoredPosition, b.sizeDelta).Contains(p);
+    }
+
+    // the frames swing side to side three times, dying down, to point the player back at the areas
+    void UpdateShake()
+    {
+        if (shakeStart < 0) return;
+        float t = style.shakeSeconds > 0 ? (Time.unscaledTime - shakeStart) / style.shakeSeconds : 1f;
+        if (t >= 1f) { StopShake(); return; }
+        float x = style.shakeDistance * Mathf.Sin(t * Mathf.PI * 2f * 3f) * (1f - t);
+        frameLayer.anchoredPosition = new Vector2(x, 0);
+    }
+
+    void StopShake()
+    {
+        shakeStart = -1;
+        if (frameLayer != null) frameLayer.anchoredPosition = Vector2.zero;
+    }
+
+    // the step's areas in this overlay's units, from the bottom-left corner: areas if it has them, otherwise area.
+    // the same as the areas on a 16:9 screen; on other screens they're stretched to keep their place roughly
+    List<Rect> Holes()
+    {
+        var areas = step.areas ?? (step.area != null ? new[] { step.area.Value } : Array.Empty<Rect>());
+        return areas.Select(ToOverlay).Where(h => h.width > 0 && h.height > 0).ToList();
+    }
 
     // an area (design units, from the top-left) in this overlay's units, from the bottom-left corner, kept on screen
     Rect ToOverlay(Rect a)
@@ -219,35 +253,63 @@ public class TutorialOverlay : MonoBehaviour
     {
         if (step == null) return;
         var size = root.rect.size;
+        var holes = Holes();
 
-        if (step.area == null)
+        // the dim: the screen cut along every hole's edges into a grid, and each row's run of cells outside
+        // every hole dimmed as one piece. with no holes that's one piece over the whole screen
+        var xs = Cuts(holes.SelectMany(h => new[] { h.xMin, h.xMax }), size.x);
+        var ys = Cuts(holes.SelectMany(h => new[] { h.yMin, h.yMax }), size.y);
+        bool Dimmed(int i, int j) =>
+            !holes.Any(h => h.Contains(new Vector2((xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2)));
+        int d = 0;
+        for (int j = 0; j < ys.Count - 1; j++)
         {
-            Place(top.rectTransform, new Rect(Vector2.zero, size));
-            Place(bottom.rectTransform, Rect.zero);
-            Place(left.rectTransform, Rect.zero);
-            Place(right.rectTransform, Rect.zero);
-            foreach (var edge in frame) edge.enabled = false;
+            int i = 0;
+            while (i < xs.Count - 1)
+            {
+                if (!Dimmed(i, j)) { i++; continue; }
+                int start = i;
+                while (i < xs.Count - 1 && Dimmed(i, j)) i++;
+                var piece = Pooled(dims, d++, dimLayer, "Dim", raycast: true);
+                piece.color = style.dimColor;
+                Place(piece.rectTransform, Rect.MinMaxRect(xs[start], ys[j], xs[i], ys[j + 1]));
+            }
+        }
+        HideFrom(dims, d);
+
+        // each hole's frame sits on the dim, just outside the hole, so it covers nothing in the hole
+        float w = Mathf.Max(0f, style.frameWidth);
+        int f = 0;
+        if (w > 0)
+            foreach (var h in holes)
+                foreach (var edge in new[]
+                {
+                    Rect.MinMaxRect(h.xMin - w, h.yMax, h.xMax + w, h.yMax + w), // top
+                    Rect.MinMaxRect(h.xMin - w, h.yMin - w, h.xMax + w, h.yMin), // bottom
+                    Rect.MinMaxRect(h.xMin - w, h.yMin, h.xMin, h.yMax),         // left
+                    Rect.MinMaxRect(h.xMax, h.yMin, h.xMax + w, h.yMax),         // right
+                })
+                {
+                    var piece = Pooled(frames, f++, frameLayer, "Frame", raycast: false);
+                    piece.color = style.frameColor;
+                    Place(piece.rectTransform, edge);
+                }
+        HideFrom(frames, f);
+
+        if (holes.Count == 0)
+        {
             PlaceBubble(new Rect(size / 2, Vector2.zero), BubbleSide.Center);
             return;
         }
-
-        var hole = Hole();
-        Place(top.rectTransform, Rect.MinMaxRect(0, hole.yMax, size.x, size.y));
-        Place(bottom.rectTransform, Rect.MinMaxRect(0, 0, size.x, hole.yMin));
-        Place(left.rectTransform, Rect.MinMaxRect(0, hole.yMin, hole.xMin, hole.yMax));
-        Place(right.rectTransform, Rect.MinMaxRect(hole.xMax, hole.yMin, size.x, hole.yMax));
-
-        // the frame sits on the dim, just outside the hole, so it covers nothing in the hole
-        float w = Mathf.Max(0f, style.frameWidth);
-        foreach (var edge in frame) edge.enabled = w > 0;
-        Place(frame[0].rectTransform, Rect.MinMaxRect(hole.xMin - w, hole.yMax, hole.xMax + w, hole.yMax + w));
-        Place(frame[1].rectTransform, Rect.MinMaxRect(hole.xMin - w, hole.yMin - w, hole.xMax + w, hole.yMin));
-        Place(frame[2].rectTransform, Rect.MinMaxRect(hole.xMin - w, hole.yMin, hole.xMin, hole.yMax));
-        Place(frame[3].rectTransform, Rect.MinMaxRect(hole.xMax, hole.yMin, hole.xMax + w, hole.yMax));
-
-        // the bubble keeps its gap from the frame, not from the hole
-        PlaceBubble(Rect.MinMaxRect(hole.xMin - w, hole.yMin - w, hole.xMax + w, hole.yMax + w), step.bubble);
+        // next to all the holes together, keeping its gap from the frames, not from the holes
+        var all = Rect.MinMaxRect(holes.Min(h => h.xMin) - w, holes.Min(h => h.yMin) - w,
+                                  holes.Max(h => h.xMax) + w, holes.Max(h => h.yMax) + w);
+        PlaceBubble(all, step.bubble);
     }
+
+    // 0, the screen's length and every cut between them, in order
+    static List<float> Cuts(IEnumerable<float> cuts, float length) =>
+        cuts.Append(0f).Append(length).Distinct().OrderBy(c => c).ToList();
 
     // next to the hole on the given side, kept on screen
     void PlaceBubble(Rect hole, BubbleSide side)
@@ -274,6 +336,25 @@ public class TutorialOverlay : MonoBehaviour
         Place(bubble.rectTransform, new Rect(pos, b));
     }
 
+    // the pool's i-th image, shown, made first if the pool is that short
+    static Image Pooled(List<Image> pool, int i, RectTransform parent, string name, bool raycast)
+    {
+        while (pool.Count <= i)
+        {
+            var img = MakeImage(name, parent, raycast);
+            FromBottomLeft(img.rectTransform);
+            pool.Add(img);
+        }
+        pool[i].gameObject.SetActive(true);
+        return pool[i];
+    }
+
+    // hides the pool's images from i on, the ones this layout didn't use
+    static void HideFrom(List<Image> pool, int i)
+    {
+        for (; i < pool.Count; i++) pool[i].gameObject.SetActive(false);
+    }
+
     // r is from the overlay's bottom-left corner, for a rect set up by FromBottomLeft
     static void Place(RectTransform rt, Rect r)
     {
@@ -282,6 +363,22 @@ public class TutorialOverlay : MonoBehaviour
     }
 
     static void FromBottomLeft(RectTransform rt) => rt.anchorMin = rt.anchorMax = rt.pivot = Vector2.zero;
+
+    static void Stretch(RectTransform rt)
+    {
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = rt.offsetMax = Vector2.zero;
+    }
+
+    // an empty full-screen layer, to keep a group of pieces drawn under the ones made after it
+    static RectTransform MakeLayer(string name, RectTransform parent)
+    {
+        var rt = (RectTransform)new GameObject(name, typeof(RectTransform)).transform;
+        rt.SetParent(parent, false);
+        Stretch(rt);
+        return rt;
+    }
 
     static Image MakeImage(string name, RectTransform parent, bool raycast)
     {

@@ -8,22 +8,33 @@ public class TutorialController : MonoBehaviour
     [Tooltip("The overlay is made as this canvas's last child, over every screen")]
     public Canvas canvas;
     public TutorialStyle style = new TutorialStyle();
+    [Tooltip("Action steps: a click inside the area that the game doesn't act on shakes the frames after this long " +
+             "(some actions, like a junction's arrow, reach the game a frame or two after the click)")]
+    [Min(0f)] public float missSeconds = 0.2f;
 
     readonly HashSet<int> finished = new HashSet<int>(); // levels whose tutorial was seen to the end this launch
     TutorialOverlay overlay;
     Coroutine running;
 
+    GameManager game;     // reports the player's actions (GameManager.ActionDone) while a tutorial runs
+    TutorialStep current; // the step on screen
+    bool actionMatched;   // the game reported the action the current step waits for
+    float missSince = -1; // when a click inside the area went unanswered by the game; -1 = none pending
+
     public bool Running => running != null;
 
-    // starts the level's tutorial, unless it has none or it was already finished since the game started
-    public void TryStart(int levelIndex)
+    // starts the level's tutorial, unless it has none or it was already finished since the game started.
+    // the steps get the game, so they can check it or set it up (e.g. GameManager.ForceNextRemoval)
+    public void TryStart(int levelIndex, GameManager game)
     {
         Stop();
         if (finished.Contains(levelIndex)) return;
-        var steps = Tutorials.For(levelIndex);
+        var steps = Tutorials.For(levelIndex, game);
         if (steps == null || steps.Count == 0) return;
         if (canvas == null) { Debug.LogError("TutorialController needs its Canvas set."); return; }
         if (overlay == null) overlay = TutorialOverlay.Create(canvas, style);
+        this.game = game;
+        game.ActionDone += OnAction;
         running = StartCoroutine(Run(levelIndex, steps));
     }
 
@@ -32,7 +43,15 @@ public class TutorialController : MonoBehaviour
     {
         if (running != null) StopCoroutine(running);
         running = null;
+        StopListening();
         if (overlay != null) overlay.Hide();
+    }
+
+    void StopListening()
+    {
+        if (game != null) game.ActionDone -= OnAction;
+        game = null;
+        current = null;
     }
 
     IEnumerator Run(int levelIndex, List<TutorialStep> steps)
@@ -44,11 +63,17 @@ public class TutorialController : MonoBehaviour
                 overlay.Block();
                 yield return new WaitForSeconds(step.delay);
             }
+            current = step;
+            actionMatched = false;
+            missSince = -1;
+            step.onShow?.Invoke();
             overlay.Show(step);
             yield return null; // the click that ended the last step can't end this one too
             while (!StepDone(step)) yield return null;
+            step.onDone?.Invoke();
         }
         overlay.Hide();
+        StopListening();
         finished.Add(levelIndex);
         running = null;
     }
@@ -57,8 +82,30 @@ public class TutorialController : MonoBehaviour
     {
         Advance.NextButton => overlay.ConsumeNext(),
         Advance.ClickInArea => overlay.ReleasedInArea(),
+        Advance.Action => ActionStepDone(),
         _ => step.condition == null || step.condition(),
     };
+
+    // the game reported a player action: does the step on screen wait for it?
+    void OnAction(GameAction action)
+    {
+        if (current != null && current.advance == Advance.Action && current.action != null && current.action(action))
+            actionMatched = true;
+    }
+
+    // done once the game reports the step's action. a click inside the area that the game doesn't act on
+    // (it missed the button, say) shakes the frames, so the player sees it didn't count
+    bool ActionStepDone()
+    {
+        if (actionMatched) return true;
+        if (overlay.ReleasedInArea()) missSince = Time.unscaledTime;
+        if (missSince >= 0 && Time.unscaledTime - missSince >= missSeconds)
+        {
+            missSince = -1;
+            overlay.Shake();
+        }
+        return false;
+    }
 
 #if UNITY_EDITOR
     // for writing areas: select a UI object in the Hierarchy (in Play mode for the ones made from code),
