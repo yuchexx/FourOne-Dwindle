@@ -12,6 +12,9 @@ public partial class GameManager : MonoBehaviour
     public HudView hud;
     public MenuView menu;
 
+    [Header("Tutorial")]
+    public TutorialController tutorial;
+
     [Header("Timing")]
     public float endPopupDelay = 1.2f; // seconds between the level ending and the end window
 
@@ -44,7 +47,7 @@ public partial class GameManager : MonoBehaviour
     List<RemovedEntry> removed;
     string finalComboNote; // set when the last objects arrive together
     bool levelOver;
-    bool level1TutorialShown;
+    // bool level1TutorialShown; // the old text pop-up, replaced by TutorialController
 
     // score, kept per source so the end window can show where it came from
     int deliveryPoints, comboPoints, teleportPoints, unusedPoints;
@@ -61,6 +64,7 @@ public partial class GameManager : MonoBehaviour
     public void LoadLevel(int index)
     {
         StopAllCoroutines();
+        if (tutorial != null) tutorial.Stop();
         TelemetryManager.Instance.StartLevel(index);
         levelReported = false;
         stuck = false;
@@ -89,18 +93,21 @@ public partial class GameManager : MonoBehaviour
             Log("Doors with the same letter are linked: a road into one comes out of the other.");
         RefreshAll();
 
-        if (index == 0 && !level1TutorialShown)
-        {
-            level1TutorialShown = true;
+        // the old text pop-up, replaced by TutorialController. kept until the new tutorial covers these points
+        // if (index == 0 && !level1TutorialShown)
+        // {
+        //     level1TutorialShown = true;
+        //
+        //     menu.ShowTutorial(
+        //         "Planning Tip",
+        //         "Each delivery breaks one tile of its path - often a junction someone else still needs.\n" +
+        //         "Delivering two or more objects at once earns you a + tile.\n\n" +
+        //         "Right-click a tile no object has used yet to put it back.\n\n" +
+        //         "You can review all rules anytime using the Rules button in the upper-right corner."
+        //     );
+        // }
 
-            menu.ShowTutorial(
-                "Planning Tip",
-                "Each delivery breaks one tile of its path - often a junction someone else still needs.\n" +
-                "Delivering two or more objects at once earns you a + tile.\n\n" +
-                "Right-click a tile no object has used yet to put it back.\n\n" +
-                "You can review all rules anytime using the Rules button in the upper-right corner."
-            );
-        }
+        if (tutorial != null) tutorial.TryStart(index);
     }
 
     // player input
@@ -787,6 +794,7 @@ public partial class GameManager : MonoBehaviour
     {
         ReportLevel(); // Home from a level: a finished last level has no Next, so this is its only report
         StopAllCoroutines();
+        if (tutorial != null) tutorial.Stop();
         stuck = false; // nothing keeps timing the stuck notice on the start screen
         HideStuckNotice();
         board.ClearChoices();
