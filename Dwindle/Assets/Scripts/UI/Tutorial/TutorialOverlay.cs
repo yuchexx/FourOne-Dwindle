@@ -194,10 +194,17 @@ public class TutorialOverlay : MonoBehaviour
         return inside;
     }
 
+    // a press on the dim is checked in Update, before the controller's coroutine can move on to the next step this
+    // frame: a quick tap (a trackpad's tap to click) presses and releases in one frame, and by LateUpdate the Next it
+    // pressed would already have brought up the next step's bubble somewhere else, making the press look like a miss
+    void Update()
+    {
+        if (DimPressed()) Shake();
+    }
+
     // the screen can be resized, so the pieces are placed again every frame
     void LateUpdate()
     {
-        if (DimPressed()) Shake();
         Layout();
         UpdateShake();
     }
