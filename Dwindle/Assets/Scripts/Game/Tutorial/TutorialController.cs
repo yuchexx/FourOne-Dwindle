@@ -49,7 +49,11 @@ public class TutorialController : MonoBehaviour
 
     void StopListening()
     {
-        if (game != null) game.ActionDone -= OnAction;
+        if (game != null)
+        {
+            game.ActionDone -= OnAction;
+            game.LockInput(false); // never leave the game locked behind a tutorial that's gone
+        }
         game = null;
         current = null;
     }
@@ -67,9 +71,11 @@ public class TutorialController : MonoBehaviour
             actionMatched = false;
             missSince = -1;
             step.onShow?.Invoke();
+            game.LockInput(step.hoverOnly); // a hover-only step lets the pointer through but not the clicks
             overlay.Show(step);
             yield return null; // the click that ended the last step can't end this one too
             while (!StepDone(step)) yield return null;
+            game.LockInput(false);
             step.onDone?.Invoke();
         }
         overlay.Hide();

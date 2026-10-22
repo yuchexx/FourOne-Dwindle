@@ -121,7 +121,7 @@ public class TutorialOverlay : MonoBehaviour
         buttonLabel.fontSize = style.fontSize * 0.85f;
 
         SetDimAndBubble(true); // Block may have hidden them
-        blocker.gameObject.SetActive(!s.clickable);
+        blocker.gameObject.SetActive(!s.clickable && !s.hoverOnly); // hovering needs the pointer to reach the game too
         button.gameObject.SetActive(hasNext);
         buttonLabel.text = string.IsNullOrEmpty(s.buttonText) ? "Next" : s.buttonText;
 

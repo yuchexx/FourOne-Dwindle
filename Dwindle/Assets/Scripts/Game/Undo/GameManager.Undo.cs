@@ -50,6 +50,7 @@ public partial class GameManager
     public void Undo()
     {
         if (levelOver || !history.CanUndo) return;
+        if (inputLocked) return; // for the tutorial (see LockInput)
 
         StopAllCoroutines(); // the round, with the slides, teleports and choices it is waiting on
         board.ClearChoices();

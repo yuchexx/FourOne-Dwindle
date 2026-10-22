@@ -58,6 +58,10 @@ public class BoardView : MonoBehaviour
 
     LevelData level;
     Dir? pickedDirection;
+
+    // for the tutorial (GameManager.LockInput): while locked, a click on a junction's or a door's arrow is ignored
+    bool inputLocked;
+    public void LockInput(bool locked) => inputLocked = locked;
     Action<DoorSpec> onDoorClicked;
 
     // builds the boards, the doors, the destination rings and the objects, and hands back the objects.
@@ -461,7 +465,7 @@ public class BoardView : MonoBehaviour
             rt.anchoredPosition = center + (Vector2)DirUtil.Offset(d) * CellSize * 0.39f; // that way
             rt.localEulerAngles = new Vector3(0, 0, DirUtil.Angle(d)); // the prefab's arrow points up
             button.GetComponent<Graphic>().color = o.spec.color;
-            button.onClick.AddListener(() => pickedDirection = dir);
+            button.onClick.AddListener(() => { if (!inputLocked) pickedDirection = dir; }); // for the tutorial: see LockInput
         }
 
         while (pickedDirection == null) yield return null; // wait for a click

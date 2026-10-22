@@ -50,6 +50,15 @@ public partial class GameManager : MonoBehaviour
     // bool level1TutorialShown; // the old text pop-up, replaced by TutorialController
     Vector2Int? forcedRemoval; // for the tutorial (see ForceNextRemoval): the cell the next delivery breaks
 
+    // for the tutorial (TutorialStep.hoverOnly): while locked, the supply, the board, its arrows, doors and undo ignore
+    // clicks, so a slip can't change the game. hovering still works (the door highlight, the tile preview)
+    bool inputLocked;
+    public void LockInput(bool locked)
+    {
+        inputLocked = locked;
+        board.LockInput(locked);
+    }
+
     // for the tutorial (TutorialController): every player action, once it has taken effect. a click that changed
     // nothing (blocked, missed, ignored while objects move) reports nothing
     public event System.Action<GameAction> ActionDone;
@@ -104,6 +113,7 @@ public partial class GameManager : MonoBehaviour
         history.Clear();
         forcedRemoval = null; // for the tutorial: a forced removal never outlives its level
         endWindowHeld = false; // for the tutorial: nor does a held end window
+        LockInput(false);      // for the tutorial: nor does locked input
 
         hud.BuildSlots(Tiles.All, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
         objects = board.Build(level, OnCellClicked, OnDoorClicked, OnCellRightClicked, PreviewTile);
@@ -133,6 +143,7 @@ public partial class GameManager : MonoBehaviour
     void SelectTile(TileType t)
     {
         if (levelOver) return;
+        if (inputLocked) return; // for the tutorial (see LockInput)
         if (inventory[t] <= 0) { Log($"No {Tiles.Name(t)} tiles left."); return; }
         selected = selected == t ? (TileType?)null : t; // clicking the selected tile again deselects it
         hud.RefreshInventory(inventory, selected);
@@ -143,6 +154,7 @@ public partial class GameManager : MonoBehaviour
     {
         if (levelOver) return;
         if (busy) return;
+        if (inputLocked) return; // for the tutorial (see LockInput)
         var cell = Cells[p.x, p.y];
         if (cell.obstacle) { Log("That space is blocked."); return; }
         if (cell.tile != null) { Log("There's already a tile there."); return; }
@@ -170,6 +182,7 @@ public partial class GameManager : MonoBehaviour
     // clicking a door names it
     void OnDoorClicked(DoorSpec door)
     {
+        if (inputLocked) return; // for the tutorial (see LockInput)
         Log($"Door {door.label}");
         Report(new GameAction { kind = GameActionKind.ClickDoor, door = door.label }); // for the tutorial
     }
@@ -178,6 +191,7 @@ public partial class GameManager : MonoBehaviour
     void OnCellRightClicked(Vector2Int p)
     {
         if (levelOver || busy) return;
+        if (inputLocked) return; // for the tutorial (see LockInput)
         menu.HideMenu(); // pressed from the paused menu: the end window replaces it
         var cell = Cells[p.x, p.y];
         if (cell.tile == null) return;

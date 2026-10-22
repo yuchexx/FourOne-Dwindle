@@ -92,21 +92,20 @@ public static class Levels
         return l;
     }
 
-    // Doors: every door sits between two squares, so each time an object comes out it picks which way to face. All three meet on one T and arrive together.
-    // Score 825 with 6 tiles (target).
+    // Laid out for the level 6 tutorial, the doors lesson: two 2x1 boards, each with door A on the edge between its
+    // two squares. Red walks right into the left board's door, comes out of the right board's door, faces right
+    // (facing left leads off the board) and walks on to its ring. The door is a wall, so the left board's right square
+    // and the right board's left square are never used.
+    // Score 150 with 2 tiles (target): 1 x 100 + used a door 1 x 50, no tiles left over. every delivery scores exactly
+    // this, so there's no 2-star case and no best plan hint
     static LevelData Level6()
     {
-        var l = new LevelData { title = "Level 6", targetScore = 825, bestTiles = 6,
-            bestPlanHint = "The best plan delivers some objects together." };
-        l.SetBoards((2, 2), (2, 2));
-        l.inventory = Inv(cross: 1, ne: 2, wn: 1, h: 1, tSWN: 3);
-        Door(l, "A", 1, 1, 1, Dir.S);
-        Door(l, "A", 0, 0, 0, Dir.E);
-        Door(l, "B", 1, 1, 1, Dir.W);
-        Door(l, "B", 0, 1, 1, Dir.S);
-        Obj(l, "Red", Red, 1, 1, -1, Dir.N, 0, 0, 2);
-        Obj(l, "Blue", Blue, 0, 1, -1, Dir.N, 1, 1, 2);
-        Obj(l, "Green", Green, 0, -1, 1, Dir.E, 1, -1, 0);
+        var l = new LevelData { title = "Level 6", targetScore = 150, bestTiles = 2 };
+        l.SetBoards((2, 1), (2, 1));
+        l.inventory = Inv(h: 2);
+        Door(l, "A", 0, 0, 0, Dir.E); // between the left board's two squares
+        Door(l, "A", 1, 0, 0, Dir.E); // between the right board's two squares
+        Obj(l, "Red", Red, 0, -1, 0, Dir.E, 1, 2, 0);
         return l;
     }
 
