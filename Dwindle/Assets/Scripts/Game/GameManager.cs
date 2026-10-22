@@ -810,7 +810,8 @@ public partial class GameManager : MonoBehaviour
             Delivered >= objects.Count,
             stars == 3, // the score only earns the 3rd star once everyone is delivered
             showResume: !ended,
-            showNext: ended && stars >= 1 && !isLast);
+            showNext: ended && stars >= 1 && !isLast,
+            showUndo: ended && history.CanUndo); // nothing to undo if the level was ended before any placement
     }
 
     // one line per source: what, how many x points, and the subtotal, then the total against the target

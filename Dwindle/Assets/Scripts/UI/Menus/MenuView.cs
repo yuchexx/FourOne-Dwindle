@@ -38,6 +38,8 @@ public class MenuView : MonoBehaviour
     public Button nextButton;
     [Tooltip("Shown in Next's place while paused mid-level; its On Click calls GameManager.EndLevelNow")]
     public Button endLevelButton;
+    [Tooltip("Shown in Resume's place in the end window; its On Click calls GameManager.UndoFromEndWindow")]
+    public Button undoButton;
 
     [Header("Level menu layout (in Play mode, changes show right away)")]
     public Vector2 menuPanelSize = new Vector2(700, 640);
@@ -203,7 +205,7 @@ public class MenuView : MonoBehaviour
 
     // the first two stars are delivery tiers; the third is the score target in its own color
     public void ShowMenu(string title, string summary, bool star1, bool star2, bool scoreStar,
-                         bool showResume, bool showNext)
+                         bool showResume, bool showNext, bool showUndo = false)
     {
         LayOutMenu();
         if (menuStars.Length > 0) menuStars[0].color = star1 ? starOnColor : starOffColor;
@@ -221,6 +223,7 @@ public class MenuView : MonoBehaviour
         resumeButton.SetActive(showResume);
         nextButton.gameObject.SetActive(showNext);
         if (endLevelButton != null) endLevelButton.gameObject.SetActive(showResume); // paused mid-level: End level where Next goes
+        if (undoButton != null) undoButton.gameObject.SetActive(showUndo); // the end window: Undo where Resume goes
         levelMenu.SetActive(true);
     }
 
