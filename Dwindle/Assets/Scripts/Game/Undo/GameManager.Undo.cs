@@ -50,6 +50,7 @@ public partial class GameManager
     public void Undo()
     {
         if (levelOver || !history.CanUndo) return;
+        if (inputLocked) return; // for the tutorial (see LockInput)
 
         StopAllCoroutines(); // the round, with the slides, teleports and choices it is waiting on
         board.ClearChoices();
@@ -62,6 +63,18 @@ public partial class GameManager
 
         Restore(history.Pop());
         UpdateStuck(); // the banner goes if this made the level winnable again
+        Report(new GameAction { kind = GameActionKind.Undo }); // for the tutorial
+    }
+
+    // the end window's Undo button: back into the level, as it was before its last placement. Undo itself refuses
+    // once the level is over, so this reopens the level first. it undoes a placement even when the level was ended
+    // with End level: the placement before that is what comes back
+    public void UndoFromEndWindow()
+    {
+        if (!levelOver || !history.CanUndo) return;
+        menu.HideMenu();
+        levelOver = false;
+        Undo();
     }
 
     void Restore(Snapshot s)
