@@ -26,13 +26,13 @@ public partial class GameManager : MonoBehaviour
 
 
     static readonly Color ToastSuccess =
-    new Color(0.38f, 0.79f, 0.55f, 0.96f);
+        new Color32(97, 201, 139, 245);
 
 static readonly Color ToastReward =
-    new Color(0.49f, 0.51f, 0.97f, 0.96f);
+        new Color32(124, 131, 247, 245);
 
 static readonly Color ToastWarning =
-    new Color(0.94f, 0.42f, 0.42f, 0.96f);
+        new Color32(239, 107, 107, 245);
 
     [Header("Stuck notice")]
     [Tooltip("Seconds without placing a tile, while stuck close to a ring, before the notice shows (0 = right away)")]
@@ -733,7 +733,7 @@ static readonly Color ToastWarning =
     {
         if (hud.StuckNoticeShowing) return;
         hud.ShowStuckNotice(Undo, Restart, EndLevelNow); // the wording is the notice's own, set in the scene
-        Log("NO ROUTE AVAILABLE.\nUndo, Restart, or End level.");
+        Log("No object can reach its ring with the tiles left. Undo, Restart, or End level.");
     }
 
     void HideStuckNotice()
