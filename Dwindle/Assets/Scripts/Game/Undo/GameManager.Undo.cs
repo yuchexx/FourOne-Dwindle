@@ -43,6 +43,7 @@ public partial class GameManager
             unusedTiles = unusedTiles,
             finalComboNote = finalComboNote,
             log = hud.GetLog(),
+            scoreLog = hud.GetScoreLog(),
         };
     }
 
@@ -112,6 +113,7 @@ public partial class GameManager
         else TelemetryManager.Instance.RemovePiece();
 
         hud.SetLog(s.log);
+        hud.SetScoreLog(s.scoreLog);
         RefreshAll();
     }
 }
