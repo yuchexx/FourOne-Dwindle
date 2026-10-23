@@ -733,7 +733,7 @@ static readonly Color ToastWarning =
     {
         if (hud.StuckNoticeShowing) return;
         hud.ShowStuckNotice(Undo, Restart, EndLevelNow); // the wording is the notice's own, set in the scene
-        Log("No object can reach its ring with the tiles left. Undo, Restart, or End level.");
+        Log("NO ROUTE AVAILABLE.\nUndo, Restart, or End level.");
     }
 
     void HideStuckNotice()
@@ -915,6 +915,7 @@ static readonly Color ToastWarning =
         HideStuckNotice();
         board.ClearChoices();
         hud.SetChoiceMode(false);
+        hud.ClearToasts();
         menu.ShowStart();
         menu.BuildLevelButtons(Levels.All.Count, LoadLevel);
     }
