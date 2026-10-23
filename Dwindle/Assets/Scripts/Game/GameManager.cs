@@ -24,6 +24,16 @@ public partial class GameManager : MonoBehaviour
     public int pointsPerTeleport = 50;    // once per delivered object that went through at least one door
     public int pointsPerUnusedTile = 75;  // per tile left in the supply, only if every object was delivered
 
+
+    static readonly Color ToastSuccess =
+    new Color(0.38f, 0.79f, 0.55f, 0.96f);
+
+static readonly Color ToastReward =
+    new Color(0.49f, 0.51f, 0.97f, 0.96f);
+
+static readonly Color ToastWarning =
+    new Color(0.94f, 0.42f, 0.42f, 0.96f);
+
     [Header("Stuck notice")]
     [Tooltip("Seconds without placing a tile, while stuck close to a ring, before the notice shows (0 = right away)")]
     [Min(0f)] public float stuckSecondsBeforeNotice = 8f;
@@ -106,6 +116,7 @@ public partial class GameManager : MonoBehaviour
         selected = null;
         busy = false;
         hud.ClearLog();
+        hud.ClearToasts();
         removed = new List<RemovedEntry>();
         finalComboNote = null;
         deliveryPoints = comboPoints = teleportPoints = unusedPoints = 0;
@@ -195,7 +206,11 @@ public partial class GameManager : MonoBehaviour
         menu.HideMenu(); // pressed from the paused menu: the end window replaces it
         var cell = Cells[p.x, p.y];
         if (cell.tile == null) return;
-        if (cell.locked) { Log("That tile has been used, so it stays."); return; }
+        if (cell.locked) { 
+            Log("That tile has been used, so it stays.");
+            hud.ShowToast("Used tiles stay locked", ToastWarning);
+            return;
+        }
 
         var t = cell.tile.Value;
         var snapshot = Capture(); // undo can bring it back
@@ -205,6 +220,7 @@ public partial class GameManager : MonoBehaviour
         inventory[t]++;
         TelemetryManager.Instance.RemovePiece();
         Log($"Put a {Tiles.Name(t)} back.");
+        hud.ShowToast("Tile returned");
         UpdateBlocked(); // a tile in an object's way may have been the one taken back
         UpdateStuck();
         RefreshAll();
@@ -224,18 +240,30 @@ public partial class GameManager : MonoBehaviour
             if (o.completed) continue;
             yield return MoveObject(o);
             board.LayoutWaitingObjects(objects);
-            if (o.completed)
+                        if (o.completed)
             {
                 deliveredNow.Add(o);
                 deliveryPoints += pointsPerDelivery;
                 Log($"{o.spec.name} reached its destination! +{pointsPerDelivery}");
-                // +50 once for an object that went through any door on its way, on whatever board its ring is
+
+                // Award the door bonus once per delivered object.
                 if (o.teleports > 0)
                 {
-                    teleports++; // objects that used a door
+                    teleports++;
                     teleportPoints += pointsPerTeleport;
                     Log($"{o.spec.name} used a door. +{pointsPerTeleport}");
                 }
+
+                // Calculate the number displayed in the toast.
+                int earned = pointsPerDelivery;
+
+                if (o.teleports > 0)
+                    earned += pointsPerTeleport;
+
+                hud.ShowToast(
+                    $"{o.spec.name} delivered  +{earned}",
+                    ToastSuccess);
+
                 RefreshAll();
             }
         }
@@ -347,20 +375,37 @@ public partial class GameManager : MonoBehaviour
 
     // after deliveries: each delivered object breaks one tile of its path, and delivering 2 or more with one
     // placement scores the combo and earns a + tile. this happens on every delivery, the last one too
-    IEnumerator HandleDeliveries(List<MovingObject> deliveredNow)
+        IEnumerator HandleDeliveries(List<MovingObject> deliveredNow)
     {
         foreach (var o in deliveredNow)
         {
             var (c, neededBy) = PickRemoval(o);
             if (c == null) continue;
+
             var cell = Cells[c.Value.x, c.Value.y];
-            var entry = new RemovedEntry { type = cell.tile.Value, source = $"{o.spec.name}'s path" };
+            var entry = new RemovedEntry
+            {
+                type = cell.tile.Value,
+                source = $"{o.spec.name}'s path"
+            };
+
             board.ClearTile(c.Value);
             removed.Add(entry);
-            Log(neededBy != null
-                ? $"Lost the {Tiles.Name(entry.type)} that {neededBy} still needed!"
-                : $"Lost a {Tiles.Name(entry.type)} from {o.spec.name}'s path.");
+
+            if (neededBy != null)
+            {
+                Log($"Lost the {Tiles.Name(entry.type)} that {neededBy} still needed!");
+
+                hud.ShowToast(
+                    $"Shared tile removed — {neededBy} needed it",
+                    ToastWarning);
+            }
+            else
+            {
+                Log($"Lost a {Tiles.Name(entry.type)} from {o.spec.name}'s path.");
+            }
         }
+
         RefreshAll();
 
         if (deliveredNow.Count >= 2)
@@ -369,18 +414,28 @@ public partial class GameManager : MonoBehaviour
             comboPoints += bonus;
             comboObjects += deliveredNow.Count;
             inventory[TileType.Cross]++;
+
             hud.FlashSlot(TileType.Cross, hud.earnedFlashColor);
             Log($"{deliveredNow.Count} delivered together! Combo +{bonus}, and a + tile for your supply.");
+
+            hud.ShowToast(
+                $"Combo!  +{bonus}  •  +1 cross",
+                ToastReward);
+
             if (objects.All(o => o.completed))
             {
-                finalComboNote = string.Join(" and ", deliveredNow.Select(o => o.spec.name)) + " arrived together!";
+                finalComboNote =
+                    string.Join(" and ", deliveredNow.Select(o => o.spec.name))
+                    + " arrived together!";
+
                 Log(finalComboNote);
             }
+
             RefreshAll();
         }
+
         yield break;
     }
-
     // for the tutorial (Tutorials.cs), so a scripted lesson can't break the wrong tile: the next delivery whose path
     // has (x, y) on the given board breaks that tile instead of a random one. one time only. it isn't part of undo's
     // snapshots, so undoing that delivery doesn't bring it back: a redone delivery breaks a random tile as usual
