@@ -25,6 +25,21 @@ public class HudView : MonoBehaviour
     public TMP_Text bonusText;
     public TMP_Text selectedText;
     public TMP_Text logText;
+    [Tooltip("The score log in the lower left: points from deliveries, doors and delivering together, and the tiles " +
+             "they break. Left empty, it takes over Log Text's spot (the activity log, hidden in the scene)")]
+    public TMP_Text scoreLogText;
+    [Min(1)] public int scoreLogLines = 8;
+    [Tooltip("A dark box behind the score log, made in code")]
+    public bool scoreLogBox = true;
+    public Color scoreLogBoxColor = new Color(0.13f, 0.14f, 0.17f, 0.9f);
+    [Tooltip("Space between the box's edges and the text inside")]
+    public float scoreLogBoxPadding = 10f;
+    [Tooltip("Space between the SCORE text above and the box's top (on top of the info panel's own spacing; can be below 0)")]
+    public float scoreLogBoxGap = 0f;
+    [Tooltip("The box is centered in the info panel, this far from its left and right edges")]
+    public float scoreLogBoxSideMargin = 20f;
+    [Tooltip("The box's height. Lines that don't fit are cut off at its bottom (the oldest, since the newest is on top)")]
+    public float scoreLogBoxHeight = 300f;
 
     [Header("Removed tiles and recovery")]
     public RectTransform crossRemovedRoot;    // + tiles
@@ -64,6 +79,85 @@ public class HudView : MonoBehaviour
     void Awake()
     {
         if (crossRemovedRoot != null && crossRemovedRoot.parent != null) crossRemovedRoot.parent.gameObject.SetActive(false);
+
+        // no score log of its own: it uses the activity log's text, which then shows only the score lines
+        if (scoreLogText == null && logText != null)
+        {
+            scoreLogText = logText;
+            scoreLogText.gameObject.SetActive(true);
+        }
+        MakeScoreLogBox(); // the box is always made (it also places the log); Score Log Box off just hides its color
+        ShowScoreLog();
+    }
+
+    // the dark box, with the log's text moved inside it. the info panel lays its children out in a column (a Vertical
+    // Layout Group), so a holder takes the box's place in that column, right under the SCORE text, and the box sits in
+    // the holder, centered on the panel. a fixed size; the text fills it minus the padding, starting at the top-left,
+    // and lines past its bottom are cut off
+    RectTransform scoreHolder, scoreBox;
+    LayoutElement scoreHolderSize;
+    Image scoreBoxImage;
+
+    void MakeScoreLogBox()
+    {
+        if (scoreLogText == null || !(scoreLogText.transform.parent is RectTransform panel)) return;
+        var text = scoreLogText.rectTransform;
+
+        var holder = new GameObject("ScoreLog", typeof(RectTransform), typeof(LayoutElement));
+        scoreHolder = (RectTransform)holder.transform;
+        scoreHolder.SetParent(panel, false);
+        scoreHolder.SetSiblingIndex(text.GetSiblingIndex());
+        scoreHolderSize = holder.GetComponent<LayoutElement>();
+
+        var go = new GameObject("ScoreLogBox", typeof(RectTransform), typeof(Image));
+        scoreBox = (RectTransform)go.transform;
+        scoreBox.SetParent(scoreHolder, false);
+        scoreBoxImage = go.GetComponent<Image>();
+        scoreBoxImage.raycastTarget = false;
+
+        text.SetParent(scoreBox, false);
+        text.anchorMin = Vector2.zero; // fills the box, minus the padding (see LayOutScoreLogBox)
+        text.anchorMax = Vector2.one;
+        text.pivot = new Vector2(0.5f, 0.5f);
+        scoreLogText.alignment = TextAlignmentOptions.TopLeft;
+        scoreLogText.overflowMode = TextOverflowModes.Truncate; // too many lines: the bottom (oldest) ones are cut off
+        LayOutScoreLogBox();
+    }
+
+    // places and sizes the box from the settings; in Play mode, changing them in the Inspector shows right away
+    void LayOutScoreLogBox()
+    {
+        if (scoreBox == null) return;
+        var panel = (RectTransform)scoreHolder.parent;
+        float height = Mathf.Max(20f, scoreLogBoxHeight);
+        // the holder's place in the column: as tall as the gap plus the box (the column sets its width and position)
+        scoreHolderSize.minHeight = scoreHolderSize.preferredHeight = Mathf.Max(0f, scoreLogBoxGap) + height;
+        scoreHolder.sizeDelta = new Vector2(scoreHolder.sizeDelta.x, scoreHolderSize.preferredHeight);
+
+        // the box: at the holder's top (after the gap), centered on the panel rather than on the holder, which the
+        // column's padding pushes off center
+        var column = panel.GetComponent<HorizontalOrVerticalLayoutGroup>();
+        float padLeft = column != null ? column.padding.left : 0f, padRight = column != null ? column.padding.right : 0f;
+        float panelWidth = panel.rect.width;
+        float holderCenter = padLeft + (panelWidth - padLeft - padRight) / 2f; // from the panel's left edge
+        scoreBox.anchorMin = scoreBox.anchorMax = scoreBox.pivot = new Vector2(0.5f, 1f);
+        scoreBox.anchoredPosition = new Vector2(panelWidth / 2f - holderCenter, -scoreLogBoxGap);
+        scoreBox.sizeDelta = new Vector2(Mathf.Max(20f, panelWidth - 2 * scoreLogBoxSideMargin), height);
+        LayoutRebuilder.MarkLayoutForRebuild(panel);
+        scoreBoxImage.color = scoreLogBox ? scoreLogBoxColor : Color.clear;
+
+        var text = scoreLogText.rectTransform;
+        text.offsetMin = new Vector2(scoreLogBoxPadding, scoreLogBoxPadding);
+        text.offsetMax = new Vector2(-scoreLogBoxPadding, -scoreLogBoxPadding);
+    }
+
+    bool scoreBoxChanged;
+    void OnValidate() => scoreBoxChanged = true;
+    void Update()
+    {
+        if (!scoreBoxChanged) return;
+        scoreBoxChanged = false;
+        LayOutScoreLogBox();
     }
 
     // every tile type gets a slot with its count, x0 for the ones the level doesn't hand out
@@ -173,8 +267,9 @@ public class HudView : MonoBehaviour
         $"<size=24>{delivered} / {total}</size> delivered";
 
     bonusText.text =
-        $"<b><color=#{scoreColor}>SCORE</color></b>\n" +
+        $"<b><color=#{progressColor}>SCORE</color></b>\n" + // the same yellow as PROGRESS
         $"<size=24>{score} / {level.targetScore}</size>" +
+        (level.bestTiles > 0 ? $"\n<size=16><color=#{scoreColor}>3rd star: best plans use {level.bestTiles} tiles</color></size>" : "") +
         (scoreStar
             ? $"\n<size=16><color=#{successColor}>Target reached</color></size>"
             : "");
@@ -276,10 +371,14 @@ public void ClearToasts()
     {
         log.Insert(0, "- " + msg); // newest first
         if (log.Count > 12) log.RemoveAt(log.Count - 1);
-        logText.text = string.Join("\n", log);
+        ShowLog();
     }
 
-    public void ClearLog() => SetLog(new List<string>());
+    public void ClearLog()
+    {
+        SetLog(new List<string>());
+        SetScoreLog(new List<string>());
+    }
 
     // a copy of the log lines, for an undo snapshot
     public List<string> GetLog() => new List<string>(log);
@@ -288,7 +387,42 @@ public void ClearToasts()
     {
         log.Clear();
         log.AddRange(lines);
-        logText.text = string.Join("\n", log);
+        ShowLog();
+    }
+
+    // the activity log, unless the score log has taken over its text
+    void ShowLog()
+    {
+        if (logText != null && logText != scoreLogText) logText.text = string.Join("\n", log);
+    }
+
+    // ---- the score log (lower left): what each delivery scored, instead of a pop-up over the board
+
+    readonly List<string> scoreLog = new List<string>();
+
+    // points: shown in front, e.g. "+150" or "+50 x 2"
+    public void LogScore(string points, string what, Color color)
+    {
+        string hex = ColorUtility.ToHtmlStringRGB(color);
+        scoreLog.Insert(0, $"<color=#{hex}><b>{points}</b></color>  {what}"); // newest first
+        if (scoreLog.Count > scoreLogLines) scoreLog.RemoveAt(scoreLog.Count - 1);
+        ShowScoreLog();
+    }
+
+    // a copy, for an undo snapshot
+    public List<string> GetScoreLog() => new List<string>(scoreLog);
+
+    public void SetScoreLog(List<string> lines)
+    {
+        scoreLog.Clear();
+        if (lines != null) scoreLog.AddRange(lines);
+        ShowScoreLog();
+    }
+
+    void ShowScoreLog()
+    {
+        if (scoreLogText == null) return;
+        scoreLogText.text = scoreLog.Count > 0 ? string.Join("\n", scoreLog) : "<color=#8C8F99>Deliveries score here.</color>";
     }
 
     static void Clear(Transform root)

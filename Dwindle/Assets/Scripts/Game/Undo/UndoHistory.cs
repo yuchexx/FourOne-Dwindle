@@ -13,6 +13,7 @@ public class Snapshot
     public int comboObjects, teleports, unusedTiles;
     public string finalComboNote;
     public List<string> log;
+    public List<string> scoreLog; // the lower-left score log
     public bool takeBack; // the action after this snapshot was a right-click take-back, not a placement
 }
 

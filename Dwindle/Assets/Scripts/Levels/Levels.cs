@@ -38,6 +38,8 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 2", targetScore = 550, bestTiles = 8,
             bestPlanHint = "The best plan delivers some objects together." };
+        // delivering everyone needs the + that delivering together earns, so the hint shows at 0 or 1 star instead
+        l.finishHint = l.bestPlanHint; l.bestPlanHint = null;
         l.SetBoards((3, 3));
         l.inventory = Inv(bridge: 1, es: 2, sw: 1, wn: 2, v: 3);
         Obj(l, "Red", Red, 0, 2, 3, Dir.S, 0, 2, -1);
@@ -82,6 +84,8 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 5", targetScore = 825, bestTiles = 10,
             bestPlanHint = "The best plan delivers some objects together." };
+        // delivering everyone needs the + that delivering together earns, so the hint shows at 0 or 1 star instead
+        l.finishHint = l.bestPlanHint; l.bestPlanHint = null;
         l.SetBoards((4, 4));
         l.inventory = Inv(ne: 3, es: 1, wn: 1, tNES: 1, tESW: 2, tSWN: 1, tWNE: 2);
         l.obstacles.Add(l.At(0, 1, 2));

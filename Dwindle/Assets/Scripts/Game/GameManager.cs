@@ -206,11 +206,7 @@ static readonly Color ToastWarning =
         menu.HideMenu(); // pressed from the paused menu: the end window replaces it
         var cell = Cells[p.x, p.y];
         if (cell.tile == null) return;
-        if (cell.locked) { 
-            Log("That tile has been used, so it stays.");
-            hud.ShowToast("Used tiles stay locked", ToastWarning);
-            return;
-        }
+        if (cell.locked) { Log("That tile has been used, so it stays."); return; }
 
         var t = cell.tile.Value;
         var snapshot = Capture(); // undo can bring it back
@@ -220,7 +216,6 @@ static readonly Color ToastWarning =
         inventory[t]++;
         TelemetryManager.Instance.RemovePiece();
         Log($"Put a {Tiles.Name(t)} back.");
-        hud.ShowToast("Tile returned");
         UpdateBlocked(); // a tile in an object's way may have been the one taken back
         UpdateStuck();
         RefreshAll();
@@ -254,15 +249,9 @@ static readonly Color ToastWarning =
                     Log($"{o.spec.name} used a door. +{pointsPerTeleport}");
                 }
 
-                // Calculate the number displayed in the toast.
-                int earned = pointsPerDelivery;
-
-                if (o.teleports > 0)
-                    earned += pointsPerTeleport;
-
-                hud.ShowToast(
-                    $"{o.spec.name} delivered  +{earned}",
-                    ToastSuccess);
+                // in the score log (lower left), not a pop-up over the board
+                int earned = pointsPerDelivery + (o.teleports > 0 ? pointsPerTeleport : 0);
+                hud.LogScore($"+{earned}", $"{o.spec.name} delivered" + (o.teleports > 0 ? $" (door +{pointsPerTeleport})" : ""), ToastSuccess);
 
                 RefreshAll();
             }
@@ -395,10 +384,6 @@ static readonly Color ToastWarning =
             if (neededBy != null)
             {
                 Log($"Lost the {Tiles.Name(entry.type)} that {neededBy} still needed!");
-
-                hud.ShowToast(
-                    $"Shared tile removed — {neededBy} needed it",
-                    ToastWarning);
             }
             else
             {
@@ -418,9 +403,7 @@ static readonly Color ToastWarning =
             hud.FlashSlot(TileType.Cross, hud.earnedFlashColor);
             Log($"{deliveredNow.Count} delivered together! Combo +{bonus}, and a + tile for your supply.");
 
-            hud.ShowToast(
-                $"Combo!  +{bonus}  •  +1 cross",
-                ToastReward);
+            hud.LogScore($"+{comboPointsPerObject} x {deliveredNow.Count}", "Delivered together, +1 + tile", ToastReward);
 
             if (objects.All(o => o.completed))
             {
@@ -583,7 +566,11 @@ static readonly Color ToastWarning =
         {
             unusedTiles = inventory.Values.Sum();
             unusedPoints = unusedTiles * pointsPerUnusedTile;
-            if (unusedTiles > 0) Log($"{unusedTiles} unused tiles. +{unusedPoints}");
+            if (unusedTiles > 0)
+            {
+                Log($"{unusedTiles} unused tiles. +{unusedPoints}");
+                hud.LogScore($"+{pointsPerUnusedTile} x {unusedTiles}", $"unused tile{(unusedTiles == 1 ? "" : "s")}", ToastSuccess);
+            }
         }
         RefreshAll();
         StartCoroutine(ShowEndMenuAfterDelay(reason));
@@ -870,6 +857,8 @@ static readonly Color ToastWarning =
             (stars == 0 ? "\nEarn at least 1 star to unlock the next level." : "") +
             // a nudge toward the 3rd star, without giving the solution away
             (ended && stars == 2 && !string.IsNullOrEmpty(level.bestPlanHint) ? "\n" + level.bestPlanHint : "") +
+            // and toward delivering everyone, on levels where that needs a trick
+            (ended && stars <= 1 && !string.IsNullOrEmpty(level.finishHint) ? "\n" + level.finishHint : "") +
             (isLast && stars > 0 ? "\nThat was the last level!" : "");
 
         menu.ShowMenu(

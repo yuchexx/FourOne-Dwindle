@@ -43,9 +43,14 @@ public static partial class Tutorials
         new TutorialStep
         {
             text = "Your goal is to deliver as many objects as you can,\nusing as few tiles as possible.",
-            // the info panel's star goals, estimated from its layout: GoalText's lines 6 to 8 (STAR GOALS, 1st star,
-            // 2nd star; font size 19, about 22 per line) and BonusText's 3rd star line, which wraps onto two lines
-            area = new Rect(23, 316, 314, 133),
+            // the info panel's PROGRESS (GoalText, its two lines centered in its 180-high box) and SCORE with the
+            // "best plans use N tiles" line (BonusText, from the top of its 90-high box), worked out from the panel's
+            // column layout; check them with TutorialController's Log Selected Area if the panel changes again
+            areas = new[]
+            {
+                new Rect(37, 284, 264, 66),  // PROGRESS, 0 / 2 delivered
+                new Rect(37, 419, 264, 84),  // SCORE, 0 / 675, 3rd star: best plans use 3 tiles
+            },
         },
         new TutorialStep
         {

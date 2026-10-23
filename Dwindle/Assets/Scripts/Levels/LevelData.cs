@@ -51,6 +51,7 @@ public class LevelData
     public int targetScore; // score needed for the 3rd star
     public int bestTiles;   // the fewest tiles among the plans that reach the target, shown as a hint
     public string bestPlanHint; // shown in the end window when the 3rd star is missed, e.g. "The best plan delivers some objects together."
+    public string finishHint;   // shown in the end window at 0 or 1 star: for levels where delivering everyone needs a trick
     public Dictionary<TileType, int> inventory = new();
     public List<BoardSpec> boards = new();
     public List<DoorSpec> doors = new();

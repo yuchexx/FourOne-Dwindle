@@ -2036,6 +2036,14 @@ MonoBehaviour:
   bonusText: {fileID: 1653674094}
   selectedText: {fileID: 2123654177}
   logText: {fileID: 1826750660}
+  scoreLogText: {fileID: 0}
+  scoreLogLines: 8
+  scoreLogBox: 1
+  scoreLogBoxColor: {r: 0.13, g: 0.14, b: 0.17, a: 0.9}
+  scoreLogBoxPadding: 10
+  scoreLogBoxGap: -25
+  scoreLogBoxSideMargin: 25
+  scoreLogBoxHeight: 370
   crossRemovedRoot: {fileID: 1378911470}
   cornerRemovedRoot: {fileID: 1408271324}
   straightRemovedRoot: {fileID: 782093247}
@@ -3904,8 +3912,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TelemetryManager
   levelCompletionForm: https://docs.google.com/forms/d/e/1FAIpQLScsOUa-nAnfAcUCfXClZVxhDMw3WuBDLeh9d9UVdUEIBGq4KA/formResponse
-  levelAttemptPreCompletion: https://docs.google.com/forms/d/1Vlo-hhRXJBIXE0rXL_4dtDDfbTbzdjqpmXsQ8CJgfeU/formResponse
-  levelAttemptPostCompletion: 
+  levelAttemptsPreForm: https://docs.google.com/forms/d/e/1FAIpQLSfWSrd91_bDOi5Soq1hJyparZxPvLobM7WrLV3ZM9nxDfP8qA/formResponse
+  levelAttemptsPostForm: https://docs.google.com/forms/d/e/1FAIpQLScCDs0U5H07NAn9Es0PmgvXtM5_9z4wHhnYVKrzcyBbRE4Qrg/formResponse
   LEVEL_COUNT: 12
 --- !u!1 &886253550
 GameObject:
