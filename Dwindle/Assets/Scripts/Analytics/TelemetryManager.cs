@@ -153,12 +153,14 @@ public class TelemetryManager : MonoBehaviour
         {
             formToSend = levelAttemptsPreForm;
             formData.Add("entry.795127675", mySession);
+            formData.Add("entry.575500443", finalLevel);
             formData.Add("entry.1099898166", levelAttemptsPre);
         }
         else if (formType.Equals("LevelAttemptsPostCompletion"))
         {
             formToSend = levelAttemptsPostForm;
             formData.Add("entry.1181161218", mySession);
+            formData.Add("entry.336054205", finalLevel);
             formData.Add("entry.820996616", levelAttemptsPost);
         }
 
