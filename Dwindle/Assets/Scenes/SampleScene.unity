@@ -3904,6 +3904,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TelemetryManager
   levelCompletionForm: https://docs.google.com/forms/d/e/1FAIpQLScsOUa-nAnfAcUCfXClZVxhDMw3WuBDLeh9d9UVdUEIBGq4KA/formResponse
+  levelAttemptPreCompletion: https://docs.google.com/forms/d/1Vlo-hhRXJBIXE0rXL_4dtDDfbTbzdjqpmXsQ8CJgfeU/formResponse
+  levelAttemptPostCompletion: 
+  LEVEL_COUNT: 12
 --- !u!1 &886253550
 GameObject:
   m_ObjectHideFlags: 0
