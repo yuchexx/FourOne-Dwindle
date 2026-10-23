@@ -162,21 +162,22 @@ public class HudView : MonoBehaviour
 
     public void RefreshInfo(LevelData level, int delivered, int total, int tilesLeft, int score, bool scoreStar)
     {
-        levelTitleText.text = level.title;
+        levelTitleText.text = level.title.ToUpperInvariant();
 
-        string heading = ColorUtility.ToHtmlStringRGB(headingColor);
-        goalText.text =
-            "Match objects to their colored rings.\n\n" +
-            $"<b><color=#{heading}>PROGRESS</color></b>\n" +
-            $"{delivered}/{total} delivered | {tilesLeft} tiles left\n\n" +
-            $"<b><color=#{heading}>STAR GOALS</color></b>\n" +
-            $"1st star: Deliver {level.Required}\n" +
-            $"2nd star: Deliver all {total}";
+    string progressColor = ColorUtility.ToHtmlStringRGB(headingColor);
+    const string scoreColor = "7C83F7";
+    const string successColor = "61C98B";
 
-        bonusText.text =
-            $"3rd star: Score {level.targetScore}" +
-            (level.bestTiles > 0 ? $" (best plans use {level.bestTiles} tiles)" : "") + "\n" +
-            $"<size=20><b>Score: {score}</b></size>{(scoreStar ? "  (target reached)" : "")}";
+    goalText.text =
+        $"<b><color=#{progressColor}>PROGRESS</color></b>\n" +
+        $"<size=24>{delivered} / {total}</size> delivered";
+
+    bonusText.text =
+        $"<b><color=#{scoreColor}>SCORE</color></b>\n" +
+        $"<size=24>{score} / {level.targetScore}</size>" +
+        (scoreStar
+            ? $"\n<size=16><color=#{successColor}>Target reached</color></size>"
+            : "");
     }
 
     // 3 sections of the panel: junctions (+, bridge, T) on top, the four L tiles, then the two I tiles
@@ -243,6 +244,28 @@ public class HudView : MonoBehaviour
     {
         if (stuckNotice != null) stuckNotice.Hide();
     }
+
+    [Header("Toast feedback")]
+public ToastView toast;
+
+
+public void ShowToast(string message)
+{
+    if (toast != null)
+        toast.Show(message);
+}
+
+public void ShowToast(string message, Color color)
+{
+    if (toast != null)
+        toast.Show(message, color);
+}
+
+public void ClearToasts()
+{
+    if (toast != null)
+        toast.Clear();
+}
 
     public void SetUndoAvailable(bool available)
     {
