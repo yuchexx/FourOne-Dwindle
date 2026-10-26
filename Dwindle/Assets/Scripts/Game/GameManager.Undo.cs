@@ -53,6 +53,8 @@ public partial class GameManager
         if (levelOver || !history.CanUndo) return;
         if (inputLocked) return; // for the tutorial (see LockInput)
 
+        var snapshot = history.Pop();
+        board.BeginUndo(objects, snapshot.rewind); // where everything is now, to rewind from (see BoardView.animateUndo)
         StopAllCoroutines(); // the round, with the slides, teleports and choices it is waiting on
         board.ClearChoices();
         board.StopFlashes();
@@ -62,7 +64,11 @@ public partial class GameManager
         board.HideGhost();
         selected = null; // undo leaves no tile selected
 
-        Restore(history.Pop());
+        var shownSupply = new Dictionary<TileType, int>(inventory); // the counts before the undo
+        Restore(snapshot);
+        // the supply bar keeps its old counts until the rewound tile has traveled back to it (or from it)
+        hud.ShowSupplyDuringRewind(shownSupply);
+        board.PlayUndo(objects, hud.SlotIconRect, () => hud.RefreshInventory(inventory, selected));
         UpdateStuck(); // the banner goes if this made the level winnable again
         Report(new GameAction { kind = GameActionKind.Undo }); // for the tutorial
     }

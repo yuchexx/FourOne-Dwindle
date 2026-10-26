@@ -15,6 +15,7 @@ public class Snapshot
     public List<string> log;
     public List<string> scoreLog; // the lower-left score log
     public bool takeBack; // the action after this snapshot was a right-click take-back, not a placement
+    public BoardView.Rewind rewind; // the moves the placement after this snapshot caused, for undo to play backwards
 }
 
 // the parts of a MovingObject that change while it moves

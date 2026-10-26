@@ -7314,6 +7314,7 @@ MonoBehaviour:
   boardSize: 700
   objectSize: 0.55
   ringSize: 0.62
+  endDistance: 0.446
   useRemovedPanelSpace: 1
   areaRightMargin: 15
   moveSecondsPerCell: 0.25
@@ -7331,6 +7332,16 @@ MonoBehaviour:
   flashColor: {r: 1, g: 0.45, b: 0.45, a: 1}
   flashHoldSeconds: 0.5
   flashFadeSeconds: 0.5
+  showEndLines: 1
+  endLineDotted: 0
+  endLineDotSize: 0.08
+  endLineGap: 0.06
+  endLineOpacity: 1
+  keepStartLine: 0
+  keepRingLine: 0
+  animateUndo: 1
+  rewindSpeed: 4
+  undoSeconds: 0.35
 --- !u!1 &1431757426
 GameObject:
   m_ObjectHideFlags: 0

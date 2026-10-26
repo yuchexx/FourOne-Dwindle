@@ -94,6 +94,7 @@ static readonly Color ToastWarning =
 
     void Start()
     {
+        hud.onSupplyBarPressed = () => board.FinishUndo(); // a press on the supply bar finishes an undo rewind
         ShowStartScreen();
     }
 
@@ -156,6 +157,7 @@ static readonly Color ToastWarning =
         if (levelOver) return;
         if (busy) return; // objects are moving or waiting for a direction: nothing can be placed, so nothing is picked
         if (inputLocked) return; // for the tutorial (see LockInput)
+        board.FinishUndo(); // an undo rewind still going: it finishes first (the supply bar's counts catch up)
         if (inventory[t] <= 0) { Log($"No {Tiles.Name(t)} tiles left."); return; }
         selected = selected == t ? (TileType?)null : t; // clicking the selected tile again deselects it
         hud.RefreshInventory(inventory, selected);
@@ -171,9 +173,12 @@ static readonly Color ToastWarning =
         if (cell.obstacle) { Log("That space is blocked."); return; }
         if (cell.tile != null) { Log("There's already a tile there."); return; }
         if (selected == null) { Log("Select a tile from the top bar first."); return; }
+        board.FinishUndo(); // an undo rewind still going: everything to its place before anything moves
 
         var t = selected.Value;
-        history.Record(Capture()); // the only point undo saves at
+        var snapshot = Capture(); // the only point undo saves at
+        snapshot.rewind = board.StartRecording(p, t); // this tile and the moves it causes, so undo can play them backwards
+        history.Record(snapshot);
         inventory[t]--;
         board.SetTile(p, t);
         TelemetryManager.Instance.AddPiece();
@@ -204,6 +209,7 @@ static readonly Color ToastWarning =
     {
         if (levelOver || busy) return;
         if (inputLocked) return; // for the tutorial (see LockInput)
+        board.FinishUndo(); // an undo rewind still going: it finishes first
         menu.HideMenu(); // pressed from the paused menu: the end window replaces it
         var cell = Cells[p.x, p.y];
         if (cell.tile == null) return;
@@ -213,6 +219,7 @@ static readonly Color ToastWarning =
         var snapshot = Capture(); // undo can bring it back
         snapshot.takeBack = true;
         history.Record(snapshot);
+        board.StopRecording(); // nothing moves on a take-back
         board.TakeBackTile(p);
         inventory[t]++;
         TelemetryManager.Instance.RemovePiece();
@@ -278,7 +285,7 @@ static readonly Color ToastWarning =
             {
                 if (next == o.spec.dest)
                 {
-                    yield return board.Slide(o, board.CellPos(next));
+                    yield return board.Slide(o, board.OutsidePos(next)); // the ring (see BoardView.endDistance)
                     o.pos = next;
                     o.completed = true;
                     board.MarkDelivered(o);
@@ -832,7 +839,11 @@ static readonly Color ToastWarning =
         foreach (var o in objects.Where(o => !o.completed))
         {
             bool now = IsBlocked(o);
-            if (now != o.blocked) Log(now ? $"{o.spec.name} is blocked." : $"{o.spec.name} is free to move again.");
+            if (now != o.blocked)
+            {
+                Log(now ? $"{o.spec.name} is blocked." : $"{o.spec.name} is free to move again.");
+                board.RecordBlocked(o, o.blocked); // for undo's rewind
+            }
             o.blocked = now;
             o.view.SetBlocked(now);
         }

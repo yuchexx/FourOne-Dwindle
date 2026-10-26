@@ -166,6 +166,7 @@ public class HudView : MonoBehaviour
         // the top bar's color, for empty slots: the nearest image behind the slots
         var bar = slotsRoot.GetComponentInParent<Image>();
         barColor = bar != null ? bar.color : emptySlotColor;
+        ListenToSupplyBar();
         Clear(slotsRoot);
         slots.Clear();
         var list = types.ToList();
@@ -189,6 +190,9 @@ public class HudView : MonoBehaviour
             slot.SetTile(tilePrefab, t, tileColor);
             var type = t; // copy for the click handler below
             slot.button.onClick.AddListener(() => onSelect(type));
+            // a press on any card, x0 ones too, counts as a press on the supply bar (it finishes an undo rewind); the
+            // card's own click still only works when it has tiles
+            slot.gameObject.AddComponent<ClickRelay>().onDown = () => onSupplyBarPressed?.Invoke();
             slots[t] = slot;
         }
     }
@@ -205,6 +209,26 @@ public class HudView : MonoBehaviour
         if (types.Count == 0 || available <= 0) return width;
         return Mathf.Clamp(available / types.Count, minSlotWidth, width);
     }
+
+    // during undo's rewind: the counts as they were before the undo (the returning tile hasn't landed yet). cards work
+    // as always for what they show: an x0 card can't be hovered or clicked. a press anywhere on the supply bar, x0
+    // cards included, finishes the rewind (see onSupplyBarPressed), and the counts catch up
+    public void ShowSupplyDuringRewind(Dictionary<TileType, int> shown) => RefreshInventory(shown, null);
+
+    // a press anywhere on the supply bar, cards or the space between them (GameManager finishes a rewind)
+    public Action onSupplyBarPressed;
+
+    void ListenToSupplyBar()
+    {
+        var bar = slotsRoot.GetComponentInParent<Image>();
+        if (bar == null || bar.GetComponent<ClickRelay>() != null) return;
+        bar.raycastTarget = true;
+        bar.gameObject.AddComponent<ClickRelay>().onDown = () => onSupplyBarPressed?.Invoke();
+    }
+
+    // where a tile type's picture sits in the supply bar (undo's rewind sends tiles there and back)
+    public RectTransform SlotIconRect(TileType t) =>
+        slots.TryGetValue(t, out var slot) && slot != null ? (slot.iconRoot != null ? slot.iconRoot : (RectTransform)slot.transform) : null;
 
     // while objects move or wait for a direction, tiles can't be picked. the slots' CanvasGroup lets the mouse pass
     // straight through every card then: no hover, no press, no click (and a card under the mouse un-highlights)
