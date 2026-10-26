@@ -206,6 +206,16 @@ public class HudView : MonoBehaviour
         return Mathf.Clamp(available / types.Count, minSlotWidth, width);
     }
 
+    // while objects move or wait for a direction, tiles can't be picked. the slots' CanvasGroup lets the mouse pass
+    // straight through every card then: no hover, no press, no click (and a card under the mouse un-highlights)
+    public void SetSupplyPaused(bool paused)
+    {
+        var group = slotsRoot.GetComponent<CanvasGroup>();
+        if (group == null) group = slotsRoot.gameObject.AddComponent<CanvasGroup>();
+        group.blocksRaycasts = !paused;
+        group.interactable = !paused;
+    }
+
     public void RefreshInventory(Dictionary<TileType, int> inventory, TileType? selected)
     {
         lastSelected = selected;

@@ -154,6 +154,7 @@ static readonly Color ToastWarning =
     void SelectTile(TileType t)
     {
         if (levelOver) return;
+        if (busy) return; // objects are moving or waiting for a direction: nothing can be placed, so nothing is picked
         if (inputLocked) return; // for the tutorial (see LockInput)
         if (inventory[t] <= 0) { Log($"No {Tiles.Name(t)} tiles left."); return; }
         selected = selected == t ? (TileType?)null : t; // clicking the selected tile again deselects it
@@ -666,7 +667,15 @@ static readonly Color ToastWarning =
     void Update()
     {
         if (stuck && !levelOver && !busy && !hud.StuckNoticeShowing && Time.time - stuckSince >= StuckWait) ShowStuckNotice();
+
+        // the supply cards don't light up under the mouse while a tile can't be picked (see SelectTile)
+        if (busy != supplyPaused)
+        {
+            supplyPaused = busy;
+            hud.SetSupplyPaused(busy);
+        }
     }
+    bool supplyPaused;
 
     // the fewest squares still to fill to connect the object to its ring
     int GapToRing(MovingObject o)
