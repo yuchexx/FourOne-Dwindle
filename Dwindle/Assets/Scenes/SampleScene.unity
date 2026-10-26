@@ -2052,7 +2052,7 @@ MonoBehaviour:
   undoButton: {fileID: 374498824}
   stuckNotice: {fileID: 347531795}
   tileColor: {r: 0.28, g: 0.31, b: 0.38, a: 1}
-  slotColor: {r: 0.22745098, g: 0.23921569, b: 0.28627452, a: 1}
+  slotColor: {r: 0.2901961, g: 0.3019608, b: 0.37254903, a: 1}
   selectedSlotColor: {r: 0.95, g: 0.7882353, b: 0.29803923, a: 1}
   emptySlotColor: {r: 0.22, g: 0.23, b: 0.27, a: 1}
   emptySlotUsesBarColor: 1
@@ -7324,7 +7324,7 @@ MonoBehaviour:
   crossHighlightColor: {r: 0.98, g: 0.88, b: 0.55, a: 1}
   lockedCellColor: {r: 0.62, g: 0.64, b: 0.69, a: 1}
   ghostFade: 0.55
-  boardFrameColor: {r: 0.19, g: 0.2, b: 0.24, a: 1}
+  boardFrameColor: {r: 0.19, g: 0.19607843, b: 0.24, a: 1}
   doorColor: {r: 0.62, g: 0.64, b: 0.68, a: 1}
   doorLabelColor: {r: 0.08, g: 0.08, b: 0.1, a: 1}
   doorHoverColor: {r: 0.98, g: 0.82, b: 0.35, a: 1}
