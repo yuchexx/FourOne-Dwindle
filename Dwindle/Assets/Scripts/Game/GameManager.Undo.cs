@@ -70,7 +70,9 @@ public partial class GameManager
         hud.ShowSupplyDuringRewind(shownSupply);
         board.PlayUndo(objects, hud.SlotIconRect, () => hud.RefreshInventory(inventory, selected));
         UpdateStuck(); // the banner goes if this made the level winnable again
-        Report(new GameAction { kind = GameActionKind.Undo }); // for the tutorial
+        // for the tutorial, and for analytics: what it took back (the placement or take-back, with its tile and square)
+        var undone = snapshot.action;
+        Report(new GameAction { kind = GameActionKind.Undo, undid = undone.kind, tile = undone.tile, board = undone.board, square = undone.square });
     }
 
     // the end window's Undo button: back into the level, as it was before its last placement. Undo itself refuses

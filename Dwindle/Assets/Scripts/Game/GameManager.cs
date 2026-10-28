@@ -178,6 +178,7 @@ static readonly Color ToastWarning =
         var t = selected.Value;
         var snapshot = Capture(); // the only point undo saves at
         snapshot.rewind = board.StartRecording(p, t); // this tile and the moves it causes, so undo can play them backwards
+        snapshot.action = OnSquare(GameActionKind.PlaceTile, p, t); // what an undo of it reports
         history.Record(snapshot);
         inventory[t]--;
         board.SetTile(p, t);
@@ -185,7 +186,7 @@ static readonly Color ToastWarning =
         Log($"Placed a {Tiles.Name(t)}.");
         RefreshAll();
         StartCoroutine(ResolveRound());
-        Report(OnSquare(GameActionKind.PlaceTile, p, t)); // for the tutorial
+        Report(snapshot.action); // for the tutorial
     }
 
     // a cell as the player sees it: its board's own coordinate, plus the board when there are several
@@ -218,6 +219,7 @@ static readonly Color ToastWarning =
         var t = cell.tile.Value;
         var snapshot = Capture(); // undo can bring it back
         snapshot.takeBack = true;
+        snapshot.action = OnSquare(GameActionKind.TakeBack, p, t); // what an undo of it reports
         history.Record(snapshot);
         board.StopRecording(); // nothing moves on a take-back
         board.TakeBackTile(p);
@@ -227,7 +229,7 @@ static readonly Color ToastWarning =
         UpdateBlocked(); // a tile in an object's way may have been the one taken back
         UpdateStuck();
         RefreshAll();
-        Report(OnSquare(GameActionKind.TakeBack, p, t)); // for the tutorial
+        Report(snapshot.action); // for the tutorial
     }
 
     // the tile the hover preview shows: the selected one, while the player can place
@@ -582,6 +584,7 @@ static readonly Color ToastWarning =
         }
         RefreshAll();
         StartCoroutine(ShowEndMenuAfterDelay(reason));
+        Report(new GameAction { kind = GameActionKind.LevelEnd, score = Score, stars = Stars(), tilesUsed = history.TilesUsed, delivered = Delivered, reason = reason }); // for analytics
     }
 
     IEnumerator ShowEndMenuAfterDelay(string reason)
@@ -932,6 +935,8 @@ static readonly Color ToastWarning =
     public void StartGame() => LoadLevel(0);
     public void Restart()
     {
+        // for analytics: the attempt being thrown away, before the level reloads
+        Report(new GameAction { kind = GameActionKind.Restart, score = Score, tilesUsed = history.TilesUsed, delivered = Delivered });
         ReportLevel();
         LoadLevel(levelIndex);
     }
