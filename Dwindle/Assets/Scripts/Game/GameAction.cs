@@ -1,11 +1,11 @@
 using UnityEngine;
 
 // what the player did
-public enum GameActionKind { SelectTile, PlaceTile, TakeBack, ChooseDirection, Undo, ClickDoor, Restart, LevelEnd, Delivered }
+public enum GameActionKind { SelectTile, PlaceTile, TakeBack, ChooseDirection, Undo, ClickDoor, Restart, LevelEnd, Delivered, Hint }
 
 // a player action, reported by GameManager.ActionDone once it has taken effect in the game.
 // for the tutorial: TutorialController waits on these, so a click that missed (and changed nothing) never counts.
-// for analytics: Restart, LevelEnd, Delivered and what each Undo took back
+// for analytics: Restart, LevelEnd, Delivered, Hint and what each Undo took back
 public struct GameAction
 {
     public GameActionKind kind;
@@ -22,6 +22,9 @@ public struct GameAction
     public int delivered;     // Restart, LevelEnd: objects delivered
     public string reason;     // LevelEnd: why it ended, e.g. "Every object was delivered!" or "You ended the level."
     public Arrival[] arrivals; // Delivered: everyone the last placement delivered (2 or more = together, which earns a +)
+    public int hintStage;     // Hint: the stage now shown (1-3); LevelEnd: the highest stage used (0 = no hints)
+    public int answerStep;    // Hint: on stage 3, how many steps of the answer are shown
+    public bool purple;       // LevelEnd: 3 stars without the answer hint
 }
 
 // one object delivered, and the tile its delivery broke

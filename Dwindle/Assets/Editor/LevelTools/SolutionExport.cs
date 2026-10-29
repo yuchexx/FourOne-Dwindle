@@ -148,7 +148,8 @@ static class SolutionExport
         sb.Append("        },\n");
 
         // the answer for the stage 3 hint: the best plan with the fewest steps (tiles and arrows), played out
-        List<string> answer = null;
+        List<string> answer = null; Plan answerPlan = null;
+        string OrderKey(Plan p) => string.Join("|", p.events.Select(g => string.Join(",", g.OrderBy(j => j))));
         foreach (var p in plans)
         {
             var rp = new Replay2(l).Run(p);
@@ -160,8 +161,12 @@ static class SolutionExport
                 actions.Add($"Place({L(l, c)}, TileType.{t})");
                 foreach (var (obj, way) in rp.stepChoices[s]) actions.Add($"Choose(\"{l.objects[obj].name}\", Dir.{way})");
             }
-            if (answer == null || actions.Count < answer.Count) answer = actions;
+            if (answer == null || actions.Count < answer.Count) { answer = actions; answerPlan = p; }
         }
+        // which family and order it follows, in the order they're written above
+        int answerFamily = families.FindIndex(g => g.Key == Roads(answerPlan));
+        int answerOrder = families[answerFamily].Select(OrderKey).Distinct().ToList().IndexOf(OrderKey(answerPlan));
+        sb.Append($"        answerFamily = {answerFamily}, answerOrder = {answerOrder},\n");
         sb.Append("        answer = new[]\n        {\n");
         foreach (var a in answer) sb.Append($"            {a},\n");
         sb.Append("        },\n    };\n");

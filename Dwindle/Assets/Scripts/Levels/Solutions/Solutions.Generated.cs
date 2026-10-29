@@ -44,6 +44,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(0, 0, 0, TileType.StraightV),
@@ -136,6 +137,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(0, 2, 2, TileType.StraightV),
@@ -204,6 +206,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(0, 0, 0, TileType.StraightH),
@@ -325,6 +328,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(0, 3, 3, TileType.Cross),
@@ -410,6 +414,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(0, 3, 3, TileType.TeeWNE),
@@ -481,6 +486,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(1, 1, 0, TileType.StraightH),
@@ -557,6 +563,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(1, 2, 0, TileType.StraightH),
@@ -638,6 +645,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(3, 0, 1, TileType.StraightV),
@@ -805,6 +813,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 2, answerOrder = 0,
         answer = new[]
         {
             Place(1, 0, 2, TileType.TeeWNE),
@@ -895,6 +904,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(0, 2, 0, TileType.CornerES),
@@ -1035,6 +1045,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(3, 2, 0, TileType.StraightH),
@@ -1268,6 +1279,7 @@ public static partial class Solutions
                 },
             },
         },
+        answerFamily = 0, answerOrder = 0,
         answer = new[]
         {
             Place(1, 2, 4, TileType.CornerNE),

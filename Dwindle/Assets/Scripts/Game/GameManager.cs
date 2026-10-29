@@ -121,6 +121,7 @@ static readonly Color ToastWarning =
         Log($"{level.title}: pick a tile, then click an empty cell.");
         if (level.doors.Count > 0)
             Log("Doors with the same letter are linked: a road into one comes out of the other.");
+        ResetHintsForLoad();
         RefreshAll();
 
         // the old text pop-up, replaced by TutorialController. kept until the new tutorial covers these points
@@ -247,7 +248,10 @@ static readonly Color ToastWarning =
         }
         RefreshAll();
         StartCoroutine(ShowEndMenuAfterDelay(reason));
-        Report(new GameAction { kind = GameActionKind.LevelEnd, score = Score, stars = Stars(), tilesUsed = history.TilesUsed, delivered = Delivered, reason = reason }); // for analytics
+        int stars = Stars();
+        bool purple = SaveResult(stars); // this session's best for the level
+        Report(new GameAction { kind = GameActionKind.LevelEnd, score = Score, stars = stars, purple = purple, hintStage = hints.Stage,
+            tilesUsed = history.TilesUsed, delivered = Delivered, reason = reason }); // for analytics
     }
 
     IEnumerator ShowEndMenuAfterDelay(string reason)
@@ -298,9 +302,11 @@ static readonly Color ToastWarning =
         menu.BuildLevelButtons(Levels.All.Count, LoadLevel);
     }
 
-    public void StartGame() => LoadLevel(0);
+    // Start: Level 1 until it's done, then the first level without a star this session
+    public void StartGame() => LoadLevel(Session.StartLevel(Levels.All.Count));
     public void Restart()
     {
+        keepHintsOnLoad = !levelOver; // mid-level, the answer hint stays (and purple stays lost); a replay clears it
         // for analytics: the attempt being thrown away, before the level reloads
         Report(new GameAction { kind = GameActionKind.Restart, score = Score, tilesUsed = history.TilesUsed, delivered = Delivered });
         ReportLevel();

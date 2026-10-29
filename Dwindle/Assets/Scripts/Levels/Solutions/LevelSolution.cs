@@ -12,6 +12,7 @@ public class LevelSolution
     // one best plan to show the player, step by step from an empty board (the stage 3 hint): the one with the fewest
     // steps. PlaceTile and ChooseDirection, in the order the game asks for them, as ActionDone reports them
     public GameAction[] answer;
+    public int answerFamily, answerOrder; // the family and delivery order the answer follows (for the stage 2 hint)
 }
 
 public struct Square
