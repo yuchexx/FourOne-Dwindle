@@ -27,6 +27,7 @@ public class ObjectState
     public Dir heading;
     public bool completed, blocked, viaDoor;
     public int teleports;
+    public List<DoorPass> doorsUsed;
     public List<Vector2Int> path;
 }
 

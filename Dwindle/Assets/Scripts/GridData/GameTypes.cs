@@ -24,6 +24,7 @@ public class MovingObject
     public bool blocked;
     public bool viaDoor; // just came out of a door
     public int teleports; // doors gone through
+    public List<DoorPass> doorsUsed = new List<DoorPass>(); // which ones, in order
 }
 
 // one tile lost this level, and where it was lost from

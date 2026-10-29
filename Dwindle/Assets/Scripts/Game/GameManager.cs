@@ -340,6 +340,12 @@ static readonly Color ToastWarning =
     {
         var partner = level.Partner(door);
         o.teleports++;
+        o.doorsUsed.Add(new DoorPass
+        {
+            door = door.label,
+            inBoard = door.board, inSquare = door.cell - level.boards[door.board].origin, inSide = door.side,
+            outBoard = partner.board, outSquare = partner.cell - level.boards[partner.board].origin, outSide = partner.side,
+        });
         Log($"{o.spec.name} went through door {door.label} to board {partner.board + 1}.");
         yield return board.Teleport(o, board.EdgePos(partner.cell, partner.side));
 
@@ -380,7 +386,7 @@ static readonly Color ToastWarning =
         foreach (var o in deliveredNow)
         {
             var (c, neededBy) = PickRemoval(o);
-            var arrival = new Arrival { objectName = o.spec.name, doors = o.teleports };
+            var arrival = new Arrival { objectName = o.spec.name, doors = o.teleports, doorsUsed = o.doorsUsed.ToArray() };
             if (c == null) { arrivals.Add(arrival); continue; }
 
             var cell = Cells[c.Value.x, c.Value.y];

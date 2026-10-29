@@ -29,9 +29,23 @@ public struct Arrival
 {
     public string objectName;
     public int doors;         // doors it went through on the way
+    public DoorPass[] doorsUsed; // each of them, in order
     public bool broke;        // a tile broke (false when none of its path was left)
     public int board;         // the broken tile's board and square
     public Vector2Int square;
     public TileType brokenTile;
     public string neededBy;   // an object still waiting that needed that tile, e.g. "Green"; null when nobody did
+}
+
+// one trip through a door: in at one end, out at its partner (both ends share the letter). an end is a square and the
+// edge of it the door sits on, in that board's own coordinates (as in Levels.cs: Door(l, "A", board, x, y, Dir.side))
+public struct DoorPass
+{
+    public string door;       // its letter, e.g. "A"
+    public int inBoard;       // the end it went in
+    public Vector2Int inSquare;
+    public Dir inSide;
+    public int outBoard;      // the end it came out
+    public Vector2Int outSquare;
+    public Dir outSide;
 }

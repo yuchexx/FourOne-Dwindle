@@ -31,6 +31,7 @@ public partial class GameManager
                 blocked = o.blocked,
                 viaDoor = o.viaDoor,
                 teleports = o.teleports,
+                doorsUsed = new List<DoorPass>(o.doorsUsed),
                 path = new List<Vector2Int>(o.path),
             }).ToArray(),
             removed = new List<RemovedEntry>(removed),
@@ -111,6 +112,7 @@ public partial class GameManager
             o.blocked = state.blocked;
             o.viaDoor = state.viaDoor;
             o.teleports = state.teleports;
+            o.doorsUsed = new List<DoorPass>(state.doorsUsed);
             o.path = state.path;
             board.SyncObject(o);
         }
