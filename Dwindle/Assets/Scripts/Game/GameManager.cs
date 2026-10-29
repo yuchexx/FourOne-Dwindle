@@ -376,12 +376,18 @@ static readonly Color ToastWarning =
     // placement scores the combo and earns a + tile. this happens on every delivery, the last one too
         IEnumerator HandleDeliveries(List<MovingObject> deliveredNow)
     {
+        var arrivals = new List<Arrival>(); // for analytics (the Delivered report)
         foreach (var o in deliveredNow)
         {
             var (c, neededBy) = PickRemoval(o);
-            if (c == null) continue;
+            var arrival = new Arrival { objectName = o.spec.name, doors = o.teleports };
+            if (c == null) { arrivals.Add(arrival); continue; }
 
             var cell = Cells[c.Value.x, c.Value.y];
+            int b = level.BoardOf(c.Value);
+            arrival.broke = true; arrival.board = b; arrival.square = c.Value - level.boards[b].origin;
+            arrival.brokenTile = cell.tile.Value; arrival.neededBy = neededBy;
+            arrivals.Add(arrival);
             var entry = new RemovedEntry
             {
                 type = cell.tile.Value,
@@ -427,6 +433,7 @@ static readonly Color ToastWarning =
             RefreshAll();
         }
 
+        Report(new GameAction { kind = GameActionKind.Delivered, arrivals = arrivals.ToArray(), score = Score }); // for analytics
         yield break;
     }
     // for the tutorial (Tutorials.cs), so a scripted lesson can't break the wrong tile: the next delivery whose path

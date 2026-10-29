@@ -46,6 +46,9 @@ class Solver2
     public bool noDetours;            // objects whose ring is on their own board may not use doors
     public bool oneEvent;             // every object arrives on the same placement
     public List<(string layout, int score)> collect; // when set, every finishing layout's best score is added here
+    public List<Plan> every; // when set, every plan scoring at least `floor` is added here: each tile assignment, grouping, order and delivering cell, played out
+    bool Exhaustive => collect != null || every != null; // nothing is skipped for not beating the best so far
+    const int EveryCap = 100000; // tile mixes per road set when listing every plan
     public static volatile bool Abort; // set from another thread to stop every running solve (the level maker's Cancel and time limit)
 
     public Solver2(LevelData l, int slack = 4, int maxRoutes = 20000) { L = l; this.slack = slack; this.maxRoutes = maxRoutes; }
@@ -128,8 +131,9 @@ class Solver2
 
     // every way to give these cells tiles from `left`, one per set of + cells (the only thing the delivery order
     // cares about: an earned + can only go on a cell placed after the group delivery that earns it).
-    // simplest tile first, cells with the fewest options first, in a fixed cell order so results don't depend on search history
-    static List<Dictionary<Vector2Int, TileType>> Assign(Dictionary<Vector2Int, List<Step>> byCell, Dictionary<TileType, int> left, int cap = 64)
+    // simplest tile first, cells with the fewest options first, in a fixed cell order so results don't depend on search history.
+    // everyTile: every tile that fits each cell, not only one per set of + cells (so a spare T where an I would do counts too)
+    static List<Dictionary<Vector2Int, TileType>> Assign(Dictionary<Vector2Int, List<Step>> byCell, Dictionary<TileType, int> left, int cap = 64, bool everyTile = false)
     {
         var cand = byCell.ToDictionary(kv => kv.Key, kv => Tiles.All.Where(t => Fits(t, kv.Value))
             .OrderBy(t => DirUtil.All.Count(d => Tiles.Has(t, d)) + (t == TileType.Bridge ? 1 : 0) + (t == TileType.Cross ? 2 : 0)).ToList());
@@ -142,7 +146,7 @@ class Solver2
             if (i == order.Count)
             {
                 var crosses = string.Join(";", order.Where(c => pick[c] == TileType.Cross).OrderBy(c => c.x).ThenBy(c => c.y));
-                if (seen.Add(crosses)) res.Add(new Dictionary<Vector2Int, TileType>(pick));
+                if (everyTile || seen.Add(crosses)) res.Add(new Dictionary<Vector2Int, TileType>(pick));
                 return;
             }
             foreach (var t in cand[order[i]])
@@ -163,6 +167,7 @@ class Solver2
         var objs = L.objects; int n = objs.Count;
         var routes = objs.Select(o => Routes(o, Fewest(o))).ToList();
         if (routes.Any(r => r.Count == 0)) return null;
+        if (every != null && routes.Any(r => r.Count >= maxRoutes)) limitHit = true; // some roads were never tried, so the list could be short
         foreach (var rs in routes) rs.Sort((a, b) => a.steps.Count.CompareTo(b.steps.Count));
         int S = L.inventory.Values.Sum();
         int doorable = Enumerable.Range(0, n).Count(i => routes[i].Any(r => r.doors > 0));
@@ -171,7 +176,7 @@ class Solver2
 
         Plan best = null;
         // start from the quick test's best plan when it really works, so the full search can skip what can't beat it
-        if ((requireSafe || lucky) && !quick && collect == null)
+        if ((requireSafe || lucky) && !quick && !Exhaustive)
         {
             var q = new Solver2(L, slack, maxRoutes) { requireSafe = requireSafe, penalize = penalize, allowCombos = allowCombos, noDetours = noDetours, oneEvent = oneEvent, allowRevisits = allowRevisits, maxVisits = maxVisits, maxRouteCells = maxRouteCells, filter = filter, noSharing = noSharing, quick = true }.Best();
             if (q != null && new Replay2(L).Run(q, any: lucky).ok) best = q;
@@ -192,15 +197,17 @@ class Solver2
                 var left = Tiles.All.ToDictionary(t => t, t => L.inventory.GetValueOrDefault(t));
                 left[TileType.Cross] += extra;
                 bool any = false;
-                foreach (var pick in Assign(byCell, left, extra == 0 || quick ? 1 : 64))
+                var picks = every != null ? Assign(byCell, left, EveryCap, everyTile: true) : Assign(byCell, left, extra == 0 || quick ? 1 : 64);
+                if (every != null && picks.Count >= EveryCap) limitHit = true; // tile mixes left out
+                foreach (var pick in picks)
                 {
-                    var plan = Order(chosen.ToArray(), pick, S, collect != null ? null : best);
+                    var plan = Order(chosen.ToArray(), pick, S, Exhaustive ? null : best);
                     if (plan == null) continue;
                     any = true;
                     if (collect != null) collect.Add((string.Join(";", pick.OrderBy(kv => kv.Key.x).ThenBy(kv => kv.Key.y).Select(kv => $"{kv.Key}={kv.Value}")), plan.score));
                     if (best == null || plan.score > best.score || (plan.score == best.score && plan.cells < best.cells)) best = plan;
                 }
-                if (extra == 0 && any) break;
+                if (extra == 0 && any && every == null) break;
             }
         }
 
@@ -214,11 +221,11 @@ class Solver2
                 if (noSharing && r.cells.Any(byCell.ContainsKey)) continue; // it would share a square with a route already chosen
                 foreach (var st in r.steps) { if (!byCell.TryGetValue(st.cell, out var l)) byCell[st.cell] = l = new(); l.Add(st); }
                 // more squares than the supply plus every + that could be earned can never be filled
-                bool canBeat = byCell.Count <= S + maxCombos && ceilingWithoutCells - Unused * byCell.Count >= floor && (collect != null || best == null || ceilingWithoutCells - Unused * byCell.Count >= best.score);
+                bool canBeat = byCell.Count <= S + maxCombos && ceilingWithoutCells - Unused * byCell.Count >= floor && (Exhaustive || best == null || ceilingWithoutCells - Unused * byCell.Count >= best.score);
                 // lookahead: every object still to route adds at least its fewest new squares, so count the largest of those too
                 if (canBeat && lookahead && k + 1 < n)
                 {
-                    int limit = Math.Min(S + maxCombos, (ceilingWithoutCells - Math.Max(floor, collect == null && best != null ? best.score : int.MinValue)) / Unused);
+                    int limit = Math.Min(S + maxCombos, (ceilingWithoutCells - Math.Max(floor, !Exhaustive && best != null ? best.score : int.MinValue)) / Unused);
                     int need = 0;
                     for (int j = k + 1; j < n && byCell.Count + need <= limit; j++)
                     {
@@ -262,15 +269,22 @@ class Solver2
                 int unused = S + combos - cells;
                 if (unused < 0) return;
                 int score = Delivery * n + ComboPer * comboObjs + DoorPer * doorObjects + Unused * unused - (penalize && !verify ? Unused * hits : 0);
-                if (score < floor || (best != null && score <= best.score)) return;
+                if (score < floor || (every == null && best != null && score <= best.score)) return;
                 if (beat != null && (score < beat.score || (score == beat.score && cells >= beat.cells))) return; // can't become the overall best
                 var plan = new Plan { score = score, cells = cells, combos = combos, comboObjects = comboObjs, doorObjects = doorObjects, hits = hits,
                     routes = r, tiles = pick, events = events.Select(g => g.ToList()).ToList(), lastCells = lasts.ToList(), pre = pres.Select(x => x.ToList()).ToList() };
                 if (filter != null && !filter(plan)) return;
                 // the quick test above can't see what the game's removal rule really does, so play it out
                 if (verify && ++replays > maxReplays) throw new ReplayLimit();
-                if (verify && !new Replay2(L).Run(plan, any: lucky).ok) return;
-                best = plan;
+                if (verify)
+                {
+                    var rp = new Replay2(L).Run(plan, any: lucky);
+                    // too many ways the tiles could break to follow them all: the plan isn't known to fail, so the list could be short
+                    if (!rp.ok && every != null && rp.problem.StartsWith("too many ways")) limitHit = true;
+                    if (!rp.ok) return;
+                }
+                every?.Add(plan);
+                if (best == null || score > best.score) best = plan;
                 return;
             }
             for (int i = k; i < events.Count; i++)

@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// level 6's tutorial: doors
+// the "Doors" tutorial (on the level with l.tutorial = "Doors"): doors
 public static partial class Tutorials
 {
-    static List<TutorialStep> Level6(GameManager game) => new()
+    static List<TutorialStep> Doors(GameManager game) => new()
     {
         new TutorialStep
         {

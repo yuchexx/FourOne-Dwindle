@@ -285,6 +285,7 @@ static class LevelMaker
         sb.Append($"    static LevelData Level{number}()\n    {{\n");
         sb.Append($"        var l = new LevelData {{ title = \"Level {number}\", targetScore = {r.props.score}, bestTiles = {r.props.tiles},\n");
         sb.Append($"            bestPlanHint = \"{r.level.bestPlanHint ?? Export.Hint(r.props)}\" }};\n");
+        if (!string.IsNullOrEmpty(l.tutorial)) sb.Append($"        l.tutorial = \"{l.tutorial}\";\n"); // kept when an existing level is written again
         sb.Append($"        l.SetBoards({string.Join(", ", l.boards.Select(b => $"({b.width}, {b.height})"))});\n");
         sb.Append("        l.inventory = Inv(" + string.Join(", ", Tiles.All.Where(t => l.inventory.GetValueOrDefault(t) > 0).Select(t => $"{InvNames[t]}: {l.inventory[t]}")) + ");\n");
         foreach (var o in l.obstacles) { int b = l.BoardOf(o); var p = o - l.boards[b].origin; sb.Append($"        l.obstacles.Add(l.At({b}, {p.x}, {p.y}));\n"); }
@@ -294,8 +295,62 @@ static class LevelMaker
             var s = o.start - l.boards[o.startBoard].origin; var t = o.dest - l.boards[o.destBoard].origin;
             sb.Append($"        Obj(l, \"{o.name}\", {o.name}, {o.startBoard}, {s.x}, {s.y}, Dir.{o.heading}, {o.destBoard}, {t.x}, {t.y});\n");
         }
+        sb.Append(SolutionExport.LinkLine(number)); // its best plans, written next to it by the Level Maker
         sb.Append("        return l;\n    }\n");
         return sb.ToString();
+    }
+
+    // puts a new level right after Level{after}: every later level moves up one (its method, title, solution link and
+    // place in the All list in Levels.cs, and its section in Solutions.Generated.cs), then the new one goes in as Level{after + 1}.
+    // the new level's solution is worked out before anything is changed, so a failed search leaves the files as they were
+    public static string InsertAfter(string levelsPath, string solutionsDir, int after, MakerResult r, string comment)
+    {
+        var numbers = SolutionExport.Numbers(levelsPath);
+        if (!numbers.Contains(after)) throw new Exception($"Levels.All has no Level{after}().");
+        int number = after + 1;
+        var solution = SolutionExport.Code(r.level, number);
+        var code = Code(r, number, comment);
+
+        var raw = File.ReadAllText(levelsPath);
+        bool crlf = raw.Contains("\r\n");
+        var text = raw.Replace("\r\n", "\n");
+        var later = numbers.Where(n => n > after).OrderByDescending(n => n).ToList(); // highest first, so names never collide
+        foreach (var k in later)
+        {
+            text = System.Text.RegularExpressions.Regex.Replace(text, $@"\bLevel{k}\(\)", $"Level{k + 1}()"); // method, link and All list
+            text = text.Replace($"title = \"Level {k}\"", $"title = \"Level {k + 1}\"");
+        }
+
+        // the new level after Level{after}() (and its comment block goes before the next level's), and in the All list
+        int at = text.IndexOf($"    static LevelData Level{after}()\n");
+        int end = text.IndexOf("\n    }\n", at) + "\n    }\n".Length;
+        text = text.Substring(0, end) + "\n" + code + text.Substring(end);
+        var list = new System.Text.RegularExpressions.Regex($@"\bLevel{after}\(\),");
+        text = list.Replace(text, $"Level{after}(), Level{number}(),", 1);
+
+        SolutionExport.InsertSection(solutionsDir, after, solution);
+        File.WriteAllText(levelsPath, crlf ? text.Replace("\n", "\r\n") : text);
+        return later.Count == 0 ? $"Added Level{number}() after Level{after}() with its solution."
+            : $"Inserted Level{number}() after Level{after}(); Levels {later.Min()}-{later.Max()} are now {later.Min() + 1}-{later.Max() + 1}, with their solutions.";
+    }
+
+    // the idea in the comment above LevelN() in Levels.cs (without the solution steps and score lines Code() adds),
+    // so writing a level again keeps its note
+    public static string ExistingComment(string levelsPath, int number)
+    {
+        var lines = File.ReadAllText(levelsPath).Replace("\r\n", "\n").Split('\n').ToList();
+        int at = lines.IndexOf($"    static LevelData Level{number}()");
+        if (at < 0) return "";
+        int start = at;
+        while (start > 0 && lines[start - 1].TrimStart().StartsWith("//")) start--;
+        var idea = new List<string>();
+        for (int i = start; i < at; i++)
+        {
+            var text = lines[i].Trim().Substring(2).Trim();
+            if (text == "Solution:" || text.StartsWith("Score ")) break;
+            idea.Add(text);
+        }
+        return string.Join("\n", idea);
     }
 
     // adds LevelN() to Levels.cs (and to the All list), or replaces it if it's already there

@@ -5,7 +5,8 @@ using System.Collections.Generic; using System.IO; using System.Linq; using Syst
 public class LevelMakerWindow : EditorWindow
 {
     const float SettingsWidth = 340f;
-    static string LevelsPath => Path.Combine(Application.dataPath, "Scripts/Core/Levels.cs");
+    static string LevelsPath => Path.Combine(Application.dataPath, "Scripts/Levels/Levels.cs");
+    static string SolutionsDir => Path.Combine(Application.dataPath, "Scripts/Levels/Solutions");
 
     static readonly Color CellColor = new Color(0.25f, 0.27f, 0.32f), TileColor = new Color(0.38f, 0.41f, 0.48f),
         LineColor = new Color(0.93f, 0.93f, 0.96f), ObstacleColor = new Color(0.10f, 0.10f, 0.12f),
@@ -13,6 +14,7 @@ public class LevelMakerWindow : EditorWindow
 
     [SerializeField] MakerSettings settings = new MakerSettings();
     [SerializeField] int levelNumber = 13;
+    [SerializeField] int insertAfter = 1;
     [SerializeField] string comment = "";
     [SerializeField] int existing;
     [SerializeField] bool fullReport;
@@ -20,6 +22,8 @@ public class LevelMakerWindow : EditorWindow
     Vector2 settingsScroll, resultScroll, codeScroll;
     MakerProgress progress; double startTime; bool solvingExisting;
     MakerResult result; int step; string status;
+    // writing solutions (every best plan) takes a few seconds a level, so it runs in the background
+    Task<string> writing; volatile string writingWhat;
 
     [MenuItem("Tools/Dwindle Level Maker")]
     static void Open()
@@ -30,11 +34,19 @@ public class LevelMakerWindow : EditorWindow
 
     void OnDisable()
     {
-        if (progress != null && !progress.done) Solver2.Abort = true; // stop the background search if the window closes or scripts reload
+        if ((progress != null && !progress.done) || writing != null) Solver2.Abort = true; // stop the background search if the window closes or scripts reload
     }
 
     void Update()
     {
+        if (writing != null)
+        {
+            if (!writing.IsCompleted) { Repaint(); return; }
+            var job = writing; writing = null;
+            status = job.IsFaulted ? job.Exception.InnerException.Message : job.Result;
+            AssetDatabase.Refresh();
+            Repaint();
+        }
         if (progress == null) return;
         if (!progress.done && !solvingExisting && EditorApplication.timeSinceStartup - startTime > settings.timeLimit) Solver2.Abort = true;
         if (progress.done)
@@ -45,8 +57,9 @@ public class LevelMakerWindow : EditorWindow
                 result = pr.result; step = result.steps.Count;
                 if (solvingExisting)
                 {
-                    levelNumber = existing + 1;
-                    comment = existing < Export.Ideas.Length ? Export.Ideas[existing] : "";
+                    var numbers = SolutionExport.Numbers(LevelsPath); // its LevelN(), even if the All list was reordered
+                    levelNumber = existing < numbers.Count ? numbers[existing] : existing + 1;
+                    comment = LevelMaker.ExistingComment(LevelsPath, levelNumber); // its note from Levels.cs
                     status = $"Solved {result.level.title} in {result.seconds:0.0}s.";
                 }
                 else
@@ -162,7 +175,8 @@ public class LevelMakerWindow : EditorWindow
         EditorGUI.EndDisabledGroup();
         EditorGUILayout.EndHorizontal();
 
-        if (running)
+        if (writing != null) EditorGUILayout.HelpBox(writingWhat, MessageType.Info);
+        else if (running)
             EditorGUILayout.HelpBox(solvingExisting ? "Solving..." :
                 $"Searching... {EditorApplication.timeSinceStartup - startTime:0}s / {s.timeLimit}s, {progress.tries} layouts tried, {progress.solved} solvable", MessageType.Info);
         else if (!string.IsNullOrEmpty(status)) EditorGUILayout.HelpBox(status, MessageType.None);
@@ -179,6 +193,13 @@ public class LevelMakerWindow : EditorWindow
         fullReport = EditorGUILayout.Toggle(new GUIContent("Full report (slow)",
             "Also check which tricks are required (not just used by the best plan), whether a detour is required, " +
             "the luck check and the ways to finish. Each is another whole search."), fullReport);
+        EditorGUI.EndDisabledGroup();
+
+        Section("Solutions (best plans, for analytics and hints)");
+        EditorGUI.BeginDisabledGroup(running || writing != null);
+        if (GUILayout.Button(new GUIContent("Rebuild all solutions",
+            "Writes every level's best plans into Scripts/Levels/Solutions/Solutions.Generated.cs again, dropping levels that are gone. " +
+            "Needed after a change to the game's rules or the solver, or after editing Levels.cs by hand. About a minute."))) RebuildSolutions();
         EditorGUI.EndDisabledGroup();
         EditorGUILayout.Space(10);
     }
@@ -267,7 +288,16 @@ public class LevelMakerWindow : EditorWindow
             EditorGUIUtility.systemCopyBuffer = code;
             ShowNotification(new GUIContent("Copied"));
         }
-        if (GUILayout.Button($"Write Level{levelNumber}() to Levels.cs", GUILayout.Height(24))) WriteLevel(code);
+        EditorGUI.BeginDisabledGroup(writing != null);
+        if (GUILayout.Button(new GUIContent($"Write Level{levelNumber}() to Levels.cs", "Also writes its best plans into Solutions.Generated.cs"), GUILayout.Height(24))) WriteLevel(code);
+        EditorGUI.EndDisabledGroup();
+        EditorGUILayout.EndHorizontal();
+        // or between two levels: the later ones move up one
+        EditorGUILayout.BeginHorizontal();
+        insertAfter = Mathf.Clamp(EditorGUILayout.IntField(new GUIContent("Insert after level", "The new level becomes the next one; every later level (and its solution) moves up one"), insertAfter), 1, Levels.All.Count);
+        EditorGUI.BeginDisabledGroup(writing != null);
+        if (GUILayout.Button($"Insert as Level{insertAfter + 1}()", GUILayout.Height(20))) InsertLevel();
+        EditorGUI.EndDisabledGroup();
         EditorGUILayout.EndHorizontal();
         codeScroll = EditorGUILayout.BeginScrollView(codeScroll, GUILayout.Height(220));
         EditorGUILayout.TextArea(code, new GUIStyle(EditorStyles.textArea) { wordWrap = true }, GUILayout.ExpandHeight(true));
@@ -275,18 +305,43 @@ public class LevelMakerWindow : EditorWindow
         EditorGUILayout.Space(10);
     }
 
+    // its solution first (Levels.cs links to it), then the level
     void WriteLevel(string code)
     {
         bool exists = File.ReadAllText(LevelsPath).Contains($"static LevelData Level{levelNumber}()");
         if (exists && !EditorUtility.DisplayDialog($"Replace Level {levelNumber}?",
                 $"Levels.cs already has Level{levelNumber}(). Replace it and its comment with this level?", "Replace", "Cancel")) return;
-        try
+        var level = result.level; int number = levelNumber;
+        StartWriting($"Writing Level {number}'s solution...", () =>
         {
-            status = LevelMaker.WriteToLevels(LevelsPath, levelNumber, code);
-            AssetDatabase.Refresh();
-            ShowNotification(new GUIContent(exists ? "Replaced" : "Added"));
-        }
-        catch (System.Exception e) { status = e.Message; }
+            Directory.CreateDirectory(SolutionsDir);
+            SolutionExport.Write(SolutionsDir, level, number);
+            return LevelMaker.WriteToLevels(LevelsPath, number, code) + $" Wrote its best plans into Solutions.Generated.cs.";
+        });
+    }
+
+    void InsertLevel()
+    {
+        int after = insertAfter, count = Levels.All.Count;
+        string moves = after < count ? $"Levels {after + 1}-{count} become {after + 2}-{count + 1} (with their solutions; tutorials stay with their levels). " +
+            "Analytics rows already collected keep the old numbers." : "It goes at the end.";
+        if (!EditorUtility.DisplayDialog($"Insert as Level {after + 1}?", $"The new level goes in after Level {after}. {moves}", "Insert", "Cancel")) return;
+        var r = result; var text = comment;
+        StartWriting($"Inserting as Level {after + 1} (working out its solution)...", () => LevelMaker.InsertAfter(LevelsPath, SolutionsDir, after, r, text));
+    }
+
+    void RebuildSolutions()
+    {
+        var levels = Levels.All.ToList();
+        StartWriting("Rebuilding solutions...", () =>
+            SolutionExport.RebuildAll(LevelsPath, SolutionsDir, levels, title => writingWhat = $"Rebuilding solutions: {title}..."));
+    }
+
+    void StartWriting(string what, System.Func<string> work)
+    {
+        Solver2.Abort = false;
+        writingWhat = what; status = null;
+        writing = Task.Run(work);
     }
 
     // ---------- board drawing ----------

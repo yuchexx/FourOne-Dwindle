@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// level 1's tutorial: the board and the top bar, a first delivery, undo, right-click take-back,
+// the "Basics" tutorial (on the level with l.tutorial = "Basics"): the board and the top bar, a first delivery, undo, right-click take-back,
 // a + junction delivering both objects together, and the end window
 public static partial class Tutorials
 {
-    static List<TutorialStep> Level1(GameManager game) => new()
+    static List<TutorialStep> Basics(GameManager game) => new()
     {
         new TutorialStep
         {

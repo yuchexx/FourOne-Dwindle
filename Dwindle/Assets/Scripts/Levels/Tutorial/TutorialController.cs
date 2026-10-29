@@ -29,7 +29,7 @@ public class TutorialController : MonoBehaviour
     {
         Stop();
         if (finished.Contains(levelIndex)) return;
-        var steps = Tutorials.For(levelIndex, game);
+        var steps = Tutorials.For(Levels.All[levelIndex], game); // the level names its tutorial (LevelData.tutorial)
         if (steps == null || steps.Count == 0) return;
         if (canvas == null) { Debug.LogError("TutorialController needs its Canvas set."); return; }
         if (overlay == null) overlay = TutorialOverlay.Create(canvas, style);

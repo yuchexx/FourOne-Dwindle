@@ -16,7 +16,7 @@ public static class Levels
         Level7(), Level8(), Level9(), Level10(), Level11(), Level12(),
     };
 
-    // Laid out for the level 1 tutorial (Tutorials.Level1): Red and Blue both need the top-left square.
+    // Laid out for the Basics tutorial (Tutorials.Basics): Red and Blue both need the top-left square.
     // The tutorial first delivers Red alone with an L there, undoes that, then shows the better plan:
     // a + on the shared square, placed last, delivers both together.
     // Score 675 with 3 tiles (target): 2 x 100 + combo 2 x 50 + 5 unused x 75 (4 left, plus the + the combo earns).
@@ -25,10 +25,12 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 1", targetScore = 675, bestTiles = 3,
             bestPlanHint = "The best plan delivers some objects together." };
+        l.tutorial = "Basics";
         l.SetBoards((2, 2));
         l.inventory = Inv(cross: 1, ne: 1, sw: 1, h: 1, v: 3); // the + is for the tutorial's better plan
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, -1, 1);
         Obj(l, "Blue", Blue, 0, 2, 1, Dir.W, 0, 0, 2); // for the tutorial: shares the top-left square with Red
+        l.solution = Solutions.Level1();
         return l;
     }
 
@@ -45,6 +47,7 @@ public static class Levels
         Obj(l, "Red", Red, 0, 2, 3, Dir.S, 0, 2, -1);
         Obj(l, "Blue", Blue, 0, 1, 3, Dir.S, 0, 0, -1);
         Obj(l, "Green", Green, 0, 3, 0, Dir.W, 0, 1, -1);
+        l.solution = Solutions.Level2();
         return l;
     }
 
@@ -60,6 +63,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, -1, 1, Dir.E, 0, 1, 3);
         Obj(l, "Green", Green, 0, 3, 3, Dir.S, 0, 2, -1);
         Obj(l, "Orange", Orange, 0, 1, -1, Dir.N, 0, 2, 3);
+        l.solution = Solutions.Level3();
         return l;
     }
 
@@ -75,6 +79,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, -1, 0, Dir.E, 0, 3, 4);
         Obj(l, "Green", Green, 0, 4, 0, Dir.W, 0, -1, 2);
         Obj(l, "Orange", Orange, 0, 4, 3, Dir.W, 0, -1, 3);
+        l.solution = Solutions.Level4();
         return l;
     }
 
@@ -93,10 +98,11 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, 1, 4, Dir.S, 0, 4, 1);
         Obj(l, "Green", Green, 0, 4, 2, Dir.W, 0, 2, -1);
         Obj(l, "Orange", Orange, 0, 4, 3, Dir.W, 0, 3, -1);
+        l.solution = Solutions.Level5();
         return l;
     }
 
-    // Laid out for the level 6 tutorial, the doors lesson: two 2x1 boards, each with door A on the edge between its
+    // Laid out for the Doors tutorial (Tutorials.Doors), the doors lesson: two 2x1 boards, each with door A on the edge between its
     // two squares. Red walks right into the left board's door, comes out of the right board's door, faces right
     // (facing left leads off the board) and walks on to its ring. The door is a wall, so the left board's right square
     // and the right board's left square are never used.
@@ -105,11 +111,13 @@ public static class Levels
     static LevelData Level6()
     {
         var l = new LevelData { title = "Level 6", targetScore = 150, bestTiles = 2 };
+        l.tutorial = "Doors";
         l.SetBoards((2, 1), (2, 1));
         l.inventory = Inv(h: 2);
         Door(l, "A", 0, 0, 0, Dir.E); // between the left board's two squares
         Door(l, "A", 1, 0, 0, Dir.E); // between the right board's two squares
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 1, 2, 0);
+        l.solution = Solutions.Level6();
         return l;
     }
 
@@ -128,6 +136,7 @@ public static class Levels
         Obj(l, "Red", Red, 0, 1, 3, Dir.S, 0, 3, 0);
         Obj(l, "Blue", Blue, 1, 1, -1, Dir.N, 1, 0, 3);
         Obj(l, "Green", Green, 1, 3, 0, Dir.W, 1, 0, -1);
+        l.solution = Solutions.Level7();
         return l;
     }
 
@@ -149,6 +158,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 3, 0, 2, Dir.S, 1, 2, 0);
         Obj(l, "Green", Green, 0, 2, 0, Dir.W, 2, 2, 0);
         Obj(l, "Orange", Orange, 2, 1, 2, Dir.S, 0, 1, 2);
+        l.solution = Solutions.Level8();
         return l;
     }
 
@@ -170,6 +180,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 1, 0, 3, Dir.S, 1, 1, -1);
         Obj(l, "Green", Green, 1, -1, 2, Dir.E, 0, 2, -1);
         Obj(l, "Orange", Orange, 1, 4, 1, Dir.W, 1, 1, 3);
+        l.solution = Solutions.Level9();
         return l;
     }
 
@@ -191,6 +202,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 1, -1, 3, Dir.E, 0, 2, 4);
         Obj(l, "Green", Green, 1, 2, 4, Dir.S, 1, -1, 1);
         Obj(l, "Orange", Orange, 1, 0, 4, Dir.S, 0, 3, -1);
+        l.solution = Solutions.Level10();
         return l;
     }
 
@@ -214,6 +226,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 3, 1, 3, Dir.S, 0, -1, 1);
         Obj(l, "Green", Green, 2, 0, 3, Dir.S, 2, 2, -1);
         Obj(l, "Orange", Orange, 2, 3, 2, Dir.W, 2, 1, -1);
+        l.solution = Solutions.Level11();
         return l;
     }
 
@@ -237,6 +250,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, 5, 2, Dir.W, 0, 4, 5);
         Obj(l, "Green", Green, 1, 3, 5, Dir.S, 0, 1, -1);
         Obj(l, "Orange", Orange, 1, 2, 5, Dir.S, 1, -1, 1);
+        l.solution = Solutions.Level12();
         return l;
     }
 

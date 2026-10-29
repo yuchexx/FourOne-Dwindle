@@ -17,10 +17,12 @@ class Replay2
     {
         public Dictionary<Vector2Int, TileType> board; public Dictionary<TileType, int> inv; public List<O> objs; public int comboPts;
         public List<List<string>> events = new(); public List<List<Vector2Int>> breaks = new(); public List<List<int>> arrivals = new();
+        public List<List<(int obj, Dir dir)>> choices = new();
         public State Copy() => new State
         {
             board = new Dictionary<Vector2Int, TileType>(board), inv = new Dictionary<TileType, int>(inv), objs = objs.Select(o => o.Copy()).ToList(), comboPts = comboPts,
             events = new List<List<string>>(events), breaks = new List<List<Vector2Int>>(breaks), arrivals = new List<List<int>>(arrivals),
+            choices = new List<List<(int, Dir)>>(choices),
         };
     }
 
@@ -31,6 +33,7 @@ class Replay2
     public List<List<string>> stepEvents = new();     // what happens after each placement, for the solution text
     public List<List<Vector2Int>> stepBreaks = new(); // the tiles each placement's deliveries break (a harmless pick where there is one)
     public List<List<int>> stepArrivals = new();      // the objects delivered by each placement
+    public List<List<(int obj, Dir dir)>> stepChoices = new(); // the ways objects were sent after each placement (junctions, then coming out of doors)
     public int score; public bool ok; public string problem = "";
     public int maxBranches = 20000; // removal sequences followed before giving up (and calling the plan unsafe)
 
@@ -40,13 +43,15 @@ class Replay2
     bool InGrid(Vector2Int c) => L.BoardOf(c) >= 0;
     List<Dir> Into(DoorSpec p) { var r = new List<Dir>(); if (InGrid(p.cell)) r.Add(DirUtil.Opposite(p.side)); if (InGrid(p.Neighbor)) r.Add(p.side); return r; }
 
-    public Replay2 Run(Plan plan, bool any = false)
+    // order: the cells in the order they're placed (every cell of the plan once); left out, each event's new cells
+    public Replay2 Run(Plan plan, bool any = false, IList<Vector2Int> order = null)
     {
         this.plan = plan; this.any = any;
         var objsSpec = L.objects; int n = objsSpec.Count;
         // the placement order: each event's new cells, its delivering cell last
         var placed = new HashSet<Vector2Int>();
-        for (int k = 0; k < plan.events.Count; k++)
+        if (order != null) foreach (var c in order) placements.Add((c, plan.tiles[c]));
+        else for (int k = 0; k < plan.events.Count; k++)
         {
             var g = plan.events[k];
             // later objects built ahead first (so they pass the shared tiles), then this event's own tiles
@@ -100,7 +105,7 @@ class Replay2
             if (!st.objs.All(o => o.done)) { Fail("not every object arrived"); return false; }
             if (!recorded)
             {
-                recorded = true; stepEvents = st.events; stepBreaks = st.breaks; stepArrivals = st.arrivals;
+                recorded = true; stepEvents = st.events; stepBreaks = st.breaks; stepArrivals = st.arrivals; stepChoices = st.choices;
                 int doorObjs = st.objs.Count(o => o.done && o.tp > 0);
                 score = Solver2.Delivery * st.objs.Count + st.comboPts + Solver2.DoorPer * doorObjs + Solver2.Unused * st.inv.Values.Sum();
             }
@@ -110,8 +115,9 @@ class Replay2
         if (st.board.ContainsKey(cell) || L.obstacles.Contains(cell)) { Fail($"{LB.Local(L, cell)} is taken"); return false; }
         if (st.inv[t] <= 0) { Fail($"no {LB.Short(t)} left in the supply at step {i + 1}"); return false; }
         st.inv[t]--; st.board[cell] = t;
-        var ev = new List<string>(); var now = new List<int>();
-        foreach (var o in st.objs.Where(o => !o.done)) { Move(o, st.board, ev); if (o.done) now.Add(o.idx); }
+        var ev = new List<string>(); var now = new List<int>(); var ch = new List<(int, Dir)>();
+        foreach (var o in st.objs.Where(o => !o.done)) { Move(o, st.board, ev, ch); if (o.done) now.Add(o.idx); }
+        st.choices.Add(ch);
         return Break(st, i, now, 0, ev, new List<Vector2Int>(), st.objs.All(o => o.done));
     }
 
@@ -160,7 +166,7 @@ class Replay2
         return anyOk;
     }
 
-    void Move(O o, Dictionary<Vector2Int, TileType> board, List<string> ev)
+    void Move(O o, Dictionary<Vector2Int, TileType> board, List<string> ev, List<(int, Dir)> ch)
     {
         for (int g = 0; g < 400; g++)
         {
@@ -172,7 +178,7 @@ class Replay2
             o.via = false; o.pos = next; o.path.Add(next);
             var ways = Tiles.Exits(t, entry);
             o.h = Pick($"{o.s.name}@{next}/{entry}", ways);
-            if (ways.Count > 1) ev.Add($"{o.s.name} picks {o.h} at {LB.Local(L, next)}");
+            if (ways.Count > 1) { ev.Add($"{o.s.name} picks {o.h} at {LB.Local(L, next)}"); ch.Add((o.idx, o.h)); }
             var door = L.DoorOnEdge(next, o.h);
             if (door != null)
             {
@@ -181,6 +187,7 @@ class Replay2
                 o.h = Pick($"{o.s.name}<{o.tp}", into);
                 o.pos = o.h == p.side ? p.cell : p.Neighbor; o.via = true;
                 ev.Add($"{o.s.name} goes through door {door.label}" + (into.Count > 1 ? $", comes out facing {o.h}" : ""));
+                if (into.Count > 1) ch.Add((o.idx, o.h));
             }
         }
         throw new Exception($"{o.s.name} loops");

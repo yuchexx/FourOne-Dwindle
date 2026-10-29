@@ -52,18 +52,19 @@ public static class Did
         a => a.kind == GameActionKind.ClickDoor && a.door == label;
 }
 
-// tutorial pages per level, one file each (Tutorials.Level1.cs, ...). get an area from TutorialController's
+// tutorials by name, one file each (Tutorials.Basics.cs, Tutorials.Doors.cs); a level picks one with LevelData.tutorial. get an area from TutorialController's
 // "Log Selected Area" (with a 16:9 Game view)
 public static partial class Tutorials
 {
-    // level index (from 0) -> its tutorial, made with the running game so steps can check it or set it up
-    static readonly Dictionary<int, Func<GameManager, List<TutorialStep>>> ByLevel = new()
+    // a tutorial's name -> its steps, made with the running game so steps can check it or set it up. a level picks its
+    // tutorial by name (LevelData.tutorial, set in Levels.cs), so it stays with its level when levels are inserted or moved
+    static readonly Dictionary<string, Func<GameManager, List<TutorialStep>>> ByName = new()
     {
-        { 0, Level1 },
-        { 5, Level6 },
+        { "Basics", Basics },
+        { "Doors", Doors },
     };
 
     // null when the level has no tutorial
-    public static List<TutorialStep> For(int levelIndex, GameManager game) =>
-        ByLevel.TryGetValue(levelIndex, out var make) ? make(game) : null;
+    public static List<TutorialStep> For(LevelData level, GameManager game) =>
+        !string.IsNullOrEmpty(level.tutorial) && ByName.TryGetValue(level.tutorial, out var make) ? make(game) : null;
 }
