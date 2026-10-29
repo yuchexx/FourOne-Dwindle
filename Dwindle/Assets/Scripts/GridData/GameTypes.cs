@@ -26,10 +26,3 @@ public class MovingObject
     public int teleports; // doors gone through
     public List<DoorPass> doorsUsed = new List<DoorPass>(); // which ones, in order
 }
-
-// one tile lost this level, and where it was lost from
-public class RemovedEntry
-{
-    public TileType type;
-    public string source;
-}

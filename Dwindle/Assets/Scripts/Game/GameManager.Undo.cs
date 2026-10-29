@@ -34,7 +34,6 @@ public partial class GameManager
                 doorsUsed = new List<DoorPass>(o.doorsUsed),
                 path = new List<Vector2Int>(o.path),
             }).ToArray(),
-            removed = new List<RemovedEntry>(removed),
             deliveryPoints = deliveryPoints,
             comboPoints = comboPoints,
             teleportPoints = teleportPoints,
@@ -42,7 +41,6 @@ public partial class GameManager
             comboObjects = comboObjects,
             teleports = teleports,
             unusedTiles = unusedTiles,
-            finalComboNote = finalComboNote,
             log = hud.GetLog(),
             scoreLog = hud.GetScoreLog(),
         };
@@ -90,7 +88,6 @@ public partial class GameManager
     void Restore(Snapshot s)
     {
         inventory = s.inventory;
-        removed = s.removed;
         deliveryPoints = s.deliveryPoints;
         comboPoints = s.comboPoints;
         teleportPoints = s.teleportPoints;
@@ -98,7 +95,6 @@ public partial class GameManager
         comboObjects = s.comboObjects;
         teleports = s.teleports;
         unusedTiles = s.unusedTiles;
-        finalComboNote = s.finalComboNote;
 
         board.RestoreTiles(s.tiles);
         board.RestoreLocks(s.locked);

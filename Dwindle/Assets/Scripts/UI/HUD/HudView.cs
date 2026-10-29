@@ -62,7 +62,6 @@ public class HudView : MonoBehaviour
     public bool emptySlotUsesBarColor = true; // an empty slot's background is the top bar's color, so it blends in
     [Range(0f, 1f)] public float emptySlotDarken = 0.6f; // how much darker a slot with none left is (0 = not at all)
     public Color emptyLabelColor = new Color(0.55f, 0.56f, 0.60f);
-    public Color recoverySelectedColor = new Color(0.95f, 0.78f, 0.25f); // the card you click to get back
     public Color flashColor = new Color(1f, 0.45f, 0.45f);
     public Color earnedFlashColor = new Color(0.45f, 0.85f, 0.55f); // the + slot when delivering together earns one
     public Color headingColor = new Color(1f, 0.82f, 0.2f);         // PROGRESS and STAR GOALS in the info panel (#FFD133)
@@ -307,51 +306,6 @@ public class HudView : MonoBehaviour
         (scoreStar
             ? $"\n<size=16><color=#{successColor}>Target reached</color></size>"
             : "");
-    }
-
-    // 3 sections of the panel: junctions (+, bridge, T) on top, the four L tiles, then the two I tiles
-    public void RefreshRemoved(List<RemovedEntry> removed, Action<TileType> onPick = null)
-    {
-        Clear(crossRemovedRoot);
-        Clear(cornerRemovedRoot);
-        Clear(straightRemovedRoot);
-        int crossCards = 0, cornerCards = 0, straightCards = 0;
-
-        foreach (var t in Tiles.All)
-        {
-            int count = removed.Count(e => e.type == t);
-            if (count == 0) continue;
-            var category = Tiles.Category(t);
-            var parent = category switch
-            {
-                TileCategory.Corner => cornerRemovedRoot,
-                TileCategory.Straight => straightRemovedRoot,
-                _ => crossRemovedRoot,
-            };
-            if (category == TileCategory.Corner) cornerCards++;
-            else if (category == TileCategory.Straight) straightCards++;
-            else crossCards++;
-
-            var card = Instantiate(cardPrefab, parent);
-            card.SetTile(tilePrefab, t, tileColor);
-            card.label.text = "x" + count;
-
-            card.button.enabled = onPick != null; // otherwise the card is just a display
-            if (onPick != null)
-            {
-                var type = t;       // copies for the click handler below
-                var clicked = card;
-                card.button.onClick.AddListener(() =>
-                {
-                    clicked.background.color = recoverySelectedColor; // show what was picked
-                    onPick(type);
-                });
-            }
-        }
-
-        crossRemovedRoot.gameObject.SetActive(crossCards > 0);
-        cornerRemovedRoot.gameObject.SetActive(cornerCards > 0);
-        straightRemovedRoot.gameObject.SetActive(straightCards > 0);
     }
 
     // everything but the removed panel is dimmed and the header asks for a pick
