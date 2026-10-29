@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 // what this play session remembers: each level's best stars and whether it earned purple, and the Unlock all setting.
 // nothing is saved, so reloading the page starts over
@@ -7,6 +8,10 @@ public static class Session
 {
     // Settings: every level can be played, whatever the stars
     public static bool unlockAll;
+
+    // Settings: how tiles are placed - click a tile then a square, drag a tile onto a square, or either
+    public enum Placement { Both, Click, Drag }
+    public static Placement placement = Placement.Both;
 
     // the best result per level (index in Levels.All) this session
     public struct Record
@@ -36,5 +41,14 @@ public static class Session
         for (int i = 0; i < count; i++)
             if (Get(i).stars == 0) return i;
         return count - 1;
+    }
+
+    // a new session each time Play is pressed in the editor
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void StartOver()
+    {
+        records.Clear();
+        unlockAll = false;
+        placement = Placement.Both;
     }
 }

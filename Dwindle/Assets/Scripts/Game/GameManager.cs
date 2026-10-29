@@ -89,6 +89,7 @@ static readonly Color ToastWarning =
     void Start()
     {
         hud.onSupplyBarPressed = () => board.FinishUndo(); // a press on the supply bar finishes an undo rewind
+        if (menu.levelSelect != null) menu.levelSelect.Build(Levels.All, LoadLevel); // the Levels page's cards
         ShowStartScreen();
     }
 
@@ -303,8 +304,8 @@ static readonly Color ToastWarning =
         board.ClearChoices();
         hud.SetChoiceMode(false);
         hud.ClearToasts();
-        menu.ShowStart();
-        menu.BuildLevelButtons(Levels.All.Count, LoadLevel);
+        int next = Session.StartLevel(Levels.All.Count);
+        menu.ShowStart(next == 0 && Session.Get(0).stars == 0 ? "Start" : $"Continue: Level {next + 1}");
     }
 
     // Start: Level 1 until it's done, then the first level without a star this session

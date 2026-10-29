@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89330fe296053284e889cf0e202a532e, type: 3}
+  m_Name: UIPalette
+  m_EditorClassIdentifier: Assembly-CSharp::UIPalette
+  background: {r: 0.1254902, g: 0.13333334, b: 0.15294118, a: 1}
+  panel: {r: 0.1882353, g: 0.2, b: 0.23921569, a: 1}
+  button: {r: 0.32156864, g: 0.32941177, b: 0.36862746, a: 1}
+  dim: {r: 0, g: 0, b: 0, a: 0.6}
+  text: {r: 1, g: 1, b: 1, a: 1}
+  mutedText: {r: 0.7019608, g: 0.7019608, b: 0.7019608, a: 1}
+  accent: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
+  star: {r: 1, g: 0.81960785, b: 0.2, a: 1}
+  starEmpty: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+  success: {r: 0.38039216, g: 0.7882353, b: 0.54509807, a: 1}
+  danger: {r: 1, g: 0.4509804, b: 0.4509804, a: 1}

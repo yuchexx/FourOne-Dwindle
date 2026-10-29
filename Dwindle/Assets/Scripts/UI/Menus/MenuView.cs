@@ -1,18 +1,22 @@
-using System;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// the start screen, the rules pop-up and the level menu
+// the title screen, the Levels page, the rules and Settings pop-ups, and the level menu
 public class MenuView : MonoBehaviour
 {
     [Header("Screens")]
-    public GameObject startScreen;
+    public GameObject startScreen; // the title screen: Start, Levels, Rules, Settings
+    public GameObject levelsScreen;
     public GameObject gameScreen;
     public GameObject rulesPopup;
     public GameObject levelMenu;
-    public GameObject tutorialPopup;
+
+    [Header("Title screen")]
+    [Tooltip("The Start button's text: Start, or Continue: Level N once a level is done")]
+    public TMP_Text startLabel;
+    public LevelSelectView levelSelect;
+    public SettingsView settings;
 
     [Header("Rules pages")]
     public GameObject[] rulesPages;
@@ -21,14 +25,6 @@ public class MenuView : MonoBehaviour
     public TMP_Text rulesPageIndicator;
 
     int currentRulesPage;
-
-    [Header("Level select")]
-    public Button levelButtonTemplate; // left empty, the Level1Button on the start screen is used
-    public float levelButtonSpacing = 20f;
-    [Min(1)] public int levelButtonsPerRow = 4;
-    [Tooltip("Level numbers (from 1) whose buttons get the tutorial color")]
-    public int[] tutorialLevels = { 1, 6 };
-    public Color tutorialButtonColor = new Color(0.30f, 0.66f, 0.58f);
 
     [Header("Level menu")]
     public TMP_Text menuTitle;
@@ -62,11 +58,6 @@ public class MenuView : MonoBehaviour
     public Color bonusStarOnColor = new Color(0.45f, 0.80f, 0.95f); // the third star, for the score
     public bool outlineMissedScoreStar = true; // a missed third star is outlined in its color (width: Outline Width on the star)
 
-    [Header("Tutorial")]
-    public TMP_Text tutorialTitle;
-    public TMP_Text tutorialBody;
-
-    readonly List<Button> levelButtons = new List<Button>();
     float summaryFontSize = -1; // the summary's font size from the editor, kept as the largest it can grow to
     bool layoutChanged;
 
@@ -80,17 +71,21 @@ public class MenuView : MonoBehaviour
         if (levelMenu != null && levelMenu.activeInHierarchy) LayOutMenu();
     }
 
-    public void ShowStart()
+    // the title screen. startText: the Start button's text
+    public void ShowStart(string startText = null)
     {
         CloseOverlays();
         startScreen.SetActive(true);
+        if (levelsScreen != null) levelsScreen.SetActive(false);
         gameScreen.SetActive(false);
+        if (startLabel != null && startText != null) startLabel.text = startText;
     }
 
     public void ShowGame()
     {
         CloseOverlays();
         startScreen.SetActive(false);
+        if (levelsScreen != null) levelsScreen.SetActive(false);
         gameScreen.SetActive(true);
     }
 
@@ -98,67 +93,33 @@ public class MenuView : MonoBehaviour
     {
         rulesPopup.SetActive(false);
         levelMenu.SetActive(false);
-
-        if (tutorialPopup != null)
-            tutorialPopup.SetActive(false);
+        if (settings != null) settings.Close();
     }
 
-    public void ShowTutorial(string title, string body)
+    // the title screen's Levels button
+    public void ShowLevels()
     {
-        tutorialTitle.text = title;
-        tutorialBody.text = body;
-        tutorialPopup.SetActive(true);
+        if (levelsScreen == null || levelSelect == null) { Debug.LogWarning("MenuView: Levels Screen and Level Select aren't set up yet."); return; }
+        CloseOverlays();
+        startScreen.SetActive(false);
+        levelsScreen.SetActive(true);
+        levelSelect.Refresh();
     }
 
-    public void HideTutorial()
+    // the Levels page's Back button
+    public void HideLevels()
     {
-        tutorialPopup.SetActive(false);
+        levelsScreen.SetActive(false);
+        startScreen.SetActive(true);
     }
 
-    // one button per level, cloned from the template, in rows centered where the template sits
-    public void BuildLevelButtons(int count, Action<int> onPick)
+    // the title screen's Settings button (and the Settings panel's Close)
+    public void ShowSettings()
     {
-        var template = levelButtonTemplate != null ? levelButtonTemplate : FindStartButton("Level1Button");
-        if (template == null) return;
-
-        foreach (var b in levelButtons) Destroy(b.gameObject);
-        levelButtons.Clear();
-        // the hand-made Level buttons are replaced by the generated ones
-        foreach (Transform child in template.transform.parent)
-            if (child.name.StartsWith("Level") && child.name.EndsWith("Button")) child.gameObject.SetActive(false);
-
-        var templateRect = (RectTransform)template.transform;
-        Vector2 size = templateRect.sizeDelta, origin = templateRect.anchoredPosition;
-        for (int i = 0; i < count; i++)
-        {
-            int row = i / levelButtonsPerRow, col = i % levelButtonsPerRow;
-            int inRow = Mathf.Min(levelButtonsPerRow, count - row * levelButtonsPerRow);
-            var button = Instantiate(template, template.transform.parent);
-            button.name = $"Level{i + 1}Button (generated)";
-            button.gameObject.SetActive(true);
-            var rt = (RectTransform)button.transform;
-            rt.anchoredPosition = new Vector2(
-                (col - (inRow - 1) / 2f) * (size.x + levelButtonSpacing),
-                origin.y - row * (size.y + levelButtonSpacing));
-
-            button.onClick = new Button.ButtonClickedEvent(); // drops the template's LoadLevel(0) from the Inspector
-            int index = i; // copy for the click handler below
-            button.onClick.AddListener(() => onPick(index));
-
-            var label = button.GetComponentInChildren<TMP_Text>(true);
-            if (label != null) label.text = $"Level {i + 1}";
-            if (Array.IndexOf(tutorialLevels, i + 1) >= 0 && button.targetGraphic != null)
-                button.targetGraphic.color = tutorialButtonColor; // a tutorial level
-            levelButtons.Add(button);
-        }
+        if (settings == null) { Debug.LogWarning("MenuView: Settings isn't set up yet."); return; }
+        settings.Open();
     }
-
-    Button FindStartButton(string name)
-    {
-        foreach (var b in startScreen.GetComponentsInChildren<Button>(true))
-            if (b.name == name) return b;
-        return null;
-    }
+    public void HideSettings() { if (settings != null) settings.Close(); }
 
     public void SetRulesVisible(bool visible)
     {
