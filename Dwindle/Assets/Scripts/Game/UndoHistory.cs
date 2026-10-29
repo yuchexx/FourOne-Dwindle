@@ -11,6 +11,8 @@ public class Snapshot
     public ObjectState[] objects; // same order as GameManager's objects
     public int deliveryPoints, comboPoints, teleportPoints, unusedPoints;
     public int comboObjects, teleports, unusedTiles;
+    public List<DeliveryRecord> deliveries;                // for the hints: who arrived together so far,
+    public Dictionary<string, List<ArrowRecord>> arrows;   //   and the arrows picked
     public List<string> log;
     public List<string> scoreLog; // the lower-left score log
     public bool takeBack; // the action after this snapshot was a right-click take-back, not a placement

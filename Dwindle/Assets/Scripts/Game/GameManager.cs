@@ -77,9 +77,12 @@ static readonly Color ToastWarning =
         return new GameAction { kind = kind, tile = tile, board = b, square = p - level.boards[b].origin };
     }
 
-    // for the tutorial: an object's direction, just chosen at a junction or coming out of a door
-    void ReportChoice(MovingObject o) =>
+    // for the tutorial and the hints: an object's direction, just chosen at a junction (door null) or coming out of a door
+    void ReportChoice(MovingObject o, string door = null)
+    {
+        RecordArrow(o, door);
         Report(new GameAction { kind = GameActionKind.ChooseDirection, objectName = o.spec.name, direction = o.heading });
+    }
 
     Cell[,] Cells => board.Cells;
 
@@ -175,6 +178,7 @@ static readonly Color ToastWarning =
         TelemetryManager.Instance.AddPiece();
         Log($"Placed a {Tiles.Name(t)}.");
         RefreshAll();
+        lastPlaced = p; // for the hints: the square whose round this is
         StartCoroutine(ResolveRound());
         Report(snapshot.action); // for the tutorial
     }
@@ -219,6 +223,7 @@ static readonly Color ToastWarning =
         UpdateBlocked(); // a tile in an object's way may have been the one taken back
         UpdateStuck();
         RefreshAll();
+        HintsChanged?.Invoke(); // a ghost comes back where its tile was taken back
         Report(snapshot.action); // for the tutorial
     }
 
@@ -306,7 +311,6 @@ static readonly Color ToastWarning =
     public void StartGame() => LoadLevel(Session.StartLevel(Levels.All.Count));
     public void Restart()
     {
-        keepHintsOnLoad = !levelOver; // mid-level, the answer hint stays (and purple stays lost); a replay clears it
         // for analytics: the attempt being thrown away, before the level reloads
         Report(new GameAction { kind = GameActionKind.Restart, score = Score, tilesUsed = history.TilesUsed, delivered = Delivered });
         ReportLevel();

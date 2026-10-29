@@ -41,6 +41,8 @@ public partial class GameManager
             comboObjects = comboObjects,
             teleports = teleports,
             unusedTiles = unusedTiles,
+            deliveries = new List<DeliveryRecord>(deliveriesSoFar), // for the hints
+            arrows = arrowsSoFar.ToDictionary(kv => kv.Key, kv => new List<ArrowRecord>(kv.Value)),
             log = hud.GetLog(),
             scoreLog = hud.GetScoreLog(),
         };
@@ -95,6 +97,8 @@ public partial class GameManager
         comboObjects = s.comboObjects;
         teleports = s.teleports;
         unusedTiles = s.unusedTiles;
+        deliveriesSoFar = new List<DeliveryRecord>(s.deliveries); // for the hints (the stages themselves stay)
+        arrowsSoFar = s.arrows.ToDictionary(kv => kv.Key, kv => new List<ArrowRecord>(kv.Value));
 
         board.RestoreTiles(s.tiles);
         board.RestoreLocks(s.locked);
@@ -121,5 +125,6 @@ public partial class GameManager
         hud.SetLog(s.log);
         hud.SetScoreLog(s.scoreLog);
         RefreshAll();
+        HintsChanged?.Invoke(); // ghosts of undone tiles come back
     }
 }

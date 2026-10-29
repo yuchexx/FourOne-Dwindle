@@ -43,6 +43,7 @@ public partial class GameManager
 
         busy = false;
         RefreshAll();
+        HintsChanged?.Invoke(); // the placed tile's ghost goes, or stays if it came at the wrong moment
         CheckLevelEnd();
     }
 
@@ -127,7 +128,7 @@ public partial class GameManager
         {
             Log($"Pick the way {o.spec.name} faces as it comes out of door {partner.label}.");
             yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into);
-            ReportChoice(o); // for the tutorial
+            ReportChoice(o, door.label); // for the tutorial and the hints
         }
 
         // stand on the far side of the door's edge, facing the square it'll enter next
@@ -154,6 +155,7 @@ public partial class GameManager
     // placement scores the combo and earns a + tile. this happens on every delivery, the last one too
         IEnumerator HandleDeliveries(List<MovingObject> deliveredNow)
     {
+        RecordDelivery(deliveredNow); // for the hints, before any tile breaks
         var arrivals = new List<Arrival>(); // for analytics (the Delivered report)
         foreach (var o in deliveredNow)
         {
