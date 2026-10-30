@@ -13,9 +13,11 @@ public class ButtonHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     const string LayerName = "HoverLayer";
     Button button;
-    Image layer;
+    Image layer;      // an Image background: a white layer in its shape on top of it
+    Graphic tinted;   // any other background (a circle): its own color is lightened instead, so the shape always matches
+    Color baseColor;
     bool hovered;
-    float shown; // the layer's alpha now
+    float shown; // how much lighter now
 
     void Awake()
     {
@@ -24,6 +26,12 @@ public class ButtonHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         colors.highlightedColor = colors.normalColor;
         colors.selectedColor = colors.normalColor;
         button.colors = colors;
+
+        if (button.targetGraphic != null && !(button.targetGraphic is Image))
+        {
+            tinted = button.targetGraphic;
+            return;
+        }
 
         // the layer sits on the background graphic, first in its children so the text draws over it.
         // a clone of a button that already had one (a level card) reuses it
@@ -58,10 +66,15 @@ public class ButtonHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         Show(fadeSeconds <= 0f ? target : Mathf.MoveTowards(shown, target, Mathf.Max(lighten, 0.01f) * Time.unscaledDeltaTime / fadeSeconds));
     }
 
-    void Show(float alpha)
+    void Show(float amount)
     {
-        shown = alpha;
-        if (layer != null) layer.color = new Color(1f, 1f, 1f, alpha);
+        if (tinted != null)
+        {
+            if (shown <= 0f && amount > 0f) baseColor = tinted.color; // its color before the hover
+            if (shown > 0f || amount > 0f) tinted.color = Color.Lerp(baseColor, new Color(1f, 1f, 1f, baseColor.a), amount);
+        }
+        shown = amount;
+        if (layer != null) layer.color = new Color(1f, 1f, 1f, amount);
     }
 
     public void OnPointerEnter(PointerEventData eventData) => hovered = true;
