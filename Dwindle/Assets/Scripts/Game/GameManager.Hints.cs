@@ -6,6 +6,7 @@ using UnityEngine;
 public partial class GameManager
 {
     readonly Hints hints = new Hints();
+    bool hintQueued; // the hint button was pressed during a move
 
     // what the player has done, for matching the board against the best plans (kept by undo's snapshots)
     List<DeliveryRecord> deliveriesSoFar = new List<DeliveryRecord>();
@@ -25,6 +26,8 @@ public partial class GameManager
     List<PlanStep> stage3Steps = new List<PlanStep>();
     int stage3Family, stage3Order;
     public bool HintAnswerDone => hints.Stage >= Hints.Stages && hints.Revealed >= stage3Steps.Count;
+    // the hint button is lit: there's a solution, the level is on, and something is left to show (UseHint itself waits out a move)
+    public bool HintAvailable => level != null && level.solution != null && !levelOver && !HintAnswerDone;
 
     // the ghosts to draw: revealed steps whose tile isn't down yet, is a different tile, or made a delivery the plan
     // didn't have (the player undoes to follow it again)
@@ -46,9 +49,12 @@ public partial class GameManager
             new ArrowRecord { square = square, door = door }, arrowsSoFar.TryGetValue(objectName, out var a) ? a : null);
 
     // the hint button: the next stage, or one more ghost
+    // pressed while objects move, it waits and runs once the board is still (see Update), so the press isn't lost
     public void UseHint()
     {
-        if (level == null || level.solution == null || levelOver || busy || inputLocked) return;
+        hintQueued = false;
+        if (level == null || level.solution == null || levelOver || inputLocked) return;
+        if (busy) { hintQueued = true; return; }
         var s = level.solution;
         switch (hints.Stage)
         {
@@ -136,6 +142,7 @@ public partial class GameManager
     void ResetHintsForLoad()
     {
         hints.Clear();
+        hintQueued = false;
         HintHidden = false;
         HintBadges = new List<(string, int)>();
         HintJunctions = new List<Vector2Int>();

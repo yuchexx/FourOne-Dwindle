@@ -24,7 +24,7 @@ public static class Levels
     static LevelData Level1()
     {
         var l = new LevelData { title = "Level 1", targetScore = 675, bestTiles = 3,
-            bestPlanHint = "The best plan delivers some objects together." };
+            bestPlanHint = "deliver some together." };
         l.tutorial = "Basics";
         l.SetBoards((2, 2));
         l.inventory = Inv(cross: 1, ne: 1, sw: 1, h: 1, v: 3); // the + is for the tutorial's better plan
@@ -39,7 +39,7 @@ public static class Levels
     static LevelData Level2()
     {
         var l = new LevelData { title = "Level 2", targetScore = 550, bestTiles = 8,
-            bestPlanHint = "The best plan delivers some objects together." };
+            bestPlanHint = "deliver some together." };
         // delivering everyone needs the + that delivering together earns, so the hint shows at 0 or 1 star instead
         l.finishHint = l.bestPlanHint; l.bestPlanHint = null;
         l.SetBoards((3, 3));
@@ -56,7 +56,7 @@ public static class Levels
     static LevelData Level3()
     {
         var l = new LevelData { title = "Level 3", targetScore = 900, bestTiles = 9,
-            bestPlanHint = "The best plan builds parts of two routes early, so both pass shared tiles before anyone is delivered." };
+            bestPlanHint = "start two routes early." };
         l.SetBoards((4, 3));
         l.inventory = Inv(cross: 1, sw: 1, wn: 1, h: 4, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 4, 0);
@@ -72,7 +72,7 @@ public static class Levels
     static LevelData Level4()
     {
         var l = new LevelData { title = "Level 4", targetScore = 825, bestTiles = 10,
-            bestPlanHint = "Splitting into pairs breaks a junction someone still needs. The best plan brings more of them in together." };
+            bestPlanHint = "pairs break a junction. Bring more in together." };
         l.SetBoards((4, 4));
         l.inventory = Inv(cross: 1, ne: 1, sw: 1, wn: 1, h: 1, v: 3, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
         Obj(l, "Red", Red, 0, 2, 4, Dir.S, 0, 3, -1);
@@ -88,7 +88,7 @@ public static class Levels
     static LevelData Level5()
     {
         var l = new LevelData { title = "Level 5", targetScore = 825, bestTiles = 10,
-            bestPlanHint = "The best plan delivers some objects together." };
+            bestPlanHint = "deliver some together." };
         // delivering everyone needs the + that delivering together earns, so the hint shows at 0 or 1 star instead
         l.finishHint = l.bestPlanHint; l.bestPlanHint = null;
         l.SetBoards((4, 4));
@@ -126,7 +126,7 @@ public static class Levels
     static LevelData Level7()
     {
         var l = new LevelData { title = "Level 7", targetScore = 675, bestTiles = 9,
-            bestPlanHint = "The best plan delivers some objects together." };
+            bestPlanHint = "deliver some together." };
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(bridge: 1, ne: 2, es: 2, wn: 2, h: 1, v: 1, tNES: 1, tESW: 1);
         Door(l, "A", 0, 2, 0, Dir.S);
@@ -145,7 +145,7 @@ public static class Levels
     static LevelData Level8()
     {
         var l = new LevelData { title = "Level 8", targetScore = 975, bestTiles = 9,
-            bestPlanHint = "Splitting into pairs breaks a junction someone still needs. The best plan brings more of them in together." };
+            bestPlanHint = "pairs break a junction. Bring more in together." };
         l.SetBoards((2, 2), (2, 2), (2, 2), (2, 2));
         l.inventory = Inv(cross: 1, ne: 3, wn: 1, v: 3, tNES: 1, tESW: 1, tWNE: 1);
         Door(l, "A", 0, 0, 1, Dir.E);
@@ -167,7 +167,7 @@ public static class Levels
     static LevelData Level9()
     {
         var l = new LevelData { title = "Level 9", targetScore = 1175, bestTiles = 12,
-            bestPlanHint = "The best plan uses a door as a shortcut back to an object's own board." };
+            bestPlanHint = "a door can be a shortcut home." };
         l.SetBoards((4, 3), (4, 3));
         l.inventory = Inv(cross: 1, ne: 1, es: 2, sw: 1, wn: 1, h: 1, v: 3, tNES: 2, tESW: 1, tSWN: 1, tWNE: 1);
         Door(l, "A", 0, 1, 0, Dir.W);
@@ -189,7 +189,7 @@ public static class Levels
     static LevelData Level10()
     {
         var l = new LevelData { title = "Level 10", targetScore = 1025, bestTiles = 11,
-            bestPlanHint = "The best plan builds parts of two routes early, so both pass shared tiles before anyone is delivered." };
+            bestPlanHint = "start two routes early." };
         l.SetBoards((4, 4), (4, 4));
         l.inventory = Inv(es: 1, sw: 1, wn: 2, h: 1, v: 1, tESW: 3, tSWN: 1, tWNE: 2);
         Door(l, "A", 1, 1, 2, Dir.W);
@@ -211,7 +211,7 @@ public static class Levels
     static LevelData Level11()
     {
         var l = new LevelData { title = "Level 11", targetScore = 1025, bestTiles = 15,
-            bestPlanHint = "The best plan builds part of one route early, so it passes a shared tile before anyone is delivered." };
+            bestPlanHint = "start one route early." };
         l.SetBoards((3, 3), (3, 3), (3, 3), (3, 3));
         l.inventory = Inv(ne: 3, sw: 1, h: 2, v: 4, tNES: 3, tESW: 1, tSWN: 2);
         Door(l, "A", 0, 1, 0, Dir.W);
@@ -235,7 +235,7 @@ public static class Levels
     static LevelData Level12()
     {
         var l = new LevelData { title = "Level 12", targetScore = 975, bestTiles = 14,
-            bestPlanHint = "The best plan builds part of one route early, so it passes a shared tile before anyone is delivered." };
+            bestPlanHint = "start one route early." };
         l.SetBoards((5, 5), (5, 5));
         l.inventory = Inv(cross: 1, bridge: 1, ne: 1, es: 1, sw: 1, wn: 2, h: 1, v: 3, tNES: 2, tESW: 1, tWNE: 1);
         l.obstacles.Add(l.At(1, 1, 3));

@@ -38,12 +38,8 @@ public partial class GameManager
             comboPoints = comboPoints,
             teleportPoints = teleportPoints,
             unusedPoints = unusedPoints,
-            comboObjects = comboObjects,
-            teleports = teleports,
-            unusedTiles = unusedTiles,
             deliveries = new List<DeliveryRecord>(deliveriesSoFar), // for the hints
             arrows = arrowsSoFar.ToDictionary(kv => kv.Key, kv => new List<ArrowRecord>(kv.Value)),
-            log = hud.GetLog(),
             scoreLog = hud.GetScoreLog(),
         };
     }
@@ -60,7 +56,6 @@ public partial class GameManager
         board.ClearChoices();
         board.StopFlashes();
         hud.ResetSlotFlashes();
-        hud.SetChoiceMode(false);
         busy = false;
         board.HideGhost();
         selected = null; // undo leaves no tile selected
@@ -94,9 +89,6 @@ public partial class GameManager
         comboPoints = s.comboPoints;
         teleportPoints = s.teleportPoints;
         unusedPoints = s.unusedPoints;
-        comboObjects = s.comboObjects;
-        teleports = s.teleports;
-        unusedTiles = s.unusedTiles;
         deliveriesSoFar = new List<DeliveryRecord>(s.deliveries); // for the hints (the stages themselves stay)
         arrowsSoFar = s.arrows.ToDictionary(kv => kv.Key, kv => new List<ArrowRecord>(kv.Value));
 
@@ -122,7 +114,6 @@ public partial class GameManager
         if (s.takeBack) TelemetryManager.Instance.AddPiece();
         else TelemetryManager.Instance.RemovePiece();
 
-        hud.SetLog(s.log);
         hud.SetScoreLog(s.scoreLog);
         RefreshAll();
         HintsChanged?.Invoke(); // ghosts of undone tiles come back

@@ -3,8 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// a button with a tile icon and a label for the supply slots
-// the removed-tiles list and the recovery choices
+// a supply slot: a button with a tile icon
 public class TileCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     public Image background;
@@ -54,19 +53,22 @@ public class TileCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     public void OnPointerEnter(PointerEventData eventData) { hovered = true; ApplyBackground(); }
     public void OnPointerExit(PointerEventData eventData) { hovered = false; ApplyBackground(); }
 
-    // darkens the icon square and the tile, and stops clicks, for a tile type you have none of
-    public void SetAvailable(bool available, float darken)
+    // a tile type you have none of can't be clicked
+    public void SetAvailable(bool available)
+    {
+        button.interactable = available;
+        ApplyBackground(); // the hover goes away when the last one is used
+    }
+
+    // an empty tile, dimmed: its square and its path in these colors (still readable, but quiet)
+    public void ShowDimmed(bool dimmed, Color backColor, Color pathColor)
     {
         if (iconBack == null)
         {
             iconBack = iconRoot.GetComponent<Image>();
             if (iconBack != null) iconBackColor = iconBack.color;
         }
-        if (iconBack != null)
-            iconBack.color = available ? iconBackColor : Color.Lerp(iconBackColor, Color.black, darken);
-        if (icon != null)
-            icon.Show(type, available ? tileColor : Color.Lerp(tileColor, Color.black, darken));
-        button.interactable = available;
-        ApplyBackground(); // the hover goes away when the last one is used
+        if (iconBack != null) iconBack.color = dimmed ? backColor : iconBackColor;
+        if (icon != null) icon.Show(type, dimmed ? pathColor : tileColor);
     }
 }

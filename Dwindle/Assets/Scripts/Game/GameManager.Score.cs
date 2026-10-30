@@ -1,14 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
-// score and stars, and the end window that shows them. part of GameManager
+// score and stars, and the Leave and End screens that show them. part of GameManager
 public partial class GameManager
 {
-    // score, kept per source so the end window can show where it came from
-    int deliveryPoints, comboPoints, teleportPoints, unusedPoints;
-    int comboObjects, teleports, unusedTiles; // how many of each, for the breakdown (teleports: objects that used a door)
+    int deliveryPoints, comboPoints, teleportPoints, unusedPoints; // kept per source, so undo can put each back
     int Score => deliveryPoints + comboPoints + teleportPoints + unusedPoints;
     bool ScoreStar => Score >= level.targetScore;
 
@@ -20,52 +15,41 @@ public partial class GameManager
         return ScoreStar ? 3 : 2;
     }
 
-    void ShowMenu(bool ended, string reason)
+    // ended: the End screen; otherwise the Leave screen
+    void ShowMenu(bool ended)
     {
         int stars = Stars();
         bool isLast = levelIndex >= Levels.All.Count - 1;
-        string summary =
-            (reason != null ? reason + "\n" : "") +
-            $"Delivered {Delivered} / {objects.Count}\n" +
-            ScoreBreakdown(ended) +
-            (stars == 0 ? "\nEarn at least 1 star to unlock the next level." : "") +
-            // a nudge toward the 3rd star, without giving the solution away
-            (ended && stars == 2 && !string.IsNullOrEmpty(level.bestPlanHint) ? "\n" + level.bestPlanHint : "") +
-            // and toward delivering everyone, on levels where that needs a trick
-            (ended && stars <= 1 && !string.IsNullOrEmpty(level.finishHint) ? "\n" + level.finishHint : "") +
-            (isLast && stars > 0 ? "\nThat was the last level!" : "");
 
-        menu.ShowMenu(
-            level.title + (ended ? " complete" : " paused"),
-            summary,
-            Delivered >= level.Required,
-            Delivered >= objects.Count,
-            stars == 3, // the score only earns the 3rd star once everyone is delivered
-            showResume: !ended,
-            showNext: ended && stars >= 1 && !isLast,
-            showUndo: ended && history.CanUndo); // nothing to undo if the level was ended before any placement
+        // the stars earned so far and the goal under each
+        bool[] earned = { Delivered >= level.Required, Delivered >= objects.Count, stars == 3 };
+        string[] goals = { $"{level.Required} of {objects.Count}", $"{objects.Count} of {objects.Count}", $"{level.targetScore} points" };
+        if (!ended)
+        {
+            if (menu.leaveDialog != null) menu.leaveDialog.Show($"Leave {level.title}?", earned, goals, $"Delivered {Delivered} · Score {Score}");
+            return;
+        }
+        if (menu.endWindow == null) return; // not set up yet (Step 3)
+        bool purple = stars == 3 && !hints.PurpleLost;
+        menu.endWindow.Show(EndTitle(stars, purple), earned, purple, goals,
+            stars == 3 ? $"Score {Score} · target reached!" : $"Score {Score}",
+            EndNote(stars, purple, isLast),
+            canUndo: history.CanUndo, canNext: stars >= 1 && !isLast);
     }
 
-    // one line per source: what, how many x points, and the subtotal, then the total against the target
-    string ScoreBreakdown(bool ended)
+    static string EndTitle(int stars, bool purple) =>
+        stars == 3 ? (purple ? "Genius!" : "Solved!") : stars == 2 ? "Nice!" : stars == 1 ? "Good start" : "So close";
+
+    // the end window's short line: a tip toward the next star, or a cheer
+    string EndNote(int stars, bool purple, bool isLast)
     {
-        string Line(string what, string count, int points) =>
-            $"{what}<pos=58%>{count}<pos=86%>{points}\n";
-
-        bool allDelivered = objects.All(o => o.completed);
-        string unused =
-            allDelivered ? Line("Unused tiles", $"{unusedTiles} x {pointsPerUnusedTile}", unusedPoints)
-            : ended ? "Unused tiles<pos=58%>not counted\n" // only counted when everything is delivered
-            : "Unused tiles<pos=58%>counted at the end\n";
-
-        return
-            "<align=left><indent=3%>" +
-            Line("Deliveries", $"{Delivered} x {pointsPerDelivery}", deliveryPoints) +
-            Line("Delivered together", $"{comboObjects} x {comboPointsPerObject}", comboPoints) +
-            Line("Used a door", $"{teleports} x {pointsPerTeleport}", teleportPoints) +
-            unused +
-            $"<b>Total<pos=86%>{Score}</b>\n" +
-            $"<color=#A0A2A8>3rd star target<pos=86%>{level.targetScore}</color>" +
-            "</indent></align>";
+        string note =
+            stars == 3 ? (purple ? "You found the best plan on your own." : "Now try it without the answer.")
+            : stars == 2 ? Tip(level.bestPlanHint)
+            : Tip(level.finishHint); // levels where delivering everyone needs the trick
+        if (isLast && stars > 0) note = note == null ? "All levels done!" : note + "\nAll levels done!";
+        return note;
     }
+
+    static string Tip(string hint) => string.IsNullOrEmpty(hint) ? null : "Tip: " + hint;
 }

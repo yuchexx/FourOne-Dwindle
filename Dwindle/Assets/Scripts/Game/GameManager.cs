@@ -24,15 +24,6 @@ public partial class GameManager : MonoBehaviour
     public int pointsPerTeleport = 50;    // once per delivered object that went through at least one door
     public int pointsPerUnusedTile = 75;  // per tile left in the supply, only if every object was delivered
 
-    static readonly Color ToastSuccess =
-        new Color32(97, 201, 139, 245);
-
-static readonly Color ToastReward =
-        new Color32(124, 131, 247, 245);
-
-static readonly Color ToastWarning =
-        new Color32(239, 107, 107, 245);
-
     [Header("Stuck notice")]
     [Tooltip("Seconds without placing a tile, while stuck close to a ring, before the notice shows (0 = right away)")]
     [Min(0f)] public float stuckSecondsBeforeNotice = 8f;
@@ -102,7 +93,6 @@ static readonly Color ToastWarning =
         stuck = false;
         HideStuckNotice();
         board.ClearChoices();
-        hud.SetChoiceMode(false);
         hud.ResetSlotFlashes();
         menu.ShowGame();
         levelOver = false;
@@ -111,20 +101,15 @@ static readonly Color ToastWarning =
         inventory = Tiles.All.ToDictionary(t => t, t => level.inventory.TryGetValue(t, out var c) ? c : 0);
         selected = null;
         busy = false;
-        hud.ClearLog();
-        hud.ClearToasts();
+        hud.SetScoreLog(null);
         deliveryPoints = comboPoints = teleportPoints = unusedPoints = 0;
-        comboObjects = teleports = unusedTiles = 0;
         history.Clear();
         forcedRemoval = null; // for the tutorial: a forced removal never outlives its level
         endWindowHeld = false; // for the tutorial: nor does a held end window
         LockInput(false);      // for the tutorial: nor does locked input
 
-        hud.BuildSlots(Tiles.All, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
+        hud.BuildSlots(Tiles.SupplyOrder, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
         objects = board.Build(level, OnCellClicked, OnDoorClicked, OnCellRightClicked, PreviewTile);
-        Log($"{level.title}: pick a tile, then click an empty cell.");
-        if (level.doors.Count > 0)
-            Log("Doors with the same letter are linked: a road into one comes out of the other.");
         ResetHintsForLoad();
         RefreshAll();
 
@@ -152,7 +137,7 @@ static readonly Color ToastWarning =
         if (busy) return; // objects are moving or waiting for a direction: nothing can be placed, so nothing is picked
         if (inputLocked) return; // for the tutorial (see LockInput)
         board.FinishUndo(); // an undo rewind still going: it finishes first (the supply bar's counts catch up)
-        if (inventory[t] <= 0) { Log($"No {Tiles.Name(t)} tiles left."); return; }
+        if (inventory[t] <= 0) return;
         selected = selected == t ? (TileType?)null : t; // clicking the selected tile again deselects it
         hud.RefreshInventory(inventory, selected);
         Report(new GameAction { kind = GameActionKind.SelectTile, tile = selected }); // for the tutorial
@@ -164,9 +149,7 @@ static readonly Color ToastWarning =
         if (busy) return;
         if (inputLocked) return; // for the tutorial (see LockInput)
         var cell = Cells[p.x, p.y];
-        if (cell.obstacle) { Log("That space is blocked."); return; }
-        if (cell.tile != null) { Log("There's already a tile there."); return; }
-        if (selected == null) { Log("Select a tile from the top bar first."); return; }
+        if (cell.obstacle || cell.tile != null || selected == null) return;
         board.FinishUndo(); // an undo rewind still going: everything to its place before anything moves
 
         var t = selected.Value;
@@ -177,26 +160,16 @@ static readonly Color ToastWarning =
         inventory[t]--;
         board.SetTile(p, t);
         TelemetryManager.Instance.AddPiece();
-        Log($"Placed a {Tiles.Name(t)}.");
         RefreshAll();
         lastPlaced = p; // for the hints: the square whose round this is
         StartCoroutine(ResolveRound());
         Report(snapshot.action); // for the tutorial
     }
 
-    // a cell as the player sees it: its board's own coordinate, plus the board when there are several
-    string Where(Vector2Int p)
-    {
-        int b = level.BoardOf(p);
-        var local = p - level.boards[b].origin;
-        return level.boards.Count > 1 ? $"({local.x},{local.y}) on board {b + 1}" : $"({local.x},{local.y})";
-    }
-
     // clicking a door names it
     void OnDoorClicked(DoorSpec door)
     {
         if (inputLocked) return; // for the tutorial (see LockInput)
-        Log($"Door {door.label}");
         Report(new GameAction { kind = GameActionKind.ClickDoor, door = door.label }); // for the tutorial
     }
 
@@ -208,8 +181,7 @@ static readonly Color ToastWarning =
         board.FinishUndo(); // an undo rewind still going: it finishes first
         menu.HideMenu(); // pressed from the paused menu: the end window replaces it
         var cell = Cells[p.x, p.y];
-        if (cell.tile == null) return;
-        if (cell.locked) { Log("That tile has been used, so it stays."); return; }
+        if (cell.tile == null || cell.locked) return;
 
         var t = cell.tile.Value;
         var snapshot = Capture(); // undo can bring it back
@@ -220,7 +192,6 @@ static readonly Color ToastWarning =
         board.TakeBackTile(p);
         inventory[t]++;
         TelemetryManager.Instance.RemovePiece();
-        Log($"Put a {Tiles.Name(t)} back.");
         UpdateBlocked(); // a tile in an object's way may have been the one taken back
         UpdateStuck();
         RefreshAll();
@@ -238,33 +209,29 @@ static readonly Color ToastWarning =
         HideStuckNotice();
         levelOver = true;
         selected = null;
-        Log(reason);
 
         // unused tiles only score when everything was delivered (otherwise ending early, e.g. with End level,
         // would score every tile not spent on the objects left behind)
         if (objects.All(o => o.completed))
         {
-            unusedTiles = inventory.Values.Sum();
+            int unusedTiles = inventory.Values.Sum();
             unusedPoints = unusedTiles * pointsPerUnusedTile;
             if (unusedTiles > 0)
-            {
-                Log($"{unusedTiles} unused tiles. +{unusedPoints}");
-                hud.LogScore($"+{pointsPerUnusedTile} x {unusedTiles}", $"unused tile{(unusedTiles == 1 ? "" : "s")}", ToastSuccess);
-            }
+                hud.LogText($"{unusedTiles} unused", unusedPoints, $"{pointsPerUnusedTile}×{unusedTiles} =");
         }
         RefreshAll();
-        StartCoroutine(ShowEndMenuAfterDelay(reason));
+        StartCoroutine(ShowEndMenuAfterDelay());
         int stars = Stars();
         bool purple = SaveResult(stars); // this session's best for the level
         Report(new GameAction { kind = GameActionKind.LevelEnd, score = Score, stars = stars, purple = purple, hintStage = hints.Stage,
             tilesUsed = history.TilesUsed, delivered = Delivered, reason = reason }); // for analytics
     }
 
-    IEnumerator ShowEndMenuAfterDelay(string reason)
+    IEnumerator ShowEndMenuAfterDelay()
     {
         yield return new WaitForSeconds(endPopupDelay);
         while (endWindowHeld) yield return null; // for the tutorial (see HoldEndWindow)
-        ShowMenu(true, reason);
+        ShowMenu(true);
     }
 
     // for the tutorial (Tutorials.cs): while held, a finished level waits to show its end window, so a step can
@@ -275,6 +242,7 @@ static readonly Color ToastWarning =
     // the wait, while stuck and the notice isn't up yet
     void Update()
     {
+        if (hintQueued && !busy) UseHint(); // a hint pressed during a move
         if (stuck && !levelOver && !busy && !hud.StuckNoticeShowing && Time.time - stuckSince >= StuckWait) ShowStuckNotice();
 
         // the supply cards don't light up under the mouse while a tile can't be picked (see SelectTile)
@@ -302,8 +270,6 @@ static readonly Color ToastWarning =
         stuck = false; // nothing keeps timing the stuck notice on the start screen
         HideStuckNotice();
         board.ClearChoices();
-        hud.SetChoiceMode(false);
-        hud.ClearToasts();
         int next = Session.StartLevel(Levels.All.Count);
         menu.ShowStart(next == 0 && Session.Get(0).stars == 0 ? "Start" : $"Continue: Level {next + 1}");
     }
@@ -334,7 +300,7 @@ static readonly Color ToastWarning =
         levelReported = true;
         TelemetryManager.Instance.EndLevel(Score, Stars());
     }
-    public void OpenMenu() => ShowMenu(levelOver, null);
+    public void OpenMenu() => ShowMenu(levelOver);
     public void Resume() => menu.HideMenu();
 
     public void DismissMenuIfPaused()
@@ -350,9 +316,8 @@ static readonly Color ToastWarning =
     {
         if (selected != null && inventory[selected.Value] <= 0) selected = null;
         hud.RefreshInventory(inventory, selected);
-        hud.RefreshInfo(level, Delivered, objects.Count, inventory.Values.Sum(), Score, ScoreStar);
+        hud.RefreshInfo(level, inventory.Values.Sum(), history.TilesUsed, Score);
         hud.SetUndoAvailable(!levelOver && history.CanUndo);
     }
 
-    void Log(string msg) => hud.Log(msg);
 }

@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// the title screen, the Levels page, the rules and Settings pop-ups, and the level menu
+// the title screen, the Levels page, the rules and Settings pop-ups, and the Leave and End screens
 public class MenuView : MonoBehaviour
 {
     [Header("Screens")]
@@ -10,13 +10,16 @@ public class MenuView : MonoBehaviour
     public GameObject levelsScreen;
     public GameObject gameScreen;
     public GameObject rulesPopup;
-    public GameObject levelMenu;
 
     [Header("Title screen")]
     [Tooltip("The Start button's text: Start, or Continue: Level N once a level is done")]
     public TMP_Text startLabel;
     public LevelSelectView levelSelect;
     public SettingsView settings;
+
+    [Header("In a level")]
+    public LeaveDialog leaveDialog;
+    public EndWindow endWindow;
 
     [Header("Rules pages")]
     public GameObject[] rulesPages;
@@ -25,51 +28,6 @@ public class MenuView : MonoBehaviour
     public TMP_Text rulesPageIndicator;
 
     int currentRulesPage;
-
-    [Header("Level menu")]
-    public TMP_Text menuTitle;
-    public TMP_Text menuSummary;
-    public Graphic[] menuStars; // StarGraphics
-    public GameObject resumeButton;
-    public Button nextButton;
-    [Tooltip("Shown in Next's place while paused mid-level; its On Click calls GameManager.EndLevelNow")]
-    public Button endLevelButton;
-    [Tooltip("Shown in Resume's place in the end window; its On Click calls GameManager.UndoFromEndWindow")]
-    public Button undoButton;
-
-    [Header("Level menu layout (in Play mode, changes show right away)")]
-    public Vector2 menuPanelSize = new Vector2(700, 640);
-    [Tooltip("From the panel's top edge down to the middle of the title")]
-    public float titleFromTop = 50f;
-    [Tooltip("From the panel's top edge down to the middle of the stars")]
-    public float starsFromTop = 135f;
-    [Tooltip("From the panel's top edge down to the top of the summary")]
-    public float summaryFromTop = 185f;
-    [Tooltip("From the panel's bottom edge up to the bottom of the summary")]
-    public float summaryFromBottom = 145f;
-    [Tooltip("Space left and right of the summary")]
-    public float summarySidePadding = 30f;
-    [Tooltip("From the panel's bottom edge up to the middle of the buttons")]
-    public float buttonsFromBottom = 55f;
-
-    [Header("Colors")]
-    public Color starOnColor = new Color(1f, 0.82f, 0.2f);
-    public Color starOffColor = new Color(0.32f, 0.33f, 0.37f);
-    public Color bonusStarOnColor = new Color(0.45f, 0.80f, 0.95f); // the third star, for the score
-    public bool outlineMissedScoreStar = true; // a missed third star is outlined in its color (width: Outline Width on the star)
-
-    float summaryFontSize = -1; // the summary's font size from the editor, kept as the largest it can grow to
-    bool layoutChanged;
-
-    // a layout number was changed in the Inspector
-    void OnValidate() => layoutChanged = true;
-
-    void Update()
-    {
-        if (!layoutChanged) return;
-        layoutChanged = false;
-        if (levelMenu != null && levelMenu.activeInHierarchy) LayOutMenu();
-    }
 
     // the title screen. startText: the Start button's text
     public void ShowStart(string startText = null)
@@ -92,7 +50,7 @@ public class MenuView : MonoBehaviour
     public void CloseOverlays()
     {
         rulesPopup.SetActive(false);
-        levelMenu.SetActive(false);
+        HideMenu();
         if (settings != null) settings.Close();
     }
 
@@ -162,65 +120,10 @@ public class MenuView : MonoBehaviour
             $"{currentRulesPage + 1} / {rulesPages.Length}";
     }
 
-    public void HideMenu() => levelMenu.SetActive(false);
-
-    // the first two stars are delivery tiers; the third is the score target in its own color
-    public void ShowMenu(string title, string summary, bool star1, bool star2, bool scoreStar,
-                         bool showResume, bool showNext, bool showUndo = false)
+    // hides the Leave and End screens
+    public void HideMenu()
     {
-        LayOutMenu();
-        if (menuStars.Length > 0) menuStars[0].color = star1 ? starOnColor : starOffColor;
-        if (menuStars.Length > 1) menuStars[1].color = star2 ? starOnColor : starOffColor;
-        if (menuStars.Length > 2)
-        {
-            menuStars[2].color = scoreStar ? bonusStarOnColor : starOffColor;
-            // a missed 3rd star keeps its own color as an outline, so it reads as the score star still to get
-            if (menuStars[2] is StarGraphic third) third.outlineColor = scoreStar || !outlineMissedScoreStar ? Color.clear : bonusStarOnColor;
-        }
-
-        menuTitle.text = title;
-        menuSummary.text = summary;
-
-        resumeButton.SetActive(showResume);
-        nextButton.gameObject.SetActive(showNext);
-        if (endLevelButton != null) endLevelButton.gameObject.SetActive(showResume); // paused mid-level: End level where Next goes
-        if (undoButton != null) undoButton.gameObject.SetActive(showUndo); // the end window: Undo where Resume goes
-        levelMenu.SetActive(true);
-    }
-
-    // sizes the level menu's panel so the score breakdown fits, and places the title, stars, summary and buttons
-    void LayOutMenu()
-    {
-        var panel = (RectTransform)menuTitle.transform.parent;
-        panel.sizeDelta = menuPanelSize;
-        float top = menuPanelSize.y / 2f;
-
-        SetY(menuTitle.rectTransform, top - titleFromTop);
-        foreach (var star in menuStars) SetY(star.rectTransform, top - starsFromTop);
-
-        // the summary fills the space between the stars and the buttons
-        var summaryRect = menuSummary.rectTransform;
-        float summaryHeight = Mathf.Max(0f, menuPanelSize.y - summaryFromTop - summaryFromBottom);
-        summaryRect.sizeDelta = new Vector2(menuPanelSize.x - 2 * summarySidePadding, summaryHeight);
-        SetY(summaryRect, top - summaryFromTop - summaryHeight / 2f);
-        menuSummary.alignment = TextAlignmentOptions.Top;
-        // keep the font size set in the editor; only shrink if the text doesn't fit
-        if (summaryFontSize < 0) summaryFontSize = menuSummary.fontSize;
-        menuSummary.fontSizeMax = summaryFontSize;
-        menuSummary.fontSizeMin = Mathf.Min(14, summaryFontSize);
-        menuSummary.enableAutoSizing = true;
-
-        // the buttons in a row along the bottom
-        foreach (Transform child in panel)
-            if (child.GetComponent<Button>() != null) SetY((RectTransform)child, -top + buttonsFromBottom);
-    }
-
-    // places a rect's center at height y in its parent (the panel's center is 0), whatever its pivot was
-    static void SetY(RectTransform rt, float y)
-    {
-        rt.anchorMin = new Vector2(rt.anchorMin.x, 0.5f);
-        rt.anchorMax = new Vector2(rt.anchorMax.x, 0.5f);
-        rt.pivot = new Vector2(rt.pivot.x, 0.5f);
-        rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, y);
+        if (leaveDialog != null) leaveDialog.Close();
+        if (endWindow != null) endWindow.Close();
     }
 }

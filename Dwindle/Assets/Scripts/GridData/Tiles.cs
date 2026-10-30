@@ -13,13 +13,22 @@ public enum TileCategory { Cross, Corner, Straight, Tee }
 
 public static class Tiles
 {
-    // supply bar order: two crosses (+ and bridge) | four L | two I | four T
+    // every tile type (the solver and the level tools go through them in this order)
     public static readonly TileType[] All =
     {
         TileType.Cross, TileType.Bridge,
         TileType.CornerNE, TileType.CornerES, TileType.CornerSW, TileType.CornerWN,
         TileType.StraightH, TileType.StraightV,
         TileType.TeeNES, TileType.TeeESW, TileType.TeeSWN, TileType.TeeWNE,
+    };
+
+    // the supply dock's order: + and bridge | L | I | T, each group turning clockwise
+    public static readonly TileType[] SupplyOrder =
+    {
+        TileType.Cross, TileType.Bridge,
+        TileType.CornerNE, TileType.CornerES, TileType.CornerSW, TileType.CornerWN,
+        TileType.StraightV, TileType.StraightH,
+        TileType.TeeWNE, TileType.TeeNES, TileType.TeeESW, TileType.TeeSWN,
     };
 
     static int Bit(Dir d) => 1 << (int)d;

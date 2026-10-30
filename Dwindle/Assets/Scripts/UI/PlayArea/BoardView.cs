@@ -23,21 +23,13 @@ public class BoardView : MonoBehaviour
     public RectTransform choicesRoot;
 
     [Header("Board")]
-    public float boardSize = 700f; // a single board fits a square this size
+    [Tooltip("A single board fits a square this size. Two or more boards side by side fill the board area instead")]
+    public float boardSize = 700f;
     [Range(0.2f, 1f)] public float objectSize = 0.55f; // an object's circle, as a fraction of a cell
     [Range(0.2f, 1f)] public float ringSize = 0.62f;   // a ring, as a fraction of a cell
     [Tooltip("How far an object's start and its ring sit from the board's edge, in squares (0.5 = the middle of the " +
              "square next to the board). Tutorial areas around starts and rings are measured for 0.5")]
     [Range(0.3f, 1f)] public float endDistance = 0.5f; // above about 0.65 they start to stick out of the dark board frame
-    [Tooltip("The board area also takes the strip on the right where the Removed panel was, so the boards center in the space next to the info panel")]
-    public bool useRemovedPanelSpace = true;
-    public float areaRightMargin = 15f; // gap between the board area and the screen's right edge
-
-    void Awake()
-    {
-        if (useRemovedPanelSpace && cellsRoot.parent != null && cellsRoot.parent.parent is RectTransform area)
-            area.offsetMax = new Vector2(-areaRightMargin, area.offsetMax.y);
-    }
     public float moveSecondsPerCell = 0.2f;
     public float teleportSeconds = 0.25f; // shrinking into one door then growing out of the other
 
@@ -49,6 +41,8 @@ public class BoardView : MonoBehaviour
     public Color lockedCellColor = new Color(0.62f, 0.64f, 0.69f); // a tile an object has gone through: it can no longer be returned
     [Range(0f, 1f)] public float ghostFade = 0.55f; // how far the hover preview fades toward the cell color
     public Color boardFrameColor = new Color(0.19f, 0.20f, 0.24f); // behind each board, so boards read as separate
+    [Tooltip("How far the dark plate reaches past the start and ring squares, as a fraction of a square. In Play mode, changes show right away")]
+    [Range(0f, 1f)] public float framePadding = 0.45f;
     public Color doorColor = new Color(0.62f, 0.64f, 0.68f); // every door, so none looks tied to one object
     public Color doorLabelColor = new Color(0.08f, 0.08f, 0.10f);
     public Color doorHoverColor = new Color(0.98f, 0.82f, 0.35f); // both ends of a door pair while the mouse is over one
@@ -82,6 +76,7 @@ public class BoardView : MonoBehaviour
         StopRecording();
         StopAllCoroutines(); // a Flash left over from the last level would touch a destroyed cell
         Clear(cellsRoot);
+        frames.Clear();
         Clear(markersRoot);
         Clear(objectsRoot);
         Clear(choicesRoot);
@@ -164,17 +159,32 @@ public class BoardView : MonoBehaviour
         return objects;
     }
 
-    // a dark panel behind a board and its ring, so side-by-side boards read as separate
+    // a dark plate behind a board and its ring, so side-by-side boards read as separate
     void MakeFrame(BoardSpec b)
     {
         var frame = MakeImage("BoardFrame", cellsRoot);
-        var rt = frame.rectTransform;
-        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+        frames.Add((frame, b));
+        LayOutFrame(frame, b);
+    }
+
+    readonly List<(Image frame, BoardSpec board)> frames = new List<(Image, BoardSpec)>();
+
+    void LayOutFrame(Image frame, BoardSpec b)
+    {
         var low = CellPos(b.origin + new Vector2Int(-1, -1));
         var high = CellPos(b.origin + new Vector2Int(b.width, b.height));
+        var rt = frame.rectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = (low + high) / 2f;
-        rt.sizeDelta = high - low + Vector2.one * CellSize * 0.9f;
+        rt.sizeDelta = high - low + Vector2.one * CellSize * 2f * framePadding;
         frame.color = boardFrameColor;
+    }
+
+    void OnValidate()
+    {
+        if (!Application.isPlaying || level == null) return;
+        frames.RemoveAll(f => f.frame == null);
+        foreach (var (frame, b) in frames) LayOutFrame(frame, b);
     }
 
     // a door: a gray bar along the edge, and a badge with its letter in the middle

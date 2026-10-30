@@ -1,6 +1,6 @@
 using System; using System.Collections.Generic; using System.IO; using System.Linq; using UnityEngine;
 
-// the end-window nudge toward the 3rd star (bestPlanHint) and tile names, for the Level Maker
+// the end window's tip toward the 3rd star (bestPlanHint, shown after "Tip: ") and tile names, for the Level Maker
 static class Export
 {
     public static string TileText(TileType t) => t switch
@@ -10,13 +10,13 @@ static class Export
         TileType.TeeNES => "T N-E-S", TileType.TeeESW => "T E-S-W", TileType.TeeSWN => "T S-W-N", _ => "T W-N-E",
     };
 
-    const string PairsHint = "Splitting into pairs breaks a junction someone still needs. The best plan brings more of them in together.";
-    const string DetourHint = "The best plan uses a door as a shortcut back to an object's own board.";
-    const string TwoRoutesHint = "The best plan builds parts of two routes early, so both pass shared tiles before anyone is delivered.";
-    const string OneRouteHint = "The best plan builds part of one route early, so it passes a shared tile before anyone is delivered.";
-    const string EarnedHint = "The best plan delivers two objects together early to earn a + tile.";
-    const string GroupHint = "The best plan delivers some objects together.";
-    const string FewerTilesHint = "The best plan uses fewer tiles.";
+    const string PairsHint = "pairs break a junction. Bring more in together.";
+    const string DetourHint = "a door can be a shortcut home.";
+    const string TwoRoutesHint = "start two routes early.";
+    const string OneRouteHint = "start one route early.";
+    const string EarnedHint = "deliver two together early to earn a +.";
+    const string GroupHint = "deliver some together.";
+    const string FewerTilesHint = "use fewer tiles.";
 
     // the end-window nudge for a player who finished below the target. without the level: the first trick the best
     // plan uses. with it: the first trick a player can skip and still finish, just not at the target, since that's

@@ -10,11 +10,9 @@ public class Snapshot
     public bool[,] locked;     // which tiles an object has gone through (they can't be put back)
     public ObjectState[] objects; // same order as GameManager's objects
     public int deliveryPoints, comboPoints, teleportPoints, unusedPoints;
-    public int comboObjects, teleports, unusedTiles;
     public List<DeliveryRecord> deliveries;                // for the hints: who arrived together so far,
     public Dictionary<string, List<ArrowRecord>> arrows;   //   and the arrows picked
-    public List<string> log;
-    public List<string> scoreLog; // the lower-left score log
+    public List<ScoreEntry> scoreLog; // the score history
     public bool takeBack; // the action after this snapshot was a right-click take-back, not a placement
     public GameAction action; // that placement or take-back, as ActionDone reported it (for analytics: what an undo takes back)
     public BoardView.Rewind rewind; // the moves the placement after this snapshot caused, for undo to play backwards

@@ -17,23 +17,15 @@ public partial class GameManager
             if (o.completed) continue;
             yield return MoveObject(o);
             board.LayoutWaitingObjects(objects);
-                        if (o.completed)
+            if (o.completed)
             {
                 deliveredNow.Add(o);
                 deliveryPoints += pointsPerDelivery;
-                Log($"{o.spec.name} reached its destination! +{pointsPerDelivery}");
+                if (o.teleports > 0) teleportPoints += pointsPerTeleport; // once per delivered object
 
-                // Award the door bonus once per delivered object.
-                if (o.teleports > 0)
-                {
-                    teleports++;
-                    teleportPoints += pointsPerTeleport;
-                    Log($"{o.spec.name} used a door. +{pointsPerTeleport}");
-                }
-
-                // in the score log (lower left), not a pop-up over the board
+                // in the score history
                 int earned = pointsPerDelivery + (o.teleports > 0 ? pointsPerTeleport : 0);
-                hud.LogScore($"+{earned}", $"{o.spec.name} delivered" + (o.teleports > 0 ? $" (door +{pointsPerTeleport})" : ""), ToastSuccess);
+                hud.LogDelivered(o.spec.color, o.teleports > 0, earned, o.teleports > 0 ? $"{pointsPerDelivery} + {pointsPerTeleport} =" : null);
 
                 RefreshAll();
             }
@@ -90,9 +82,6 @@ public partial class GameManager
             }
             else
             {
-                Log(ways.Any(d => level.DoorOnEdge(next, d) != null)
-                    ? $"{o.spec.name} is next to a door. Click an arrow: the one on the door teleports."
-                    : $"{o.spec.name} is at a junction. Click an arrow to choose its direction.");
                 yield return board.AskDirection(o, ways); // sets o.heading from the arrow the player clicks
                 ReportChoice(o); // for the tutorial
             }
@@ -119,14 +108,12 @@ public partial class GameManager
             inBoard = door.board, inSquare = door.cell - level.boards[door.board].origin, inSide = door.side,
             outBoard = partner.board, outSquare = partner.cell - level.boards[partner.board].origin, outSide = partner.side,
         });
-        Log($"{o.spec.name} went through door {door.label} to board {partner.board + 1}.");
         yield return board.Teleport(o, board.EdgePos(partner.cell, partner.side));
 
         var into = ArrivalHeadings(partner);
         if (into.Count == 1) o.heading = into[0];
         else
         {
-            Log($"Pick the way {o.spec.name} faces as it comes out of door {partner.label}.");
             yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into);
             ReportChoice(o, door.label); // for the tutorial and the hints
         }
@@ -170,15 +157,6 @@ public partial class GameManager
             arrivals.Add(arrival);
 
             board.ClearTile(c.Value);
-
-            if (neededBy != null)
-            {
-                Log($"Lost the {Tiles.Name(arrival.brokenTile)} that {neededBy} still needed!");
-            }
-            else
-            {
-                Log($"Lost a {Tiles.Name(arrival.brokenTile)} from {o.spec.name}'s path.");
-            }
         }
 
         RefreshAll();
@@ -187,13 +165,10 @@ public partial class GameManager
         {
             int bonus = comboPointsPerObject * deliveredNow.Count;
             comboPoints += bonus;
-            comboObjects += deliveredNow.Count;
             inventory[TileType.Cross]++;
 
             hud.FlashSlot(TileType.Cross, hud.earnedFlashColor);
-            Log($"{deliveredNow.Count} delivered together! Combo +{bonus}, and a + tile for your supply.");
-
-            hud.LogScore($"+{comboPointsPerObject} x {deliveredNow.Count}", "Delivered together, +1 + tile", ToastReward);
+            hud.LogTogether(deliveredNow.Select(o => o.spec.color).ToArray(), bonus, $"{comboPointsPerObject}×{deliveredNow.Count} =");
 
             RefreshAll();
         }
@@ -456,7 +431,6 @@ public partial class GameManager
     {
         if (hud.StuckNoticeShowing) return;
         hud.ShowStuckNotice(Undo, Restart, EndLevelNow); // the wording is the notice's own, set in the scene
-        Log("No object can reach its ring with the tiles left. Undo, Restart, or End level.");
     }
 
     void HideStuckNotice()
@@ -544,7 +518,7 @@ public partial class GameManager
         return Step(o.pos, o.heading, o.viaDoor);
     }
 
-    // crosses out blocked objects, and logs when one becomes blocked or free again
+    // crosses out blocked objects, and records it for undo
     void UpdateBlocked()
     {
         foreach (var o in objects.Where(o => !o.completed))
@@ -552,7 +526,6 @@ public partial class GameManager
             bool now = IsBlocked(o);
             if (now != o.blocked)
             {
-                Log(now ? $"{o.spec.name} is blocked." : $"{o.spec.name} is free to move again.");
                 board.RecordBlocked(o, o.blocked); // for undo's rewind
             }
             o.blocked = now;
