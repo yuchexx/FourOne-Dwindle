@@ -12,6 +12,8 @@ public class SettingsView : MonoBehaviour
     [Header("Switches")]
     public Toggle undoAnimationToggle;
     public Toggle unlockAllToggle;
+    public Toggle compactSupplyToggle; // the supply shows only this level's tiles (and the +)
+    public Toggle showTutorialsToggle;
     public GameManager game;
     public LevelSelectView levelSelect; // its locks change with Unlock all
 
@@ -26,6 +28,8 @@ public class SettingsView : MonoBehaviour
             game.UnlockAll = on;
             if (levelSelect != null) levelSelect.Refresh();
         });
+        if (compactSupplyToggle != null) compactSupplyToggle.onValueChanged.AddListener(on => game.CompactSupply = on);
+        if (showTutorialsToggle != null) showTutorialsToggle.onValueChanged.AddListener(on => game.ShowTutorials = on);
     }
 
     void Choice(Button b, Session.Placement p)
@@ -47,6 +51,8 @@ public class SettingsView : MonoBehaviour
     {
         undoAnimationToggle.SetIsOnWithoutNotify(game.AnimateUndo);
         unlockAllToggle.SetIsOnWithoutNotify(game.UnlockAll);
+        if (compactSupplyToggle != null) compactSupplyToggle.SetIsOnWithoutNotify(game.CompactSupply);
+        if (showTutorialsToggle != null) showTutorialsToggle.SetIsOnWithoutNotify(game.ShowTutorials);
         ShowPlacement();
         panel.SetActive(true);
     }

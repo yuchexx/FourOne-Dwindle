@@ -13,6 +13,12 @@ public static class Session
     public enum Placement { Both, Click, Drag }
     public static Placement placement = Placement.Both;
 
+    // Settings: the supply shows only the tiles this level hands out (the + always, since it can be earned)
+    public static bool compactSupply;
+
+    // Settings: tutorial levels show their step-by-step boxes
+    public static bool showTutorials = true;
+
     // the best result per level (index in Levels.All) this session
     public struct Record
     {
@@ -50,5 +56,7 @@ public static class Session
         records.Clear();
         unlockAll = false;
         placement = Placement.Both;
+        compactSupply = false;
+        showTutorials = true;
     }
 }

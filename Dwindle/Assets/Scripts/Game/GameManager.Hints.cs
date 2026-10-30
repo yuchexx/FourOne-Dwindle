@@ -208,4 +208,16 @@ public partial class GameManager
     // Settings
     public bool AnimateUndo { get => board.animateUndo; set => board.animateUndo = value; }
     public bool UnlockAll { get => Session.unlockAll; set => Session.unlockAll = value; }
+    public bool ShowTutorials { get => Session.showTutorials; set => Session.showTutorials = value; } // from the next level start
+    public bool CompactSupply
+    {
+        get => Session.compactSupply;
+        set
+        {
+            Session.compactSupply = value;
+            if (level == null) return;
+            hud.BuildSlots(SupplyTypes(), SelectTile, SupplyDragStart, e => board.MoveDrag(e), SupplyDragEnd); // the dock changes right away
+            RefreshAll();
+        }
+    }
 }

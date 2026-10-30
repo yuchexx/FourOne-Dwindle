@@ -119,7 +119,8 @@ public class HudView : MonoBehaviour
         groupLines.Clear();
         hadTiles.Clear();
         var list = types.ToList();
-        float slotWidth = SlotWidth(list);
+        // as wide as with every tile type shown, so leaving some out (Compact supply) only shortens the dock
+        float slotWidth = SlotWidth(Tiles.SupplyOrder.ToList());
         TileCategory? previous = null;
         foreach (var t in list)
         {

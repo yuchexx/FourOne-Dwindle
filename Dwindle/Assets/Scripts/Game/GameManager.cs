@@ -122,8 +122,8 @@ public partial class GameManager : MonoBehaviour
         endWindowHeld = false; // for the tutorial: nor does a held end window
         LockInput(false);      // for the tutorial: nor does locked input
 
-        // every tile type, x0 for the ones this level doesn't hand out
-        hud.BuildSlots(Tiles.SupplyOrder, SelectTile, SupplyDragStart, e => board.MoveDrag(e), SupplyDragEnd);
+        // every tile type (x0 for the ones this level doesn't hand out), or only its own with Compact supply
+        hud.BuildSlots(SupplyTypes(), SelectTile, SupplyDragStart, e => board.MoveDrag(e), SupplyDragEnd);
         objects = board.Build(level, OnCellClicked, OnDoorClicked, OnCellRightClicked, PreviewTile);
         ResetHintsForLoad();
         RefreshAll();
@@ -142,7 +142,7 @@ public partial class GameManager : MonoBehaviour
         //     );
         // }
 
-        if (tutorial != null) tutorial.TryStart(index, this); // the tutorial's steps can call back into the game
+        if (tutorial != null && Session.showTutorials) tutorial.TryStart(index, this); // the tutorial's steps can call back into the game
     }
 
     // player input
@@ -198,6 +198,10 @@ public partial class GameManager : MonoBehaviour
         StartCoroutine(ResolveRound());
         Report(snapshot.action); // for the tutorial
     }
+
+    // the supply dock's tile types, in the dock's order
+    IEnumerable<TileType> SupplyTypes() => Tiles.SupplyOrder.Where(t =>
+        !Session.compactSupply || t == TileType.Cross || level.inventory.GetValueOrDefault(t) > 0);
 
     // tiles can be picked and placed: the level is on, nothing moving, not locked by the tutorial
     bool CanAct() => !levelOver && !busy && !inputLocked;

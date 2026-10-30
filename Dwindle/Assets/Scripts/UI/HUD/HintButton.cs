@@ -11,16 +11,16 @@ public class HintButton : MonoBehaviour
     public Graphic[] dots;           // one per stage, left to right
     public TMP_Text tilesLine;       // stage 1: "Best plans use 8 tiles, 3 left"
     public GameObject noPurpleLabel; // shown once the answer has been used
-    [Tooltip("Optional: what stage 2 and 3 draw on the board mean")]
-    public TMP_Text stageLine;
-    [TextArea] public string stage2Text = "Same number: they arrive together, 1 before 2. Framed square: where a group meets.";
-    [TextArea] public string stage3Text = "The plan's tiles, one more each press.";
+    [Tooltip("Optional: the note above Hide / Show, there from stage 2")]
+    public HintNote stageNote;
     [Tooltip("Asks before stage 3; its buttons call ShowAnswer and CloseConfirm")]
     public GameObject confirmPanel;
-    [Tooltip("Optional: hides and shows the hints, there once one is used. Its On Click: HintButton > ToggleHidden")]
+    [Tooltip("Optional: the round Hide / Show button above this one. Its On Click: HintButton > ToggleHidden")]
     public GameObject hideButton;
     public TMP_Text hideLabel;
-    public string hideText = "Hide hints", showText = "Show hints";
+    public string hideText = "Hide", showText = "Show";
+    [Tooltip("Optional: opens Hide / Show on hover, like the More menu. It only opens once a hint is used")]
+    public HoverReveal hoverPanel;
 
     void Start()
     {
@@ -41,7 +41,7 @@ public class HintButton : MonoBehaviour
         // the lines pulse with the board's hints
         float k = game.board.HintPulseLevel;
         if (tilesLine != null && tilesLine.gameObject.activeSelf) tilesLine.alpha = k;
-        if (stageLine != null && stageLine.gameObject.activeSelf) stageLine.alpha = k;
+        if (stageNote != null && stageNote.gameObject.activeInHierarchy) stageNote.Pulse(k);
     }
 
     public void ToggleHidden() => game.ToggleHintHidden();
@@ -77,13 +77,13 @@ public class HintButton : MonoBehaviour
             if (stage >= 1) tilesLine.text = game.HintTilesText;
         }
         if (noPurpleLabel != null) noPurpleLabel.SetActive(game.PurpleLost);
-        if (stageLine != null)
+        if (stageNote != null)
         {
-            string s = stage == 2 ? stage2Text : stage >= 3 ? stage3Text : "";
-            stageLine.text = s;
-            stageLine.gameObject.SetActive(s.Length > 0 && !hidden);
+            stageNote.Show(stage, game.board);
+            stageNote.gameObject.SetActive(stage >= 2 && !hidden);
         }
         if (hideButton != null) hideButton.SetActive(stage >= 1);
         if (hideLabel != null) hideLabel.text = hidden ? showText : hideText;
+        if (hoverPanel != null) hoverPanel.enabled = stage >= 1; // nothing to show or hide before the first hint
     }
 }
