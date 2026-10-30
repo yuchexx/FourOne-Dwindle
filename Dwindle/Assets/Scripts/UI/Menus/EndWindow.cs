@@ -37,10 +37,10 @@ public class EndWindow : MonoBehaviour
 
     public void Close() => panel.SetActive(false);
 
-    // the shown buttons side by side, centered
+    // the shown buttons side by side, centered; Home stays where it's placed
     void LayOutButtons()
     {
-        var shown = new[] { undoButton, replayButton, homeButton, nextButton }
+        var shown = new[] { undoButton, replayButton, nextButton }
             .Where(b => b != null && b.gameObject.activeSelf).Select(b => (RectTransform)b.transform).ToList();
         float x = -(shown.Sum(r => r.rect.width) + buttonSpacing * (shown.Count - 1)) / 2f;
         foreach (var r in shown)

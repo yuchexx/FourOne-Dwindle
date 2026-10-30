@@ -203,7 +203,7 @@ public partial class GameManager : MonoBehaviour
     TileType? PreviewTile() => levelOver || busy ? null : selected;
 
     // the level is over: count the unused tiles and show the end window
-    void FinishLevel(string reason)
+    void FinishLevel(string reason, bool showNow = false)
     {
         stuck = false;
         HideStuckNotice();
@@ -220,7 +220,8 @@ public partial class GameManager : MonoBehaviour
                 hud.LogText($"{unusedTiles} unused", unusedPoints, $"{pointsPerUnusedTile}×{unusedTiles} =");
         }
         RefreshAll();
-        StartCoroutine(ShowEndMenuAfterDelay());
+        if (showNow && !endWindowHeld) ShowMenu(true); // from the Leave screen: no wait
+        else StartCoroutine(ShowEndMenuAfterDelay());
         int stars = Stars();
         bool purple = SaveResult(stars); // this session's best for the level
         Report(new GameAction { kind = GameActionKind.LevelEnd, score = Score, stars = stars, purple = purple, hintStage = hints.Stage,
@@ -258,8 +259,9 @@ public partial class GameManager : MonoBehaviour
     public void EndLevelNow()
     {
         if (levelOver || busy) return;
-        menu.HideMenu(); // pressed from the paused menu: the end window replaces it
-        FinishLevel("You ended the level.");
+        bool fromLeave = menu.leaveDialog != null && menu.leaveDialog.panel.activeSelf;
+        menu.HideMenu(); // the end window replaces the Leave screen
+        FinishLevel("You ended the level.", showNow: fromLeave);
     }
 
     public void ShowStartScreen()
