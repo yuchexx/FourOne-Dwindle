@@ -11679,7 +11679,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1232323017
 RectTransform:
   m_ObjectHideFlags: 0
@@ -13540,9 +13540,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BoardView
   draggedFromOpacity: 0.35
-  draggedTileOpacity: 0.9
   hintBadgeSize: 0.3
-  hintRingBadgeOffset: {x: 0.34, y: -0.34}
   hintFrameWidth: 4
   hintGhostStrength: 0.6
   hintPulse: 1
@@ -13558,8 +13556,11 @@ MonoBehaviour:
   objectsRoot: {fileID: 1860073911}
   choicesRoot: {fileID: 1050023301}
   boardSize: 700
+  boardMaxWidth: 820
   boardSideMargin: 80
   boardHudMargin: 24
+  boardDockGap: 40
+  boardTopMargin: 60
   boardGap: 40
   keepBelow: []
   keepAbove: []

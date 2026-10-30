@@ -86,6 +86,7 @@ public partial class BoardView : MonoBehaviour
         this.previewTile = previewTile;
         ghost = null;
         EndDrag(); // a drag cut short by a new level
+        picked = null;
         FinishUndo(); // an undo rewind cut short by a new level
         undoing = false;
         StopRecording();

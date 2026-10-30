@@ -80,7 +80,13 @@ public partial class GameManager : MonoBehaviour
     void Start()
     {
         hud.onSupplyBarPressed = () => board.FinishUndo(); // a press on the supply bar finishes an undo rewind
-        board.canDragTile = p => CanAct() && Cells[p.x, p.y].tile != null && !Cells[p.x, p.y].locked;
+        board.canDragTile = p =>
+        {
+            bool ok = DragAllowed && CanAct() && Cells[p.x, p.y].tile != null && !Cells[p.x, p.y].locked;
+            if (ok) DropPickedUp(); // a drag replaces a click pick-up
+            return ok;
+        };
+        board.dockIcon = hud.SlotIconRect; // a tile dragged from the board is as big as in the dock
         board.onTileMoved = OnTileMoved;
         // boards with several parts fit between the top bar and the dock
         board.keepBelow = new[] { hud.levelTitleText ? hud.levelTitleText.rectTransform : null, hud.scoreText ? hud.scoreText.rectTransform : null };
@@ -108,6 +114,7 @@ public partial class GameManager : MonoBehaviour
         inventory = Tiles.All.ToDictionary(t => t, t => level.inventory.TryGetValue(t, out var c) ? c : 0);
         selected = null;
         busy = false;
+        pickedUp = null; // the board is rebuilt
         hud.SetScoreLog(null);
         deliveryPoints = comboPoints = teleportPoints = unusedPoints = 0;
         history.Clear();
@@ -144,6 +151,8 @@ public partial class GameManager : MonoBehaviour
         if (levelOver) return;
         if (busy) return; // objects are moving or waiting for a direction: nothing can be placed, so nothing is picked
         if (inputLocked) return; // for the tutorial (see LockInput)
+        if (!ClickAllowed) return; // Settings: drag only
+        if (pickedUp is Vector2Int from) { DropPickedUp(); OnCellRightClicked(from); return; } // a picked-up board tile: back to the supply
         board.FinishUndo(); // an undo rewind still going: it finishes first (the supply bar's counts catch up)
         if (inventory[t] <= 0) return;
         selected = selected == t ? (TileType?)null : t; // clicking the selected tile again deselects it
@@ -151,7 +160,23 @@ public partial class GameManager : MonoBehaviour
         Report(new GameAction { kind = GameActionKind.SelectTile, tile = selected }); // for the tutorial
     }
 
+    // a click on a square: puts down a board tile picked up by clicking (the same square: where it was), picks one up
+    // (a tile no object has used), or places the tile picked in the supply
     void OnCellClicked(Vector2Int p)
+    {
+        if (!CanAct() || !ClickAllowed) return;
+        var cell = Cells[p.x, p.y];
+        if (pickedUp is Vector2Int from)
+        {
+            if (p == from) { DropPickedUp(); return; }
+            if (!cell.obstacle && cell.tile == null) { DropPickedUp(); OnTileMoved(from, p); return; }
+        }
+        if (cell.tile != null && !cell.locked) { PickUp(p); return; }
+        PlaceSelected(p);
+    }
+
+    // the tile picked in the supply goes on the square
+    void PlaceSelected(Vector2Int p)
     {
         if (levelOver) return;
         if (busy) return;
@@ -177,11 +202,36 @@ public partial class GameManager : MonoBehaviour
     // tiles can be picked and placed: the level is on, nothing moving, not locked by the tutorial
     bool CanAct() => !levelOver && !busy && !inputLocked;
 
+    // Settings: click a tile then a square, drag it, or either
+    static bool ClickAllowed => Session.placement != Session.Placement.Drag;
+    static bool DragAllowed => Session.placement != Session.Placement.Click;
+
+    // a board tile picked up by clicking it (no object has used it): the next click on an empty square moves it there,
+    // on the supply returns it, on it again puts it back. its preview shows on the squares; nothing follows the mouse
+    Vector2Int? pickedUp;
+
+    void PickUp(Vector2Int p)
+    {
+        DropPickedUp();
+        selected = null; // instead of a supply tile
+        hud.RefreshInventory(inventory, selected);
+        pickedUp = p;
+        board.SetPicked(p);
+    }
+
+    void DropPickedUp()
+    {
+        if (pickedUp == null) return;
+        pickedUp = null;
+        board.SetPicked(null);
+    }
+
     // dragging a tile from the supply: it's picked, and dropping it on a square places it like a click
     bool supplyDrag;
     void SupplyDragStart(TileType t, UnityEngine.EventSystems.PointerEventData e)
     {
-        if (!CanAct() || inventory[t] <= 0) return;
+        if (!DragAllowed || !CanAct() || inventory[t] <= 0) return;
+        DropPickedUp();
         board.FinishUndo();
         if (selected != t)
         {
@@ -199,7 +249,8 @@ public partial class GameManager : MonoBehaviour
         if (!supplyDrag) return;
         supplyDrag = false;
         board.EndDrag();
-        if (BoardView.SquareUnder(e) is Vector2Int p) OnCellClicked(p);
+        if (BoardView.SquareUnder(e) is Vector2Int p) PlaceSelected(p);
+        if (!ClickAllowed) { selected = null; hud.RefreshInventory(inventory, selected); } // drag only: nothing stays picked for clicks
     }
 
     // a board tile dragged onto another empty square: taken back and placed there in one move (one undo)
@@ -245,6 +296,7 @@ public partial class GameManager : MonoBehaviour
     // right-click puts a tile back in the supply, as long as no object has gone through it yet
     void OnCellRightClicked(Vector2Int p)
     {
+        DropPickedUp();
         if (levelOver || busy) return;
         if (inputLocked) return; // for the tutorial (see LockInput)
         board.FinishUndo(); // an undo rewind still going: it finishes first
@@ -269,7 +321,7 @@ public partial class GameManager : MonoBehaviour
     }
 
     // the tile the hover preview shows: the selected one, while the player can place
-    TileType? PreviewTile() => levelOver || busy ? null : selected;
+    TileType? PreviewTile() => levelOver || busy ? null : pickedUp is Vector2Int q ? Cells[q.x, q.y].tile : selected;
 
     // the level is over: count the unused tiles and show the end window
     void FinishLevel(string reason, bool showNow = false)
@@ -278,6 +330,7 @@ public partial class GameManager : MonoBehaviour
         HideStuckNotice();
         levelOver = true;
         selected = null;
+        DropPickedUp();
 
         // unused tiles only score when everything was delivered (otherwise ending early, e.g. with End level,
         // would score every tile not spent on the objects left behind)

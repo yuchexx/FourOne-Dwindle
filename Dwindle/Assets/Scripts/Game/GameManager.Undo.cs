@@ -59,6 +59,7 @@ public partial class GameManager
         busy = false;
         board.HideGhost();
         selected = null; // undo leaves no tile selected
+        DropPickedUp();
 
         var shownSupply = new Dictionary<TileType, int>(inventory); // the counts before the undo
         Restore(snapshot);

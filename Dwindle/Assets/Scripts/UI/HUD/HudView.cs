@@ -336,14 +336,16 @@ public class HudView : MonoBehaviour
     LevelData lastLevel;
     int lastLeft, lastUsed, lastScore, lastUntravelled;
 
-    // untravelled: tiles on the board nobody has gone through yet (they'd count as unused too), shown as "3 Left (+2)"
+    // untravelled: tiles on the board nobody has gone through yet (they'd count as unused too): "7 (+1 on board) / 8 Left"
     public void RefreshInfo(LevelData level, int tilesLeft, int tilesUsed, int score, int untravelled = 0)
     {
         (lastLevel, lastLeft, lastUsed, lastScore, lastUntravelled) = (level, tilesLeft, tilesUsed, score, untravelled);
         if (levelTitleText != null) levelTitleText.text = level.title;
         if (scoreText != null)
-            scoreText.text = $"Score {score}\n<size={targetSize * 100f:0}%><color=#{ColorUtility.ToHtmlStringRGB(targetColor)}>/ {level.targetScore}</color></size>";
-        if (supplyLeftText != null) supplyLeftText.text = untravelled > 0 ? $"{tilesLeft} Left (+{untravelled})" : $"{tilesLeft} Left";
+            scoreText.text = level.targetScore <= 0 ? $"Score {score}" // no target (Level 1): no "/ 0"
+                : $"Score {score}\n<size={targetSize * 100f:0}%><color=#{ColorUtility.ToHtmlStringRGB(targetColor)}>/ {level.targetScore}</color></size>";
+        if (supplyLeftText != null)
+            supplyLeftText.text = untravelled > 0 ? $"{tilesLeft} (+{untravelled} on board) / {tilesLeft + untravelled} Left" : $"{tilesLeft} Left";
         if (supplyUsedText != null) supplyUsedText.text = $"Used {tilesUsed}";
     }
 

@@ -9,11 +9,11 @@ public partial class BoardView
 {
     [Header("Dragging")]
     [Range(0f, 1f)] public float draggedFromOpacity = 0.35f; // the board tile being dragged, left on its square
-    [Range(0.2f, 1f)] public float draggedTileOpacity = 0.9f;
 
     // set by GameManager: whether the tile on this square may be dragged off (no object has used it, nothing moving)
     public Func<Vector2Int, bool> canDragTile;
     public Action<Vector2Int, Vector2Int> onTileMoved; // set by GameManager: a board tile dropped on another square
+    public Func<TileType, RectTransform> dockIcon;     // set by GameManager: a supply card's tile, so a dragged board tile is that size
 
     TileType draggedTile;
 
@@ -39,7 +39,6 @@ public partial class BoardView
         go.GetComponent<Image>().color = cellColor;
         dragIconGroup = go.GetComponent<CanvasGroup>();
         dragIconGroup.blocksRaycasts = false; // the squares under it still get the mouse
-        dragIconGroup.alpha = draggedTileOpacity;
         var tile = Instantiate(tilePrefab, dragIcon);
         var rt = (RectTransform)tile.transform;
         rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = rt.offsetMax = Vector2.zero;
@@ -77,7 +76,7 @@ public partial class BoardView
         var cell = Cells[p.x, p.y];
         if (cell?.tile == null || canDragTile == null || !canDragTile(p)) return false;
         HideGhost();
-        StartDrag(cell.tile.Value, e);
+        StartDrag(cell.tile.Value, e, dockIcon?.Invoke(cell.tile.Value));
         draggedFrom = p;
         draggedTile = cell.tile.Value;
         SetTileOpacity(cell, draggedFromOpacity);
@@ -95,10 +94,16 @@ public partial class BoardView
         else if (to != from) onTileMoved?.Invoke(from.Value, to.Value);
     }
 
-    static void SetTileOpacity(Cell cell, float alpha)
+    // GameManager: a board tile picked up by clicking shows faded on its square (null: none)
+    Vector2Int? picked;
+    public void SetPicked(Vector2Int? p)
     {
-        var group = cell.tileView.GetComponent<CanvasGroup>();
-        if (group == null) group = cell.tileView.gameObject.AddComponent<CanvasGroup>();
-        group.alpha = alpha;
+        if (picked is Vector2Int q && Cells != null && Cells[q.x, q.y]?.tileView != null) SetTileOpacity(Cells[q.x, q.y], 1f);
+        picked = p;
+        if (p is Vector2Int r && Cells[r.x, r.y]?.tileView != null) SetTileOpacity(Cells[r.x, r.y], draggedFromOpacity);
     }
+
+    // faded toward the square's own color, solid (see-through would show the road pieces' overlaps darker)
+    void SetTileOpacity(Cell cell, float alpha) =>
+        cell.tileView.Show(cell.tile.Value, Color.Lerp(CellColor(cell), tileColor, alpha));
 }
