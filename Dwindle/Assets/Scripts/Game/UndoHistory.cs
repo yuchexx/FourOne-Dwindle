@@ -14,6 +14,7 @@ public class Snapshot
     public Dictionary<string, List<ArrowRecord>> arrows;   //   and the arrows picked
     public List<ScoreEntry> scoreLog; // the score history
     public bool takeBack; // the action after this snapshot was a right-click take-back, not a placement
+    public bool move;     // or a board tile dragged to another square (taken back and placed in one go)
     public GameAction action; // that placement or take-back, as ActionDone reported it (for analytics: what an undo takes back)
     public BoardView.Rewind rewind; // the moves the placement after this snapshot caused, for undo to play backwards
 }
@@ -35,8 +36,8 @@ public class UndoHistory
     readonly Stack<Snapshot> snapshots = new Stack<Snapshot>();
 
     public bool CanUndo => snapshots.Count > 0;
-    // tiles on the board from the player's own hand: placements still in the history, minus take-backs
-    public int TilesUsed => snapshots.Sum(s => s.takeBack ? -1 : 1);
+    // tiles on the board from the player's own hand: placements still in the history, minus take-backs (moves: 0)
+    public int TilesUsed => snapshots.Sum(s => s.takeBack ? -1 : s.move ? 0 : 1);
 
     public void Record(Snapshot s) => snapshots.Push(s);
     public Snapshot Pop() => snapshots.Pop();

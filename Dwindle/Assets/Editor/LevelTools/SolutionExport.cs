@@ -147,29 +147,22 @@ static class SolutionExport
         }
         sb.Append("        },\n");
 
-        // the answer for the stage 3 hint: the best plan with the fewest steps (tiles and arrows), played out
-        List<string> answer = null; Plan answerPlan = null;
+        // the plan the hints start from on an empty board: the best plan with the fewest steps (tiles and arrows). every
+        // best plan is played out here too, as a check
+        int fewest = int.MaxValue; Plan answerPlan = null;
         string OrderKey(Plan p) => string.Join("|", p.events.Select(g => string.Join(",", g.OrderBy(j => j))));
         foreach (var p in plans)
         {
             var rp = new Replay2(l).Run(p);
             if (!rp.ok || rp.score < l.targetScore) throw new Exception($"{l.title}: a best plan didn't replay to the target ({(rp.ok ? "score " + rp.score : rp.problem)}).");
-            var actions = new List<string>();
-            for (int s = 0; s < rp.placements.Count; s++)
-            {
-                var (c, t) = rp.placements[s];
-                actions.Add($"Place({L(l, c)}, TileType.{t})");
-                foreach (var (obj, way) in rp.stepChoices[s]) actions.Add($"Choose(\"{l.objects[obj].name}\", Dir.{way})");
-            }
-            if (answer == null || actions.Count < answer.Count) { answer = actions; answerPlan = p; }
+            int steps = rp.placements.Count + rp.stepChoices.Sum(c => c.Count);
+            if (steps < fewest) { fewest = steps; answerPlan = p; }
         }
         // which family and order it follows, in the order they're written above
         int answerFamily = families.FindIndex(g => g.Key == Roads(answerPlan));
         int answerOrder = families[answerFamily].Select(OrderKey).Distinct().ToList().IndexOf(OrderKey(answerPlan));
         sb.Append($"        answerFamily = {answerFamily}, answerOrder = {answerOrder},\n");
-        sb.Append("        answer = new[]\n        {\n");
-        foreach (var a in answer) sb.Append($"            {a},\n");
-        sb.Append("        },\n    };\n");
+        sb.Append("    };\n");
         sb.Append($"    // ---- end of Level {number} ----\n");
         return sb.ToString();
     }

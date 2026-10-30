@@ -7,7 +7,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Dwindle/UI Palette", fileName = "UIPalette")]
 public class UIPalette : ScriptableObject
 {
-    public enum Role { Background, Panel, Button, Text, MutedText, Accent, Star, StarEmpty, Success, Danger, Dim }
+    public enum Role { Background, Panel, Button, Text, MutedText, Accent, Star, StarEmpty, Success, Danger, Dim, Hint }
 
     [Header("Surfaces")]
     [Tooltip("Behind everything: the title screen, the Levels page")]
@@ -33,6 +33,8 @@ public class UIPalette : ScriptableObject
     public Color success = Hex("#61C98B");
     [Tooltip("Bad news: a lost tile, a blocked object")]
     public Color danger = Hex("#FF7373");
+    [Tooltip("The hints drawn on the board: numbers, frames, ghost tiles")]
+    public Color hint = Hex("#403B8A");
 
     public Color Get(Role role) => role switch
     {
@@ -46,6 +48,7 @@ public class UIPalette : ScriptableObject
         Role.StarEmpty => starEmpty,
         Role.Success => success,
         Role.Danger => danger,
+        Role.Hint => hint,
         _ => dim,
     };
 

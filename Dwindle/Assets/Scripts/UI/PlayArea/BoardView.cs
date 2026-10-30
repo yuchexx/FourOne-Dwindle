@@ -6,8 +6,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// draws the boards and animates what happens on them
-public class BoardView : MonoBehaviour
+// draws the boards and animates what happens on them. hints in BoardView.Hints.cs, dragging in BoardView.Drag.cs
+public partial class BoardView : MonoBehaviour
 {
     [Header("Prefabs")]
     public TileView tilePrefab;
@@ -23,8 +23,22 @@ public class BoardView : MonoBehaviour
     public RectTransform choicesRoot;
 
     [Header("Board")]
-    [Tooltip("A single board fits a square this size. Two or more boards side by side fill the board area instead")]
+    [Tooltip("A single board is at most this tall, with its rings. Two or more boards fill the free space instead")]
     public float boardSize = 700f;
+    [Tooltip("A single board is at most this wide, with its rings (wider than Board Size, so wide boards aren't small)")]
+    public float boardMaxWidth = 820f;
+    [Tooltip("The space kept between the boards' frames and the screen's left and right sides")]
+    public float boardSideMargin = 80f;
+    [Tooltip("The space kept between the boards' frames and the title and score above")]
+    public float boardHudMargin = 24f;
+    [Tooltip("The boards' lowest frame sits exactly this far above the dock, on every level")]
+    public float boardDockGap = 40f;
+    [Tooltip("The space kept between the boards' frames and the top of the screen")]
+    public float boardTopMargin = 60f;
+    [Tooltip("With several boards: the space between two boards' frames")]
+    public float boardGap = 40f;
+    // set by GameManager: the top bar's parts (the boards stay below them) and the dock (they stay above it)
+    [HideInInspector] public RectTransform[] keepBelow, keepAbove;
     [Range(0.2f, 1f)] public float objectSize = 0.55f; // an object's circle, as a fraction of a cell
     [Range(0.2f, 1f)] public float ringSize = 0.62f;   // a ring, as a fraction of a cell
     [Tooltip("How far an object's start and its ring sit from the board's edge, in squares (0.5 = the middle of the " +
@@ -71,6 +85,7 @@ public class BoardView : MonoBehaviour
         this.onDoorClicked = onDoorClicked;
         this.previewTile = previewTile;
         ghost = null;
+        EndDrag(); // a drag cut short by a new level
         FinishUndo(); // an undo rewind cut short by a new level
         undoing = false;
         StopRecording();
@@ -83,15 +98,15 @@ public class BoardView : MonoBehaviour
 
         // leave room for one ring of cells around each board, where objects and destinations sit
         int cols = level.width + 2, rows = level.height + 2;
-        if (level.boards.Count == 1)
-            CellSize = Mathf.Floor(boardSize / Mathf.Max(cols, rows));
-        else
-        {
-            // several boards side by side use the whole board area
-            var area = cellsRoot.parent != null && cellsRoot.parent.parent is RectTransform areaRect
-                ? areaRect.rect.size : new Vector2(boardSize, boardSize);
-            CellSize = Mathf.Floor(Mathf.Min(area.x / cols, area.y / rows));
-        }
+        var free = FreeSpace();
+        var board = cellsRoot.parent;
+        LayOutGrid(free); // again: FreeSpace tried several
+        // one board: at most Board Size tall and Board Max Width wide, rings included (so a wide board grows to about a
+        // square one's height). several: as big as the free space allows
+        if (level.boards.Count == 1) CellSize = Mathf.Min(CellSize, Mathf.Floor(Mathf.Min(boardMaxWidth / cols, boardSize / rows)));
+        SetLines();
+        // the lowest frame Board Dock Gap above the dock, on every level; centered across; the space left goes above
+        board.localPosition = new Vector2(free.center.x, free.yMin + LayoutSize().y / 2f);
 
         foreach (var b in level.boards) MakeFrame(b);
 
@@ -107,6 +122,7 @@ public class BoardView : MonoBehaviour
                 rt.sizeDelta = Vector2.one * (CellSize - CellGap); // a thin gap between cells
                 view.background.color = cellColor;
                 view.Init(p, onCellClicked, onCellRightClicked, ShowGhost, HideGhost);
+                view.board = this; // dragging a tile off the board (BoardView.Drag.cs)
                 // no hover or click tint on the squares: the faded preview of the selected tile is the only hover
                 var colors = view.button.colors;
                 colors.highlightedColor = colors.normalColor;
@@ -157,6 +173,58 @@ public class BoardView : MonoBehaviour
         }
         LayoutWaitingObjects(objects);
         return objects;
+    }
+
+    // the space the boards can use, in Board Area's own coordinates: between the screen's sides (less Board Side
+    // Margin), Board Dock Gap above the dock, and as high as it can go without the boards coming within Board HUD
+    // Margin of the title or the score. those count as reaching their screen corner (the "<" sits left of the title)
+    Rect FreeSpace()
+    {
+        var area = cellsRoot.parent.parent;
+        Canvas.ForceUpdateCanvases(); // the HUD laid out for this level first
+        var screen = Bounds((RectTransform)cellsRoot.GetComponentInParent<Canvas>().rootCanvas.transform, area);
+        float bottom = screen.yMin;
+        foreach (var t in keepAbove ?? Array.Empty<RectTransform>())
+            if (t != null && t.gameObject.activeInHierarchy) bottom = Mathf.Max(bottom, Bounds(t, area).yMax);
+        var corners = new List<Rect>();
+        foreach (var t in keepBelow ?? Array.Empty<RectTransform>())
+        {
+            if (t == null || !t.gameObject.activeInHierarchy) continue;
+            var r = Bounds(t, area);
+            if (r.center.x < screen.center.x) r.xMin = screen.xMin; else r.xMax = screen.xMax;
+            corners.Add(Rect.MinMaxRect(r.xMin - boardHudMargin, r.yMin - boardHudMargin, r.xMax + boardHudMargin, r.yMax + boardHudMargin));
+        }
+        float left = screen.xMin + boardSideMargin, right = screen.xMax - boardSideMargin, low = bottom + boardDockGap;
+        // the boards' top at the screen's top, or just below one of the corners: the biggest fit that clears them all
+        var tops = new List<float> { screen.yMax - boardTopMargin };
+        foreach (var c in corners) tops.Add(c.yMin);
+        Rect best = Rect.MinMaxRect(left, low, right, tops.Min());
+        float bestCell = -1f;
+        foreach (var top in tops)
+        {
+            if (top <= low) continue;
+            var free = Rect.MinMaxRect(left, low, right, top);
+            LayOutGrid(free);
+            var size = LayoutSize();
+            var box = new Rect(free.center.x - size.x / 2f, free.yMin, size.x, size.y); // on the dock gap, as Build puts it
+            if (corners.Any(c => c.Overlaps(box))) continue;
+            if (CellSize > bestCell) { bestCell = CellSize; best = free; }
+        }
+        return best;
+    }
+
+    static Rect Bounds(RectTransform t, Transform space)
+    {
+        var corners = new Vector3[4];
+        t.GetWorldCorners(corners);
+        Vector2 min = Vector2.positiveInfinity, max = Vector2.negativeInfinity;
+        foreach (var c in corners)
+        {
+            Vector2 p = space.InverseTransformPoint(c);
+            min = Vector2.Min(min, p);
+            max = Vector2.Max(max, p);
+        }
+        return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
     }
 
     // a dark plate behind a board and its ring, so side-by-side boards read as separate
@@ -442,9 +510,67 @@ public class BoardView : MonoBehaviour
         return img;
     }
 
-    // board position relative to the board's center of a grid coordinate
-    public Vector2 CellPos(Vector2Int c) =>
-        new Vector2((c.x - (level.width - 1) / 2f) * CellSize, (c.y - (level.height - 1) / 2f) * CellSize);
+    // board position relative to the board's center of a grid coordinate (columns and rows from LayOutGrid)
+    public Vector2 CellPos(Vector2Int c) => new Vector2(Line(colX, c.x), Line(rowY, c.y)) * CellSize;
+
+    // each column's and row's center, in squares from the layout's middle, for -1 (the ring before the first board)
+    // to width / height (the ring after the last). the empty line between two boards' rings is squeezed so their frames
+    // are Board Gap apart
+    float[] colX = new float[0], rowY = new float[0];
+
+    static float Line(float[] at, int i) =>
+        at.Length == 0 ? i : i < -1 ? at[0] + (i + 1) : i + 1 >= at.Length ? at[at.Length - 1] + (i + 2 - at.Length) : at[i + 1];
+
+    // the square size that fits the whole layout (boards, rings, frames, Board Gap between frames) into free, and
+    // where each column and row goes
+    void LayOutGrid(Rect free)
+    {
+        float pad = Mathf.Max(framePadding, ringSize / 2f); // each frame past its ring (or the ring's circle, if bigger)
+        bool[] emptyCol = EmptyLines(level.width, b => (b.origin.x, b.width));
+        bool[] emptyRow = EmptyLines(level.height, b => (b.origin.y, b.height));
+        int ex = emptyCol.Count(e => e), ey = emptyRow.Count(e => e);
+        // across: the rings' centers span width + 1 squares, each frame adds pad; an empty line between two rings takes
+        // what's left of Board Gap once the two frames' pads past their rings are counted
+        float Fit(float room, int lines, int empties) => (room - empties * boardGap) / (lines + 1 + 2f * pad - empties * (2f - 2f * pad));
+        CellSize = Mathf.Floor(Mathf.Min(Fit(free.width, level.width, ex), Fit(free.height, level.height, ey)));
+        SetLines();
+    }
+
+    // where each column and row goes at the current square size (an empty line between boards keeps Board Gap)
+    void SetLines()
+    {
+        float pad = Mathf.Max(framePadding, ringSize / 2f);
+        float squeezed = Mathf.Max(0f, boardGap / Mathf.Max(1f, CellSize) - (1f - 2f * pad)); // an empty line's width, in squares
+        colX = Centers(EmptyLines(level.width, b => (b.origin.x, b.width)), squeezed);
+        rowY = Centers(EmptyLines(level.height, b => (b.origin.y, b.height)), squeezed);
+    }
+
+    // the whole layout's size at the current square size: ring to ring across, plus each frame past its ring
+    Vector2 LayoutSize()
+    {
+        float pad = Mathf.Max(framePadding, ringSize / 2f);
+        return new Vector2(colX[colX.Length - 1] - colX[0] + 2f * pad, rowY[rowY.Length - 1] - rowY[0] + 2f * pad) * CellSize;
+    }
+
+    // lines (0 to count - 1) no board or ring touches: the empty line between two boards
+    bool[] EmptyLines(int count, Func<BoardSpec, (int start, int size)> span)
+    {
+        var res = new bool[count];
+        for (int i = 0; i < count; i++)
+            res[i] = level.boards.All(b => { var (s, n) = span(b); return i < s - 1 || i > s + n; });
+        return res;
+    }
+
+    static float[] Centers(bool[] empty, float squeezed)
+    {
+        int count = empty.Length;
+        float W(int i) => i >= 0 && i < count && empty[i] ? squeezed : 1f;
+        var at = new float[count + 2]; // index i + 1 for line i, from -1 to count
+        for (int i = 0; i <= count; i++) at[i + 1] = at[i] + W(i - 1) / 2f + W(i) / 2f;
+        float middle = (at[0] + at[count + 1]) / 2f;
+        for (int i = 0; i < at.Length; i++) at[i] -= middle;
+        return at;
+    }
 
     // the middle of a cell's edge
     public Vector2 EdgePos(Vector2Int c, Dir side) => CellPos(c) + (Vector2)DirUtil.Offset(side) * CellSize * 0.5f;
@@ -524,7 +650,7 @@ public class BoardView : MonoBehaviour
     {
         HideGhost(p);
         var cell = Cells[p.x, p.y];
-        var t = previewTile?.Invoke();
+        var t = draggedFrom != null ? draggedTile : previewTile?.Invoke(); // a board tile being dragged previews itself
         if (t == null || cell == null || cell.obstacle || cell.tile != null) return;
         ghost = Instantiate(tilePrefab, cell.view.transform);
         ghost.Show(t.Value, Color.Lerp(tileColor, cellColor, ghostFade));
@@ -667,19 +793,20 @@ public class BoardView : MonoBehaviour
     }
 
     // the object waits at the center of a + or T tile or a door, with one arrow per way it may go
-    public IEnumerator AskDirection(MovingObject o, List<Dir> options)
+    public IEnumerator AskDirection(MovingObject o, List<Dir> options, Dir? hinted = null)
     {
         var cellBg = Cells[o.pos.x, o.pos.y].view.background;
         cellBg.color = crossHighlightColor;
-        yield return AskDirectionAt(o, CellPos(o.pos), options);
+        yield return AskDirectionAt(o, CellPos(o.pos), options, hinted);
         cellBg.color = CellColor(Cells[o.pos.x, o.pos.y]);
     }
 
-    // arrows around a point
-    public IEnumerator AskDirectionAt(MovingObject o, Vector2 center, List<Dir> options)
+    // arrows around a point. hinted: the stage 3 hint's way, whose arrow pulses in the Hint color
+    public IEnumerator AskDirectionAt(MovingObject o, Vector2 center, List<Dir> options, Dir? hinted = null)
     {
         Clear(choicesRoot);
         pickedDirection = null;
+        hintedArrow = null;
         foreach (var d in options)
         {
             var dir = d; // copy for the click handler below
@@ -689,10 +816,12 @@ public class BoardView : MonoBehaviour
             rt.anchoredPosition = center + (Vector2)DirUtil.Offset(d) * CellSize * 0.39f; // that way
             rt.localEulerAngles = new Vector3(0, 0, DirUtil.Angle(d)); // the prefab's arrow points up
             button.GetComponent<Graphic>().color = o.spec.color;
+            if (hinted == d) hintedArrow = button.GetComponent<Graphic>();
             button.onClick.AddListener(() => { if (!inputLocked) pickedDirection = dir; }); // for the tutorial: see LockInput
         }
 
         while (pickedDirection == null) yield return null; // wait for a click
+        hintedArrow = null;
 
         Clear(choicesRoot);
         o.heading = pickedDirection.Value;

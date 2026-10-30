@@ -30,6 +30,8 @@ public struct ArrowRecord
 }
 
 // one tile of a hint's plan, in the order it should go down
+public enum StepState { ToDo, Done, Early }
+
 public struct PlanStep
 {
     public Vector2Int square;
@@ -60,8 +62,19 @@ public static class PlanMatcher
             var road = fam.roads.FirstOrDefault(r => r.objectName == kv.Key);
             if (road == null || !ArrowsFit(l, road, kv.Value)) return false;
         }
+        for (int k = st.deliveries.Count; k < deliveries.Length; k++)
+            if (MeetingMissed(l, deliveries[k], st)) return false;
         return true;
     }
+
+    // a delivery still to come can't happen any more: the tile that delivers a group lies on every member's road, so
+    // each member waits before it. once a member has gone through every square that could deliver them, it got
+    // there ahead of the rest (e.g. Level 2's bridge placed first: Green runs through it alone)
+    static bool MeetingMissed(LevelData l, Delivery d, PlayerState st) =>
+        !d.completedBy.Any(c => d.objects.All(o => !Passed(st, o, G(l, c.at))));
+
+    static bool Passed(PlayerState st, string objectName, Vector2Int square) =>
+        st.passed.TryGetValue(objectName, out var p) && p.Contains(square);
 
     // the k-th delivery happened as the plan's k-th: the same objects, on one of its squares, after its "before" tiles
     public static bool DeliveryFits(LevelData l, int family, int order, int k, DeliveryRecord d)
@@ -153,25 +166,122 @@ public static class PlanMatcher
         return k;
     }
 
-    // stage 3's ghosts: the steps not done yet. a step is done when its exact tile is on its square, unless that tile
-    // made a delivery the plan didn't have (the first delivery off the plan, and every one after it)
-    public static List<int> PendingSteps(LevelData l, int family, int order, List<PlanStep> steps, PlayerState st)
+    // stage 3: how each step stands. Done: its exact tile is on its square at the right moment, or its delivery has
+    // already happened the plan's way (its tile may have broken since). Early: its exact tile is there at the wrong
+    // moment (it made a delivery the plan didn't have, or let one of its delivery's objects through ahead of the
+    // rest). ToDo: the square is empty or has another tile
+    public static StepState[] StepStates(LevelData l, int family, int order, List<PlanStep> steps, PlayerState st)
     {
         int ok = MatchingDeliveries(l, family, order, st.deliveries);
-        var wrongMoment = new HashSet<Vector2Int>(st.deliveries.Skip(ok).Select(d => d.at));
-        var res = new List<int>();
+        var offPlan = new HashSet<Vector2Int>(st.deliveries.Skip(ok).Select(d => d.at));
+        var deliveries = l.solution.families[family].orders[order].deliveries;
+        var res = new StepState[steps.Count];
         for (int i = 0; i < steps.Count; i++)
         {
             var s = steps[i];
-            bool done = st.tiles.TryGetValue(s.square, out var t) && t == s.tile && !wrongMoment.Contains(s.square);
-            if (!done) res.Add(i);
+            if (s.delivery >= 0 && s.delivery < ok) { res[i] = StepState.Done; continue; }
+            if (!st.tiles.TryGetValue(s.square, out var t) || t != s.tile) { res[i] = StepState.ToDo; continue; }
+            bool early = offPlan.Contains(s.square) || s.completes && s.delivery >= 0 && s.delivery < deliveries.Length &&
+                         deliveries[s.delivery].objects.Any(o => Passed(st, o, s.square));
+            res[i] = early ? StepState.Early : StepState.Done;
         }
         return res;
     }
 
-    // a plan's whole sequence from an empty board, with the level's own supply
-    public static List<PlanStep> FromStart(LevelData l, int family, int order) =>
-        NextSteps(l, family, order, new PlayerState { supply = Tiles.All.ToDictionary(t => t, t => l.inventory.GetValueOrDefault(t)) });
+    // the same steps (squares, order, numbers) with their tiles picked again for this board: a step not done yet whose
+    // square has a tile the plan allows there takes that tile; the empty ones get tiles the supply left (and the +
+    // tiles still to be earned) can cover. null when it can't cover them
+    public static List<PlanStep> Refit(LevelData l, int family, int order, List<PlanStep> steps, StepState[] states, PlayerState st)
+    {
+        var allowed = l.solution.families[family].squares.ToDictionary(a => G(l, a.at), a => a.tiles);
+        var deliveries = l.solution.families[family].orders[order].deliveries;
+        var res = new List<PlanStep>(steps);
+        var todo = Enumerable.Range(0, res.Count).Where(i => states[i] != StepState.Done).ToList();
+        var left = new Dictionary<TileType, int>(st.supply);
+        bool Assign(int k)
+        {
+            if (k == todo.Count) return true;
+            var step = res[todo[k]];
+            bool earns = step.completes && step.delivery >= 0 && step.delivery < deliveries.Length && deliveries[step.delivery].objects.Length >= 2;
+            // already down and allowed here: it stays (no supply needed)
+            bool down = st.tiles.TryGetValue(step.square, out var placed) && allowed[step.square].Contains(placed);
+            foreach (var t in down ? new[] { placed } : allowed[step.square].OrderBy(t => t != step.tile).ThenBy(t => t == TileType.Cross).ToArray())
+            {
+                if (!down && left.GetValueOrDefault(t) <= 0) continue;
+                if (!down) left[t]--;
+                if (earns) left[TileType.Cross] = left.GetValueOrDefault(TileType.Cross) + 1;
+                step.tile = t; res[todo[k]] = step;
+                if (Assign(k + 1)) return true;
+                if (earns) left[TileType.Cross]--;
+                if (!down) left[t]++;
+            }
+            return false;
+        }
+        return Assign(0) ? res : null;
+    }
+
+    // every best plan, the answer's own first
+    public static IEnumerable<(int family, int order)> Plans(LevelData l)
+    {
+        var s = l.solution;
+        yield return (s.answerFamily, s.answerOrder);
+        for (int f = 0; f < s.families.Length; f++)
+            for (int o = 0; o < s.families[f].orders.Length; o++)
+                if (f != s.answerFamily || o != s.answerOrder) yield return (f, o);
+    }
+
+    // a plan's whole sequence from an empty board, with the level's own supply. prefer: tiles to pick where the plan
+    // allows them (the player's own, so a fitting tile already down counts as done)
+    public static List<PlanStep> FromStart(LevelData l, int family, int order, Dictionary<Vector2Int, TileType> prefer = null) =>
+        NextSteps(l, family, order, new PlayerState { supply = LevelSupply(l) }, prefer);
+
+    static Dictionary<TileType, int> LevelSupply(LevelData l) => Tiles.All.ToDictionary(t => t, t => l.inventory.GetValueOrDefault(t));
+
+    // the delivery each step belongs to, and the steps that deliver: a delivery happens on the first of its squares
+    // that completes every member's road (for steps that don't say, like shown steps carried over to another plan)
+    public static List<PlanStep> Tag(LevelData l, int family, int order, List<PlanStep> steps)
+    {
+        var fam = l.solution.families[family];
+        var deliveries = fam.orders[order].deliveries;
+        var placed = new HashSet<Vector2Int>();
+        var res = new List<PlanStep>();
+        int k = 0;
+        foreach (var step in steps)
+        {
+            var s = step;
+            placed.Add(s.square);
+            s.delivery = k;
+            s.completes = k < deliveries.Length && deliveries[k].completedBy.Any(c => G(l, c.at) == s.square) &&
+                deliveries[k].objects.All(o => fam.roads.First(r => r.objectName == o).squares.All(q => placed.Contains(G(l, q))));
+            if (s.completes) k++;
+            res.Add(s);
+        }
+        return res;
+    }
+
+    // another plan carrying on from the steps already shown: null unless those are its first steps too (it allows each
+    // of those tiles there, the supply covers them, and the deliveries they make are its first ones). otherwise the
+    // shown steps (numbered as before), then its own next ones
+    public static List<PlanStep> Continue(LevelData l, int family, int order, List<PlanStep> shown, Dictionary<Vector2Int, TileType> prefer)
+    {
+        var tagged = Tag(l, family, order, shown);
+        var deliveries = l.solution.families[family].orders[order].deliveries;
+        var st = new PlayerState { supply = LevelSupply(l) };
+        var occupied = new HashSet<Vector2Int>();
+        foreach (var s in tagged)
+        {
+            if (st.supply.GetValueOrDefault(s.tile) <= 0) return null;
+            st.supply[s.tile]--;
+            st.tiles[s.square] = s.tile;
+            occupied.Add(s.square);
+            if (!s.completes) continue;
+            st.deliveries.Add(new DeliveryRecord { objects = deliveries[s.delivery].objects, at = s.square, occupied = new HashSet<Vector2Int>(occupied) });
+            if (deliveries[s.delivery].objects.Length >= 2) st.supply[TileType.Cross]++;
+        }
+        if (!Fits(l, family, order, st)) return null;
+        var next = NextSteps(l, family, order, st, prefer);
+        return next == null ? null : tagged.Concat(next).ToList();
+    }
 
     // stage 2: who arrives in which delivery (1 = first; the same number = together), and the squares where groups meet
     public static List<(string objectName, int number)> Badges(LevelData l, int family, int order)
@@ -183,14 +293,22 @@ public static class PlanMatcher
         return res;
     }
 
-    public static List<Vector2Int> Junctions(LevelData l, int family, int order) =>
-        l.solution.families[family].orders[order].deliveries.Where(d => d.objects.Length >= 2)
-            .SelectMany(d => d.completedBy.Select(c => G(l, c.at))).Distinct().ToList();
+    // with the delivery's number (the same as its badges)
+    public static List<(Vector2Int square, int number)> Junctions(LevelData l, int family, int order)
+    {
+        var deliveries = l.solution.families[family].orders[order].deliveries;
+        var res = new List<(Vector2Int, int)>();
+        for (int k = 0; k < deliveries.Length; k++)
+            if (deliveries[k].objects.Length >= 2)
+                foreach (var c in deliveries[k].completedBy)
+                    if (!res.Any(r => r.Item1 == G(l, c.at))) res.Add((G(l, c.at), k + 1));
+        return res;
+    }
 
     // stage 3: the tiles still to place on this plan, in order: for each delivery still to come, its "before" tiles,
     // then the arriving objects' roads, then the tile that completes it. each gets a tile the supply allows at that
     // point (a + earned by delivering together only after that delivery). null when the supply can't cover it
-    public static List<PlanStep> NextSteps(LevelData l, int family, int order, PlayerState st)
+    public static List<PlanStep> NextSteps(LevelData l, int family, int order, PlayerState st, Dictionary<Vector2Int, TileType> prefer = null)
     {
         var fam = l.solution.families[family];
         var deliveries = fam.orders[order].deliveries;
@@ -230,7 +348,8 @@ public static class PlanMatcher
             if (i == steps.Count) return true;
             var step = steps[i];
             bool earns = step.completes && deliveries[step.delivery].objects.Length >= 2;
-            foreach (var t in allowed[step.square].OrderBy(t => t == TileType.Cross))
+            bool Preferred(TileType t) => prefer != null && prefer.TryGetValue(step.square, out var p) && p == t;
+            foreach (var t in allowed[step.square].OrderBy(t => !Preferred(t)).ThenBy(t => t == TileType.Cross))
             {
                 if (left.GetValueOrDefault(t) <= 0) continue;
                 left[t]--;
@@ -245,8 +364,4 @@ public static class PlanMatcher
         return Assign(0) ? steps : null;
     }
 
-    // the fixed answer as steps (from an empty board)
-    public static List<PlanStep> AnswerSteps(LevelData l) =>
-        l.solution.answer.Where(a => a.kind == GameActionKind.PlaceTile)
-            .Select(a => new PlanStep { square = l.boards[a.board].origin + a.square, tile = a.tile.Value, delivery = -1 }).ToList();
 }

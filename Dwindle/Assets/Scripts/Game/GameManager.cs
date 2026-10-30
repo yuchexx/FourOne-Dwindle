@@ -80,6 +80,12 @@ public partial class GameManager : MonoBehaviour
     void Start()
     {
         hud.onSupplyBarPressed = () => board.FinishUndo(); // a press on the supply bar finishes an undo rewind
+        board.canDragTile = p => CanAct() && Cells[p.x, p.y].tile != null && !Cells[p.x, p.y].locked;
+        board.onTileMoved = OnTileMoved;
+        // boards with several parts fit between the top bar and the dock
+        board.keepBelow = new[] { hud.levelTitleText ? hud.levelTitleText.rectTransform : null, hud.scoreText ? hud.scoreText.rectTransform : null };
+        board.keepAbove = new[] { hud.supplyDock };
+        HintsChanged += DrawHints;
         if (menu.levelSelect != null) menu.levelSelect.Build(Levels.All, LoadLevel); // the Levels page's cards
         ShowStartScreen();
     }
@@ -93,6 +99,7 @@ public partial class GameManager : MonoBehaviour
         stuck = false;
         HideStuckNotice();
         board.ClearChoices();
+        supplyDrag = false;
         hud.ResetSlotFlashes();
         menu.ShowGame();
         levelOver = false;
@@ -108,7 +115,8 @@ public partial class GameManager : MonoBehaviour
         endWindowHeld = false; // for the tutorial: nor does a held end window
         LockInput(false);      // for the tutorial: nor does locked input
 
-        hud.BuildSlots(Tiles.SupplyOrder, SelectTile); // every tile type, x0 for the ones this level doesn't hand out
+        // every tile type, x0 for the ones this level doesn't hand out
+        hud.BuildSlots(Tiles.SupplyOrder, SelectTile, SupplyDragStart, e => board.MoveDrag(e), SupplyDragEnd);
         objects = board.Build(level, OnCellClicked, OnDoorClicked, OnCellRightClicked, PreviewTile);
         ResetHintsForLoad();
         RefreshAll();
@@ -166,6 +174,67 @@ public partial class GameManager : MonoBehaviour
         Report(snapshot.action); // for the tutorial
     }
 
+    // tiles can be picked and placed: the level is on, nothing moving, not locked by the tutorial
+    bool CanAct() => !levelOver && !busy && !inputLocked;
+
+    // dragging a tile from the supply: it's picked, and dropping it on a square places it like a click
+    bool supplyDrag;
+    void SupplyDragStart(TileType t, UnityEngine.EventSystems.PointerEventData e)
+    {
+        if (!CanAct() || inventory[t] <= 0) return;
+        board.FinishUndo();
+        if (selected != t)
+        {
+            selected = t;
+            hud.RefreshInventory(inventory, selected);
+            Report(new GameAction { kind = GameActionKind.SelectTile, tile = selected }); // for the tutorial
+        }
+        supplyDrag = true;
+        var card = e.pointerDrag != null ? e.pointerDrag.GetComponent<TileCard>() : null;
+        board.StartDrag(t, e, card != null ? card.iconRoot : null); // as big as the card's tile
+    }
+
+    void SupplyDragEnd(UnityEngine.EventSystems.PointerEventData e)
+    {
+        if (!supplyDrag) return;
+        supplyDrag = false;
+        board.EndDrag();
+        if (BoardView.SquareUnder(e) is Vector2Int p) OnCellClicked(p);
+    }
+
+    // a board tile dragged onto another empty square: taken back and placed there in one move (one undo)
+    void OnTileMoved(Vector2Int from, Vector2Int to)
+    {
+        if (!CanAct()) return;
+        Cell a = Cells[from.x, from.y], b = Cells[to.x, to.y];
+        if (a.tile == null || a.locked || b.obstacle || b.tile != null) return;
+        board.FinishUndo();
+
+        var t = a.tile.Value;
+        var snapshot = Capture();
+        snapshot.move = true;
+        snapshot.rewind = board.StartRecording(to, t);
+        snapshot.action = OnSquare(GameActionKind.PlaceTile, to, t); // what an undo of it reports
+        history.Record(snapshot);
+        board.TakeBackTile(from);
+        board.SetTile(to, t);
+        RefreshAll();
+        lastPlaced = to; // for the hints
+        StartCoroutine(ResolveRound());
+        Report(OnSquare(GameActionKind.TakeBack, from, t)); // for the tutorial and analytics: a take-back, then a placement
+        Report(snapshot.action);
+    }
+
+    // tiles on the board no object has gone through: they count as unused at the end
+    int UntravelledTiles()
+    {
+        int n = 0;
+        for (int x = 0; x < Cells.GetLength(0); x++)
+            for (int y = 0; y < Cells.GetLength(1); y++)
+                if (Cells[x, y]?.tile != null && !Cells[x, y].locked) n++;
+        return n;
+    }
+
     // clicking a door names it
     void OnDoorClicked(DoorSpec door)
     {
@@ -214,7 +283,7 @@ public partial class GameManager : MonoBehaviour
         // would score every tile not spent on the objects left behind)
         if (objects.All(o => o.completed))
         {
-            int unusedTiles = inventory.Values.Sum();
+            int unusedTiles = inventory.Values.Sum() + UntravelledTiles(); // the supply, and tiles nobody went through
             unusedPoints = unusedTiles * pointsPerUnusedTile;
             if (unusedTiles > 0)
                 hud.LogText($"{unusedTiles} unused", unusedPoints, $"{pointsPerUnusedTile}×{unusedTiles} =");
@@ -318,7 +387,7 @@ public partial class GameManager : MonoBehaviour
     {
         if (selected != null && inventory[selected.Value] <= 0) selected = null;
         hud.RefreshInventory(inventory, selected);
-        hud.RefreshInfo(level, inventory.Values.Sum(), history.TilesUsed, Score);
+        hud.RefreshInfo(level, inventory.Values.Sum(), history.TilesUsed, Score, Cells != null ? UntravelledTiles() : 0);
         hud.SetUndoAvailable(!levelOver && history.CanUndo);
     }
 

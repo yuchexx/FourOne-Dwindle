@@ -21,10 +21,5 @@ public static partial class Solutions
     static Completion At(int board, int x, int y, params (int board, int x, int y)[] before) =>
         new Completion { at = Sq(board, x, y), before = Squares(before) };
 
-    static GameAction Place(int board, int x, int y, TileType tile) =>
-        new GameAction { kind = GameActionKind.PlaceTile, tile = tile, board = board, square = new Vector2Int(x, y) };
-    static GameAction Choose(string objectName, Dir way) =>
-        new GameAction { kind = GameActionKind.ChooseDirection, objectName = objectName, direction = way };
-
     static Trick TrickOf(string name, TrickNeed need) => new Trick { name = name, need = need };
 }

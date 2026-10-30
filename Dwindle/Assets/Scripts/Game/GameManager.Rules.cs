@@ -82,7 +82,7 @@ public partial class GameManager
             }
             else
             {
-                yield return board.AskDirection(o, ways); // sets o.heading from the arrow the player clicks
+                yield return board.AskDirection(o, ways, HintArrow(o)); // sets o.heading from the arrow the player clicks
                 ReportChoice(o); // for the tutorial
             }
             o.view.Face(o.heading);
@@ -114,7 +114,7 @@ public partial class GameManager
         if (into.Count == 1) o.heading = into[0];
         else
         {
-            yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into);
+            yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into, HintArrow(o, door));
             ReportChoice(o, door.label); // for the tutorial and the hints
         }
 

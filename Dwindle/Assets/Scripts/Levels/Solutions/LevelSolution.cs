@@ -9,10 +9,8 @@ public class LevelSolution
     public int target, bestTiles;
     public Trick[] tricks;
     public RoadFamily[] families; // the sets of roads the best plans use
-    // one best plan to show the player, step by step from an empty board (the stage 3 hint): the one with the fewest
-    // steps. PlaceTile and ChooseDirection, in the order the game asks for them, as ActionDone reports them
-    public GameAction[] answer;
-    public int answerFamily, answerOrder; // the family and delivery order the answer follows (for the stage 2 hint)
+    // the plan the hints start from on an empty board: the best plan with the fewest steps (tiles and arrows)
+    public int answerFamily, answerOrder;
 }
 
 public struct Square

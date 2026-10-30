@@ -112,7 +112,7 @@ public partial class GameManager
 
         // undoing a placement takes its piece back off the count; undoing a take-back puts it back on
         if (s.takeBack) TelemetryManager.Instance.AddPiece();
-        else TelemetryManager.Instance.RemovePiece();
+        else if (!s.move) TelemetryManager.Instance.RemovePiece(); // a move kept the count
 
         hud.SetScoreLog(s.scoreLog);
         RefreshAll();

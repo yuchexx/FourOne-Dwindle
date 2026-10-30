@@ -3,8 +3,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-// a supply slot: a button with a tile icon
-public class TileCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+// a supply slot: a button with a tile icon. click to pick it, or drag it onto a square
+public class TileCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     public Image background;
     public Button button;
@@ -52,6 +52,18 @@ public class TileCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
     public void OnPointerEnter(PointerEventData eventData) { hovered = true; ApplyBackground(); }
     public void OnPointerExit(PointerEventData eventData) { hovered = false; ApplyBackground(); }
+
+    // set by HudView: a drag from this card (GameManager decides whether it may start)
+    public System.Action<TileType, PointerEventData> onDragStart;
+    public System.Action<PointerEventData> onDrag, onDragEnd;
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (eventData.button == PointerEventData.InputButton.Left) onDragStart?.Invoke(type, eventData);
+    }
+
+    public void OnDrag(PointerEventData eventData) => onDrag?.Invoke(eventData);
+    public void OnEndDrag(PointerEventData eventData) => onDragEnd?.Invoke(eventData);
 
     // a tile type you have none of can't be clicked
     public void SetAvailable(bool available)

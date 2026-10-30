@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
@@ -107,7 +108,9 @@ public class HudView : MonoBehaviour
     void Awake() => ShowScoreLog();
 
     // every tile type gets a slot with its count badge
-    public void BuildSlots(IEnumerable<TileType> types, Action<TileType> onSelect)
+    public void BuildSlots(IEnumerable<TileType> types, Action<TileType> onSelect,
+                           Action<TileType, PointerEventData> onDragStart = null,
+                           Action<PointerEventData> onDrag = null, Action<PointerEventData> onDragEnd = null)
     {
         ListenToSupplyBar();
         Clear(slotsRoot);
@@ -145,6 +148,9 @@ public class HudView : MonoBehaviour
             slot.SetTile(tilePrefab, t, tileColor);
             var type = t; // copy for the click handler below
             slot.button.onClick.AddListener(() => onSelect(type));
+            slot.onDragStart = onDragStart;
+            slot.onDrag = onDrag;
+            slot.onDragEnd = onDragEnd;
             // a press on any card, x0 ones too, counts as a press on the supply bar (it finishes an undo rewind); the
             // card's own click still only works when it has tiles
             slot.gameObject.AddComponent<ClickRelay>().onDown = () => onSupplyBarPressed?.Invoke();
@@ -220,7 +226,7 @@ public class HudView : MonoBehaviour
         if (!historyChanged) return;
         historyChanged = false;
         ShowScoreLog();
-        if (lastLevel != null) RefreshInfo(lastLevel, lastLeft, lastUsed, lastScore);
+        if (lastLevel != null) RefreshInfo(lastLevel, lastLeft, lastUsed, lastScore, lastUntravelled);
     }
 
     // the prefab's width, or less if that many slots plus the gaps would overflow the dock
@@ -328,15 +334,16 @@ public class HudView : MonoBehaviour
     }
 
     LevelData lastLevel;
-    int lastLeft, lastUsed, lastScore;
+    int lastLeft, lastUsed, lastScore, lastUntravelled;
 
-    public void RefreshInfo(LevelData level, int tilesLeft, int tilesUsed, int score)
+    // untravelled: tiles on the board nobody has gone through yet (they'd count as unused too), shown as "3 Left (+2)"
+    public void RefreshInfo(LevelData level, int tilesLeft, int tilesUsed, int score, int untravelled = 0)
     {
-        (lastLevel, lastLeft, lastUsed, lastScore) = (level, tilesLeft, tilesUsed, score);
+        (lastLevel, lastLeft, lastUsed, lastScore, lastUntravelled) = (level, tilesLeft, tilesUsed, score, untravelled);
         if (levelTitleText != null) levelTitleText.text = level.title;
         if (scoreText != null)
             scoreText.text = $"Score {score}\n<size={targetSize * 100f:0}%><color=#{ColorUtility.ToHtmlStringRGB(targetColor)}>/ {level.targetScore}</color></size>";
-        if (supplyLeftText != null) supplyLeftText.text = $"{tilesLeft} Left";
+        if (supplyLeftText != null) supplyLeftText.text = untravelled > 0 ? $"{tilesLeft} Left (+{untravelled})" : $"{tilesLeft} Left";
         if (supplyUsedText != null) supplyUsedText.text = $"Used {tilesUsed}";
     }
 
