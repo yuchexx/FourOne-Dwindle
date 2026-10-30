@@ -1618,7 +1618,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Leave Level 2?
+  m_text: 'Genius
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5207,7 +5209,7 @@ MonoBehaviour:
   undoButton: {fileID: 374498824}
   stuckNotice: {fileID: 347531795}
   tileColor: {r: 0.28, g: 0.31, b: 0.38, a: 1}
-  selectedSlotColor: {r: 0.95, g: 0.7882353, b: 0.29803923, a: 1}
+  selectedSlotColor: {r: 0.98039216, g: 0.81960785, b: 0.34901962, a: 0.9019608}
   flashColor: {r: 0.9372549, g: 0.41960785, b: 0.41960785, a: 1}
   earnedFlashColor: {r: 0.38039216, g: 0.7882353, b: 0.54509807, a: 1}
   flashHoldSeconds: 0.5
@@ -5921,7 +5923,7 @@ GameObject:
   - component: {fileID: 510626168}
   - component: {fileID: 510626167}
   m_Layer: 5
-  m_Name: LeaveButton
+  m_Name: ResumeButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5944,8 +5946,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 86, y: -50}
-  m_SizeDelta: {x: 120, y: 55}
+  m_AnchoredPosition: {x: 94, y: -50}
+  m_SizeDelta: {x: 140, y: 55}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &510626167
 MonoBehaviour:
@@ -6021,7 +6023,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 434519279}
         m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
-        m_MethodName: ShowStartScreen
+        m_MethodName: Resume
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7081,7 +7083,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Leave
+  m_text: 'Resume
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -7108,8 +7112,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 30
-  m_fontSizeBase: 30
+  m_fontSize: 28
+  m_fontSizeBase: 28
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -13621,7 +13625,7 @@ GameObject:
   - component: {fileID: 1308407488}
   - component: {fileID: 1308407487}
   m_Layer: 5
-  m_Name: ResumeButton
+  m_Name: LeaveButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -13721,7 +13725,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 434519279}
         m_TargetAssemblyTypeName: GameManager, Assembly-CSharp
-        m_MethodName: Resume
+        m_MethodName: ShowStartScreen
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -19296,9 +19300,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Resume
-
-'
+  m_text: Leave
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
