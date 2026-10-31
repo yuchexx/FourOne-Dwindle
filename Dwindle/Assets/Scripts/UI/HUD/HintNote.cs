@@ -47,7 +47,7 @@ public class HintNote : MonoBehaviour
         shownStage = stage;
         this.board = board;
         pulsing.Clear();
-        for (int i = transform.childCount - 1; i >= 0; i--) Destroy(transform.GetChild(i).gameObject);
+        UIBuilder.Clear(transform);
         var p = UIPalette.Current;
         if (stage == 2)
         {
@@ -77,17 +77,11 @@ public class HintNote : MonoBehaviour
     // a line: its icons (added after) then the label
     RectTransform Row(string label)
     {
-        var row = new GameObject("Line", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-        row.transform.SetParent(transform, false);
-        var h = row.GetComponent<HorizontalLayoutGroup>();
-        h.spacing = 6f;
-        h.childAlignment = TextAnchor.MiddleLeft;
-        h.childControlWidth = h.childControlHeight = true;
-        h.childForceExpandWidth = h.childForceExpandHeight = false;
-        var text = Text(row.transform, label, fontSize, UIPalette.Current.mutedText);
+        var row = UIBuilder.NewRow("Line", transform, 6f);
+        var text = Text(row, label, fontSize, UIPalette.Current.mutedText);
         text.gameObject.AddComponent<LayoutElement>().minHeight = iconSize;
         pulsing.Add(text);
-        return (RectTransform)row.transform;
+        return row;
     }
 
     // an icon-sized box placed before the row's label
@@ -96,19 +90,14 @@ public class HintNote : MonoBehaviour
         var rt = (RectTransform)new GameObject(name, typeof(RectTransform)).transform;
         rt.SetParent(row, false);
         rt.SetSiblingIndex(row.childCount - 2);
-        var e = rt.gameObject.AddComponent<LayoutElement>();
-        e.minWidth = e.preferredWidth = e.minHeight = e.preferredHeight = iconSize;
+        UIBuilder.FixedSize(rt.gameObject, iconSize);
         return rt;
     }
 
     Image Fill(RectTransform box, Color color)
     {
-        var img = new GameObject("Fill", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-        var rt = img.rectTransform;
-        rt.SetParent(box, false);
-        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = rt.offsetMax = Vector2.zero;
-        img.color = color;
-        img.raycastTarget = false;
+        var img = UIBuilder.NewImage("Fill", box, color);
+        UIBuilder.Fill(img.rectTransform);
         return img;
     }
 
@@ -125,11 +114,7 @@ public class HintNote : MonoBehaviour
     void Round(RectTransform row, Color color)
     {
         var box = Box(row, "Ring");
-        var circle = Instantiate(board.objectPrefab, box);
-        circle.Setup(color, iconSize);
-        foreach (var g in circle.GetComponentsInChildren<Graphic>(true))
-            if (g != circle.body) g.gameObject.SetActive(false); // just the circle
-        circle.body.raycastTarget = false;
+        var circle = UIBuilder.Circle(board.objectPrefab, box, color, iconSize);
         var rt = circle.Rect;
         rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = Vector2.zero;
@@ -159,25 +144,14 @@ public class HintNote : MonoBehaviour
 
     void Hash(RectTransform box, bool pulse)
     {
-        var t = Text(box, "#", iconSize * 0.62f, Color.white);
-        t.fontStyle = FontStyles.Bold;
-        t.alignment = TextAlignmentOptions.Center;
-        var rt = t.rectTransform;
-        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = rt.offsetMax = Vector2.zero;
+        var t = UIBuilder.BadgeLabel(box, "#", iconSize * 0.62f, font);
         if (pulse) pulsing.Add(t);
     }
 
     TextMeshProUGUI Text(Transform parent, string s, float size, Color color)
     {
-        var t = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
-        t.rectTransform.SetParent(parent, false);
-        if (font != null) t.font = font;
-        t.text = s;
-        t.fontSize = size;
-        t.color = color;
+        var t = UIBuilder.NewText("Text", parent, s, size, color, font);
         t.alignment = TextAlignmentOptions.MidlineLeft;
-        t.textWrappingMode = TextWrappingModes.NoWrap;
-        t.raycastTarget = false;
         return t;
     }
 }

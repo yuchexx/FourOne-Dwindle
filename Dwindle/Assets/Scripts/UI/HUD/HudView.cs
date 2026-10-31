@@ -113,7 +113,7 @@ public class HudView : MonoBehaviour
                            Action<PointerEventData> onDrag = null, Action<PointerEventData> onDragEnd = null)
     {
         ListenToSupplyBar();
-        Clear(slotsRoot);
+        UIBuilder.Clear(slotsRoot);
         slots.Clear();
         badges.Clear();
         groupLines.Clear();
@@ -132,14 +132,9 @@ public class HudView : MonoBehaviour
                 var rt = (RectTransform)gap.transform;
                 rt.SetParent(slotsRoot, false);
                 rt.sizeDelta = new Vector2(groupGap, slotHeight);
-                var line = new GameObject("Line", typeof(RectTransform), typeof(Image));
-                var lr = (RectTransform)line.transform;
-                lr.SetParent(rt, false);
+                var lr = UIBuilder.NewImage("Line", rt, groupLineColor).rectTransform;
                 PlaceGroupLine(lr);
                 groupLines.Add(lr);
-                var img = line.GetComponent<Image>();
-                img.color = groupLineColor;
-                img.raycastTarget = false;
             }
             previous = category;
 
@@ -179,15 +174,12 @@ public class HudView : MonoBehaviour
         slot.iconRoot.anchoredPosition = new Vector2(slot.iconRoot.anchoredPosition.x, -slotHeight / 2f);
         slot.iconRoot.sizeDelta = Vector2.one * iconSize;
         slot.background.color = Color.clear; // the slot still takes the clicks
-        var square = new GameObject("Highlight", typeof(RectTransform), typeof(Image));
-        var sr = (RectTransform)square.transform;
-        sr.SetParent(slot.transform, false);
+        var squareImage = UIBuilder.NewImage("Highlight", slot.transform, Color.white);
+        var sr = squareImage.rectTransform;
         sr.SetAsFirstSibling(); // behind the tile
         sr.anchorMin = sr.anchorMax = slot.iconRoot.anchorMin;
         sr.anchoredPosition = slot.iconRoot.anchoredPosition;
         sr.sizeDelta = slot.iconRoot.sizeDelta + Vector2.one * 2 * highlightPadding;
-        var squareImage = square.GetComponent<Image>();
-        squareImage.raycastTarget = false;
         slot.background = squareImage;
         if (countBadgeTemplate == null) return;
         var badge = Instantiate(countBadgeTemplate, slot.iconRoot);
@@ -483,41 +475,16 @@ public class HudView : MonoBehaviour
         foreach (var g in row.GetComponentsInChildren<Graphic>(true)) g.raycastTarget = false;
     }
 
-    RectTransform NewRow()
-    {
-        var go = new GameObject("Row", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-        var rt = (RectTransform)go.transform;
-        rt.SetParent(scoreHistory, false);
-        var h = go.GetComponent<HorizontalLayoutGroup>();
-        h.spacing = historySpacing;
-        h.childAlignment = TextAnchor.MiddleLeft;
-        h.childControlWidth = h.childControlHeight = true;
-        h.childForceExpandWidth = h.childForceExpandHeight = false;
-        return rt;
-    }
+    RectTransform NewRow() => UIBuilder.NewRow("Row", scoreHistory, historySpacing);
 
-    TMP_Text HistoryText(RectTransform row, string text, Color color)
-    {
-        var go = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
-        go.transform.SetParent(row, false);
-        var t = go.GetComponent<TextMeshProUGUI>();
-        if (scoreText != null) t.font = scoreText.font;
-        t.text = text;
-        t.fontSize = historyTextSize;
-        t.color = color;
-        t.textWrappingMode = TextWrappingModes.NoWrap;
-        t.raycastTarget = false;
-        return t;
-    }
+    TMP_Text HistoryText(RectTransform row, string text, Color color) =>
+        UIBuilder.NewText("Text", row, text, historyTextSize, color, scoreText != null ? scoreText.font : null);
 
     void DoorPart(RectTransform spot, Vector2 size)
     {
-        var go = new GameObject("Door", typeof(RectTransform), typeof(Image));
-        var rt = (RectTransform)go.transform;
-        rt.SetParent(spot, false);
+        var rt = UIBuilder.NewImage("Door", spot, doorIconColor).rectTransform;
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.sizeDelta = size;
-        go.GetComponent<Image>().color = doorIconColor;
     }
 
     // a square spot in a row; the icon goes inside it
@@ -525,7 +492,7 @@ public class HudView : MonoBehaviour
     {
         var go = new GameObject("Icon", typeof(RectTransform));
         go.transform.SetParent(row, false);
-        Fixed(go, size);
+        UIBuilder.FixedSize(go, size);
         return (RectTransform)go.transform;
     }
 
@@ -539,20 +506,6 @@ public class HudView : MonoBehaviour
         rt.sizeDelta = Vector2.one * native;
         rt.localScale = Vector3.one * (size / native);
         return native;
-    }
-
-    // an icon at a fixed size in its row
-    static void Fixed(GameObject go, float size)
-    {
-        var le = go.GetComponent<LayoutElement>();
-        if (le == null) le = go.AddComponent<LayoutElement>();
-        le.minWidth = le.preferredWidth = size;
-        le.minHeight = le.preferredHeight = size;
-    }
-
-    static void Clear(Transform root)
-    {
-        foreach (Transform child in root) Destroy(child.gameObject);
     }
 }
 

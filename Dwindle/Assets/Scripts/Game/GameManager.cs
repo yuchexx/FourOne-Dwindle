@@ -459,11 +459,6 @@ public partial class GameManager : MonoBehaviour
     public void OpenMenu() => ShowMenu(levelOver);
     public void Resume() => menu.HideMenu();
 
-    public void DismissMenuIfPaused()
-    {
-        if (!levelOver) menu.HideMenu();
-    }
-
     public void ShowRules() => menu.SetRulesVisible(true);
     public void HideRules() => menu.SetRulesVisible(false);
 

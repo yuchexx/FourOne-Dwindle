@@ -97,7 +97,7 @@ public partial class BoardView
     // a layer above the tiles and rings, below the objects; it never takes the mouse
     void MakeHintsRoot()
     {
-        if (hintsRoot != null) { Clear(hintsRoot); return; }
+        if (hintsRoot != null) { UIBuilder.Clear(hintsRoot); return; }
         var go = new GameObject("Hints", typeof(RectTransform), typeof(CanvasGroup));
         hintsRoot = (RectTransform)go.transform;
         hintsRoot.SetParent(objectsRoot.parent, false);
@@ -129,10 +129,7 @@ public partial class BoardView
     {
         var hole = destinationPrefab.hole.rectTransform;
         float size = CellSize * ringSize * (hole.anchorMax.x - hole.anchorMin.x);
-        var circle = Instantiate(objectPrefab, hintsRoot);
-        circle.Setup(HintColor, size);
-        foreach (var g in circle.GetComponentsInChildren<Graphic>(true))
-            if (g != circle.body) g.gameObject.SetActive(false); // just the circle
+        var circle = UIBuilder.Circle(objectPrefab, hintsRoot, HintColor, size);
         circle.Rect.anchoredPosition = pos;
         pulsing.Add((circle.body, Pulse.Fade));
         pulsing.Add((Number(circle.Rect, number, size * 0.62f), Pulse.Fade));
@@ -141,8 +138,7 @@ public partial class BoardView
     // a small square (Hint-colored unless color says otherwise) with a white number, centered at pos
     void Badge(Vector2 pos, int number, Color? color = null, bool pulse = true)
     {
-        var back = MakeImage("Badge", hintsRoot);
-        back.color = color ?? HintColor;
+        var back = UIBuilder.NewImage("Badge", hintsRoot, color ?? HintColor);
         var rt = back.rectTransform;
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.sizeDelta = Vector2.one * CellSize * hintBadgeSize;
@@ -154,21 +150,7 @@ public partial class BoardView
     }
 
     // a white bold number filling box
-    static TextMeshProUGUI Number(RectTransform box, int number, float size)
-    {
-        var text = new GameObject("Number", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
-        var rt = text.rectTransform;
-        rt.SetParent(box, false);
-        rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = rt.offsetMax = Vector2.zero;
-        rt.localEulerAngles = Vector3.zero;
-        text.text = number.ToString();
-        text.fontSize = size;
-        text.fontStyle = FontStyles.Bold;
-        text.color = Color.white;
-        text.alignment = TextAlignmentOptions.Center;
-        text.raycastTarget = false;
-        return text;
-    }
+    static TextMeshProUGUI Number(RectTransform box, int number, float size) => UIBuilder.BadgeLabel(box, number.ToString(), size);
 
     // four bars just inside a square's edge
     void Frame(Vector2Int p)
@@ -183,8 +165,7 @@ public partial class BoardView
 
     void Bar(RectTransform box, Vector2 min, Vector2 max, Vector2 offMin, Vector2 offMax)
     {
-        var img = MakeImage("Bar", box);
-        img.color = HintColor;
+        var img = UIBuilder.NewImage("Bar", box, HintColor);
         var rt = img.rectTransform;
         rt.anchorMin = min; rt.anchorMax = max; rt.offsetMin = offMin; rt.offsetMax = offMax;
         pulsing.Add((img, Pulse.Frame));

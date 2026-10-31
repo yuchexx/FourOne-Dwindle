@@ -64,20 +64,4 @@ public static class Tiles
         TileType.StraightH or TileType.StraightV => TileCategory.Straight,
         _ => TileCategory.Corner,
     };
-
-    public static string Name(TileType t) => t switch
-    {
-        TileType.Cross => "+ Cross",
-        TileType.Bridge => "+ Bridge (straight only)",
-        TileType.CornerNE => "L (N-E)",
-        TileType.CornerES => "L (E-S)",
-        TileType.CornerSW => "L (S-W)",
-        TileType.CornerWN => "L (W-N)",
-        TileType.StraightH => "I (horizontal)",
-        TileType.StraightV => "I (vertical)",
-        TileType.TeeNES => "T (N-E-S)",
-        TileType.TeeESW => "T (E-S-W)",
-        TileType.TeeSWN => "T (S-W-N)",
-        _ => "T (W-N-E)",
-    };
 }

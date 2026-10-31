@@ -91,11 +91,11 @@ public partial class BoardView : MonoBehaviour
         undoing = false;
         StopRecording();
         StopAllCoroutines(); // a Flash left over from the last level would touch a destroyed cell
-        Clear(cellsRoot);
+        UIBuilder.Clear(cellsRoot);
         frames.Clear();
-        Clear(markersRoot);
-        Clear(objectsRoot);
-        Clear(choicesRoot);
+        UIBuilder.Clear(markersRoot);
+        UIBuilder.Clear(objectsRoot);
+        UIBuilder.Clear(choicesRoot);
 
         // leave room for one ring of cells around each board, where objects and destinations sit
         int cols = level.width + 2, rows = level.height + 2;
@@ -231,7 +231,7 @@ public partial class BoardView : MonoBehaviour
     // a dark plate behind a board and its ring, so side-by-side boards read as separate
     void MakeFrame(BoardSpec b)
     {
-        var frame = MakeImage("BoardFrame", cellsRoot);
+        var frame = UIBuilder.NewImage("BoardFrame", cellsRoot, Color.white);
         frames.Add((frame, b));
         LayOutFrame(frame, b);
     }
@@ -262,18 +262,16 @@ public partial class BoardView : MonoBehaviour
         var mid = EdgePos(door.cell, door.side);
         bool horizontalEdge = door.side == Dir.N || door.side == Dir.S;
 
-        var bar = MakeImage("Door " + door.label, markersRoot);
+        var bar = UIBuilder.NewImage("Door " + door.label, markersRoot, doorColor);
         bar.rectTransform.anchorMin = bar.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         bar.rectTransform.anchoredPosition = mid;
         float length = CellSize * 0.7f, thickness = Mathf.Max(6f, CellSize * 0.1f);
         bar.rectTransform.sizeDelta = horizontalEdge ? new Vector2(length, thickness) : new Vector2(thickness, length);
-        bar.color = doorColor;
 
-        var badge = MakeImage("Badge", bar.rectTransform);
+        var badge = UIBuilder.NewImage("Badge", bar.rectTransform, doorColor);
         badge.rectTransform.anchorMin = badge.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         badge.rectTransform.anchoredPosition = Vector2.zero;
         badge.rectTransform.sizeDelta = Vector2.one * CellSize * 0.3f;
-        badge.color = doorColor;
 
         if (onDoorClicked != null)
         {
@@ -331,7 +329,7 @@ public partial class BoardView : MonoBehaviour
     // a layer just above the objects, lined up with them
     void MakeDoorHighlightRoot()
     {
-        if (doorHighlightRoot != null) { Clear(doorHighlightRoot); return; }
+        if (doorHighlightRoot != null) { UIBuilder.Clear(doorHighlightRoot); return; }
         var go = new GameObject("DoorHighlights", typeof(RectTransform));
         doorHighlightRoot = (RectTransform)go.transform;
         doorHighlightRoot.SetParent(objectsRoot.parent, false);
@@ -482,33 +480,21 @@ public partial class BoardView : MonoBehaviour
         color.a *= endLineOpacity;
         if (!endLineDotted) // one bar from the start or ring to the board's edge
         {
-            var bar = MakeImage("Bar", root);
+            var bar = UIBuilder.NewImage("Bar", root, color);
             bar.rectTransform.anchorMin = bar.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            bar.color = color;
             line.bar = bar.rectTransform;
             line.Restore();
             return line;
         }
         for (float t = length - dot / 2f; t >= dot / 2f; t -= step) // from the board's edge back toward the start or ring
         {
-            var img = MakeImage("Dot", root);
+            var img = UIBuilder.NewImage("Dot", root, color);
             img.rectTransform.anchorMin = img.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
             img.rectTransform.sizeDelta = Vector2.one * dot;
             img.rectTransform.anchoredPosition = from + dir * t;
-            img.color = color;
             line.dots.Add((img.gameObject, t));
         }
         return line;
-    }
-
-    static Image MakeImage(string name, RectTransform parent)
-    {
-        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-        var rt = (RectTransform)go.transform;
-        rt.SetParent(parent, false);
-        var img = go.GetComponent<Image>();
-        img.raycastTarget = false;
-        return img;
     }
 
     // board position relative to the board's center of a grid coordinate (columns and rows from LayOutGrid)
@@ -805,7 +791,7 @@ public partial class BoardView : MonoBehaviour
     // arrows around a point. hinted: the stage 3 hint's way, whose arrow pulses in the Hint color
     public IEnumerator AskDirectionAt(MovingObject o, Vector2 center, List<Dir> options, Dir? hinted = null)
     {
-        Clear(choicesRoot);
+        UIBuilder.Clear(choicesRoot);
         pickedDirection = null;
         hintedArrow = null;
         foreach (var d in options)
@@ -824,11 +810,11 @@ public partial class BoardView : MonoBehaviour
         while (pickedDirection == null) yield return null; // wait for a click
         hintedArrow = null;
 
-        Clear(choicesRoot);
+        UIBuilder.Clear(choicesRoot);
         o.heading = pickedDirection.Value;
     }
 
-    public void ClearChoices() => Clear(choicesRoot);
+    public void ClearChoices() => UIBuilder.Clear(choicesRoot);
 
     // briefly tints a cell red so the player sees where a tile was removed
     IEnumerator Flash(Image img)
@@ -1171,10 +1157,5 @@ public partial class BoardView : MonoBehaviour
         supplyDone = null;
         done?.Invoke();
         // (undoing stays as it is: Undo stops the board's effects between BeginUndo and PlayUndo)
-    }
-
-    static void Clear(Transform root)
-    {
-        foreach (Transform child in root) Destroy(child.gameObject);
     }
 }

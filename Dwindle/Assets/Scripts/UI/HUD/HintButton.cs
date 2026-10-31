@@ -15,8 +15,7 @@ public class HintButton : MonoBehaviour
     public HintNote stageNote;
     [Tooltip("Asks before stage 3; its buttons call ShowAnswer and CloseConfirm")]
     public GameObject confirmPanel;
-    [Tooltip("Optional: the round Hide / Show button above this one. Its On Click: HintButton > ToggleHidden")]
-    public GameObject hideButton;
+    [Tooltip("The Hide / Show button's text. Its On Click: HintButton > ToggleHidden")]
     public TMP_Text hideLabel;
     public string hideText = "Hide", showText = "Show";
     [Tooltip("Optional: opens Hide / Show on hover, like the More menu. It only opens once a hint is used")]
@@ -82,7 +81,6 @@ public class HintButton : MonoBehaviour
             stageNote.Show(stage, game.board);
             stageNote.gameObject.SetActive(stage >= 2 && !hidden);
         }
-        if (hideButton != null) hideButton.SetActive(stage >= 1);
         if (hideLabel != null) hideLabel.text = hidden ? showText : hideText;
         if (hoverPanel != null) hoverPanel.enabled = stage >= 1; // nothing to show or hide before the first hint
     }
