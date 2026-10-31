@@ -79,7 +79,7 @@ public partial class GameManager : MonoBehaviour
 
     void Start()
     {
-        hud.onSupplyBarPressed = () => board.FinishUndo(); // a press on the supply bar finishes an undo rewind
+        hud.onSupplyBarPressed = SupplyBarPressed;
         board.canDragTile = p =>
         {
             bool ok = DragAllowed && CanAct() && Cells[p.x, p.y].tile != null && !Cells[p.x, p.y].locked;
@@ -87,6 +87,7 @@ public partial class GameManager : MonoBehaviour
             return ok;
         };
         board.dockIcon = hud.SlotIconRect; // a tile dragged from the board is as big as in the dock
+        board.onDock = hud.OnDock;
         board.onTileMoved = OnTileMoved;
         // boards with several parts fit between the top bar and the dock
         board.keepBelow = new[] { hud.levelTitleText ? hud.levelTitleText.rectTransform : null, hud.scoreText ? hud.scoreText.rectTransform : null };
@@ -152,7 +153,7 @@ public partial class GameManager : MonoBehaviour
         if (busy) return; // objects are moving or waiting for a direction: nothing can be placed, so nothing is picked
         if (inputLocked) return; // for the tutorial (see LockInput)
         if (!ClickAllowed) return; // Settings: drag only
-        if (pickedUp is Vector2Int from) { DropPickedUp(); OnCellRightClicked(from); return; } // a picked-up board tile: back to the supply
+        if (returnedOnPress) { returnedOnPress = false; return; } // this press returned a picked-up tile (SupplyBarPressed)
         board.FinishUndo(); // an undo rewind still going: it finishes first (the supply bar's counts catch up)
         if (inventory[t] <= 0) return;
         selected = selected == t ? (TileType?)null : t; // clicking the selected tile again deselects it
@@ -211,7 +212,7 @@ public partial class GameManager : MonoBehaviour
     static bool DragAllowed => Session.placement != Session.Placement.Click;
 
     // a board tile picked up by clicking it (no object has used it): the next click on an empty square moves it there,
-    // on the supply returns it, on it again puts it back. its preview shows on the squares; nothing follows the mouse
+    // on the dock returns it, on it again or off the board puts it back. its preview shows on the squares; nothing follows the mouse
     Vector2Int? pickedUp;
 
     void PickUp(Vector2Int p)
@@ -228,6 +229,32 @@ public partial class GameManager : MonoBehaviour
         if (pickedUp == null) return;
         pickedUp = null;
         board.SetPicked(null);
+    }
+
+    // a press off the squares and the dock: a picked-up tile stays where it was
+    void CancelPickUpOffBoard()
+    {
+        var pointer = UnityEngine.InputSystem.Pointer.current;
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        if (pickedUp == null || pointer == null || events == null || !pointer.press.wasPressedThisFrame) return;
+        var hits = new List<UnityEngine.EventSystems.RaycastResult>();
+        events.RaycastAll(new UnityEngine.EventSystems.PointerEventData(events) { position = pointer.position.ReadValue() }, hits);
+        var top = hits.Count > 0 ? hits[0].gameObject : null;
+        if (top != null && (top.GetComponentInParent<CellView>() != null || hud.OnDock(top))) return;
+        DropPickedUp();
+    }
+
+    // any press on the dock, empty cards and the bar too: finishes an undo rewind, and returns a picked-up board tile
+    // (the card's own click then does nothing)
+    bool returnedOnPress;
+    void SupplyBarPressed()
+    {
+        returnedOnPress = false;
+        board.FinishUndo();
+        if (pickedUp is not Vector2Int from || !CanAct()) return;
+        DropPickedUp();
+        OnCellRightClicked(from);
+        returnedOnPress = true;
     }
 
     // dragging a tile from the supply: it's picked, and dropping it on a square places it like a click
@@ -370,6 +397,7 @@ public partial class GameManager : MonoBehaviour
     void Update()
     {
         if (hintQueued && !busy) UseHint(); // a hint pressed during a move
+        CancelPickUpOffBoard();
         if (stuck && !levelOver && !busy && !hud.StuckNoticeShowing && Time.time - stuckSince >= StuckWait) ShowStuckNotice();
 
         // the supply cards don't light up under the mouse while a tile can't be picked (see SelectTile)
@@ -444,7 +472,7 @@ public partial class GameManager : MonoBehaviour
     {
         if (selected != null && inventory[selected.Value] <= 0) selected = null;
         hud.RefreshInventory(inventory, selected);
-        hud.RefreshInfo(level, inventory.Values.Sum(), history.TilesUsed, Score, Cells != null ? UntravelledTiles() : 0);
+        hud.RefreshInfo(level, inventory.Values.Sum(), history.TilesUsed, Score);
         hud.SetUndoAvailable(!levelOver && history.CanUndo);
     }
 

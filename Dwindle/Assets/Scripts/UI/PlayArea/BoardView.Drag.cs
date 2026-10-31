@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 // dragging tiles: from the supply onto a square (GameManager starts it), or a board tile to another square (a move)
-// or off the board (back to the supply). the dragged tile follows the mouse; over a square it can go on, the usual preview shows too. part of BoardView
+// or onto the dock (back to the supply). the dragged tile follows the mouse; over a square it can go on, the usual preview shows too. part of BoardView
 public partial class BoardView
 {
     [Header("Dragging")]
@@ -14,6 +14,7 @@ public partial class BoardView
     public Func<Vector2Int, bool> canDragTile;
     public Action<Vector2Int, Vector2Int> onTileMoved; // set by GameManager: a board tile dropped on another square
     public Func<TileType, RectTransform> dockIcon;     // set by GameManager: a supply card's tile, so a dragged board tile is that size
+    public Func<GameObject, bool> onDock;              // set by GameManager: a hit on the supply dock
 
     TileType draggedTile;
 
@@ -83,14 +84,15 @@ public partial class BoardView
         return true;
     }
 
-    // CellView: dropped. off the board it goes back to the supply (like right-click); on another square it moves there
+    // CellView: dropped. on the dock it goes back to the supply (like right-click); on another square it moves there;
+    // anywhere else it stays
     public void EndBoardDrag(PointerEventData e, Action<Vector2Int> takeBack)
     {
         var from = draggedFrom;
         EndDrag();
         if (from == null) return;
         var to = SquareUnder(e);
-        if (to == null) takeBack?.Invoke(from.Value);
+        if (to == null) { if (onDock != null && onDock(e.pointerCurrentRaycast.gameObject)) takeBack?.Invoke(from.Value); }
         else if (to != from) onTileMoved?.Invoke(from.Value, to.Value);
     }
 

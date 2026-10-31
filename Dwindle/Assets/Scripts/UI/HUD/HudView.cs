@@ -227,7 +227,7 @@ public class HudView : MonoBehaviour
         if (!historyChanged) return;
         historyChanged = false;
         ShowScoreLog();
-        if (lastLevel != null) RefreshInfo(lastLevel, lastLeft, lastUsed, lastScore, lastUntravelled);
+        if (lastLevel != null) RefreshInfo(lastLevel, lastLeft, lastUsed, lastScore);
     }
 
     // the prefab's width, or less if that many slots plus the gaps would overflow the dock
@@ -267,6 +267,10 @@ public class HudView : MonoBehaviour
         bar.raycastTarget = true;
         bar.gameObject.AddComponent<ClickRelay>().onDown = () => onSupplyBarPressed?.Invoke();
     }
+
+    // a raycast hit on the supply dock (bar or cards)
+    public bool OnDock(GameObject go) =>
+        go != null && go.transform.IsChildOf(supplyDock != null ? supplyDock : slotsRoot.parent);
 
     // where a tile type's picture sits in the supply bar (undo's rewind sends tiles there and back)
     public RectTransform SlotIconRect(TileType t) =>
@@ -335,18 +339,17 @@ public class HudView : MonoBehaviour
     }
 
     LevelData lastLevel;
-    int lastLeft, lastUsed, lastScore, lastUntravelled;
+    int lastLeft, lastUsed, lastScore;
 
-    // untravelled: tiles on the board nobody has gone through yet (they'd count as unused too): "7 (+1 on board) / 8 Left"
-    public void RefreshInfo(LevelData level, int tilesLeft, int tilesUsed, int score, int untravelled = 0)
+    public void RefreshInfo(LevelData level, int tilesLeft, int tilesUsed, int score)
     {
-        (lastLevel, lastLeft, lastUsed, lastScore, lastUntravelled) = (level, tilesLeft, tilesUsed, score, untravelled);
+        (lastLevel, lastLeft, lastUsed, lastScore) = (level, tilesLeft, tilesUsed, score);
         if (levelTitleText != null) levelTitleText.text = level.title;
         if (scoreText != null)
             scoreText.text = level.targetScore <= 0 ? $"Score {score}" // no target (Level 1): no "/ 0"
                 : $"Score {score}\n<size={targetSize * 100f:0}%><color=#{ColorUtility.ToHtmlStringRGB(targetColor)}>/ {level.targetScore}</color></size>";
         if (supplyLeftText != null)
-            supplyLeftText.text = untravelled > 0 ? $"{tilesLeft} (+{untravelled} on board) / {tilesLeft + untravelled} Left" : $"{tilesLeft} Left";
+            supplyLeftText.text = $"{tilesLeft} Left";
         if (supplyUsedText != null) supplyUsedText.text = $"Used {tilesUsed}";
     }
 
