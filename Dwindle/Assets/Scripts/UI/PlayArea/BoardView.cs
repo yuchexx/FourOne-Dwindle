@@ -124,12 +124,6 @@ public partial class BoardView : MonoBehaviour
                 view.background.color = cellColor;
                 view.Init(p, onCellClicked, onCellRightClicked, ShowGhost, HideGhost);
                 view.board = this; // dragging a tile off the board (BoardView.Drag.cs)
-                // no hover or click tint on the squares: the faded preview of the selected tile is the only hover
-                var colors = view.button.colors;
-                colors.highlightedColor = colors.normalColor;
-                colors.selectedColor = colors.normalColor;
-                colors.pressedColor = colors.normalColor;
-                view.button.colors = colors;
                 Cells[p.x, p.y] = new Cell { view = view };
             }
 

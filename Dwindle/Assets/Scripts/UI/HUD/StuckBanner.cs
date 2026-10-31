@@ -22,7 +22,6 @@ public class StuckBanner : MonoBehaviour
         onUndo = undo;
         onRestart = restart;
         onEnd = end;
-        transform.SetAsLastSibling(); // drawn over the board (and under the menus, if it sits in GameScreen)
         gameObject.SetActive(true);
     }
 

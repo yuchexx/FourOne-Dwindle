@@ -269,11 +269,11 @@ public class HudView : MonoBehaviour
         slots.TryGetValue(t, out var slot) && slot != null ? (slot.iconRoot != null ? slot.iconRoot : (RectTransform)slot.transform) : null;
 
     // while objects move or wait for a direction, tiles can't be picked. the slots' CanvasGroup lets the mouse pass
-    // straight through every card then: no hover, no press, no click (and a card under the mouse un-highlights)
+    // straight through every card then: no hover, no press, no click (and a card under the mouse un-highlights).
+    // the CanvasGroup is on Slots in the scene
     public void SetSupplyPaused(bool paused)
     {
-        var group = slotsRoot.GetComponent<CanvasGroup>();
-        if (group == null) group = slotsRoot.gameObject.AddComponent<CanvasGroup>();
+        if (!slotsRoot.TryGetComponent(out CanvasGroup group)) return;
         group.blocksRaycasts = !paused;
         group.interactable = !paused;
     }
@@ -351,8 +351,7 @@ public class HudView : MonoBehaviour
     public void ShowStuckNotice(Action onUndo, Action onRestart, Action onEnd)
     {
         if (stuckNotice == null) return;
-        stuckNotice.Show(onUndo, onRestart, onEnd); // it moves itself to the end of its parent
-        if (scoreHistory != null && scoreHistory.parent == stuckNotice.transform.parent) scoreHistory.SetAsLastSibling(); // the history stays on top
+        stuckNotice.Show(onUndo, onRestart, onEnd); // the Hierarchy keeps the score history after it, so it stays on top
     }
 
     public void HideStuckNotice()

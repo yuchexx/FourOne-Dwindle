@@ -22,13 +22,7 @@ public class TileCard : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 
     void Awake()
     {
-        // the hover is drawn here (only when the card can be clicked), so the button's own tints are turned off;
-        // an empty card is shown by its background color (HudView), not by the disabled tint
-        var colors = button.colors;
-        colors.highlightedColor = colors.normalColor;
-        colors.selectedColor = colors.normalColor;
-        colors.disabledColor = colors.normalColor;
-        button.colors = colors;
+        // the hover is drawn here (only when the card can be clicked); the prefab's Button has no tints of its own
         backgroundColor = background.color;
     }
 

@@ -18,18 +18,8 @@ public class HintNote : MonoBehaviour
     int shownStage = -1;
     BoardView board;
 
-    void Awake()
-    {
-        if (!TryGetComponent(out VerticalLayoutGroup layout)) layout = gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(14, 14, 12, 12);
-        layout.spacing = 8f;
-        layout.childAlignment = TextAnchor.MiddleLeft;
-        layout.childControlWidth = layout.childControlHeight = true;
-        layout.childForceExpandWidth = layout.childForceExpandHeight = false;
-        if (!TryGetComponent(out ContentSizeFitter fit)) fit = gameObject.AddComponent<ContentSizeFitter>();
-        fit.horizontalFit = fit.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        UIPalette.Changed += Rebuild;
-    }
+    // its Vertical Layout Group and Content Size Fitter are set in the Inspector
+    void Awake() => UIPalette.Changed += Rebuild;
 
     void OnDestroy() => UIPalette.Changed -= Rebuild;
 
