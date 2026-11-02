@@ -61,7 +61,7 @@ public partial class GameManager
     public void UseHint()
     {
         hintQueued = false;
-        if (level == null || level.solution == null || levelOver || inputLocked) return;
+        if (level == null || level.solution == null || levelOver) return;
         if (busy) { hintQueued = true; return; }
         var s = level.solution;
         switch (hints.Stage)

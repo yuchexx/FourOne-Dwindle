@@ -45,16 +45,6 @@ public partial class GameManager : MonoBehaviour
     bool busy; // true while objects are moving or waiting for a choice
     List<MovingObject> objects;
     bool levelOver;
-    Vector2Int? forcedRemoval; // for the tutorial (see ForceNextRemoval): the cell the next delivery breaks
-
-    // for the tutorial (TutorialStep.hoverOnly): while locked, the supply, the board, its arrows, doors and undo ignore
-    // clicks, so a slip can't change the game. hovering still works (the door highlight, the tile preview)
-    bool inputLocked;
-    public void LockInput(bool locked)
-    {
-        inputLocked = locked;
-        board.LockInput(locked);
-    }
 
     // for the tutorial (TutorialController): every player action, once it has taken effect. a click that changed
     // nothing (blocked, missed, ignored while objects move) reports nothing
@@ -119,29 +109,16 @@ public partial class GameManager : MonoBehaviour
         hud.SetScoreLog(null);
         deliveryPoints = comboPoints = teleportPoints = unusedPoints = 0;
         history.Clear();
-        forcedRemoval = null; // for the tutorial: a forced removal never outlives its level
-        endWindowHeld = false; // for the tutorial: nor does a held end window
-        LockInput(false);      // for the tutorial: nor does locked input
+        endWindowHeld = false; // for the tutorial: a held end window never outlives its level
+        levelEndHeld = false;  // for the tutorial: nor a held level end (GameManager.Tutorial.cs)
+        earnedFlashHeld = false; // for the tutorial: nor a held earned flash (GameManager.Tutorial.cs)
+        ShowTutorialButton(tutorial != null && !string.IsNullOrEmpty(level.tutorial)); // for the tutorial: its button by the title
 
         // every tile type (x0 for the ones this level doesn't hand out), or only its own with Compact supply
         hud.BuildSlots(SupplyTypes(), SelectTile, SupplyDragStart, e => board.MoveDrag(e), SupplyDragEnd);
         objects = board.Build(level, OnCellClicked, OnDoorClicked, OnCellRightClicked, PreviewTile);
         ResetHintsForLoad();
         RefreshAll();
-
-        // the old text pop-up, replaced by TutorialController. kept until the new tutorial covers these points
-        // if (index == 0 && !level1TutorialShown)
-        // {
-        //     level1TutorialShown = true;
-        //
-        //     menu.ShowTutorial(
-        //         "Planning Tip",
-        //         "Each delivery breaks one tile of its path - often a junction someone else still needs.\n" +
-        //         "Delivering two or more objects at once earns you a + tile.\n\n" +
-        //         "Right-click a tile no object has used yet to put it back.\n\n" +
-        //         "You can review all rules anytime using the Rules button in the upper-right corner."
-        //     );
-        // }
 
         if (tutorial != null && Session.showTutorials) tutorial.TryStart(index, this); // the tutorial's steps can call back into the game
     }
@@ -151,7 +128,6 @@ public partial class GameManager : MonoBehaviour
     {
         if (levelOver) return;
         if (busy) return; // objects are moving or waiting for a direction: nothing can be placed, so nothing is picked
-        if (inputLocked) return; // for the tutorial (see LockInput)
         if (!ClickAllowed) return; // Settings: drag only
         if (returnedOnPress) { returnedOnPress = false; return; } // this press returned a picked-up tile (SupplyBarPressed)
         board.FinishUndo(); // an undo rewind still going: it finishes first (the supply bar's counts catch up)
@@ -170,7 +146,7 @@ public partial class GameManager : MonoBehaviour
         if (pickedUp is Vector2Int from)
         {
             if (p == from) { DropPickedUp(); return; }
-            if (!cell.obstacle && cell.tile == null) { DropPickedUp(); OnTileMoved(from, p); return; }
+            if (!cell.obstacle && !cell.closed && cell.tile == null) { DropPickedUp(); OnTileMoved(from, p); return; } // closed: for the tutorial
         }
         if (cell.tile != null && !cell.locked) { PickUp(p); return; }
         PlaceSelected(p);
@@ -181,9 +157,8 @@ public partial class GameManager : MonoBehaviour
     {
         if (levelOver) return;
         if (busy) return;
-        if (inputLocked) return; // for the tutorial (see LockInput)
         var cell = Cells[p.x, p.y];
-        if (cell.obstacle || cell.tile != null || selected == null) return;
+        if (cell.obstacle || cell.closed || cell.tile != null || selected == null) return; // closed: for the tutorial
         board.FinishUndo(); // an undo rewind still going: everything to its place before anything moves
 
         var t = selected.Value;
@@ -204,8 +179,8 @@ public partial class GameManager : MonoBehaviour
     IEnumerable<TileType> SupplyTypes() => Tiles.SupplyOrder.Where(t =>
         !Session.compactSupply || t == TileType.Cross || level.inventory.GetValueOrDefault(t) > 0);
 
-    // tiles can be picked and placed: the level is on, nothing moving, not locked by the tutorial
-    bool CanAct() => !levelOver && !busy && !inputLocked;
+    // tiles can be picked and placed: the level is on, nothing moving
+    bool CanAct() => !levelOver && !busy;
 
     // Settings: click a tile then a square, drag it, or either
     static bool ClickAllowed => Session.placement != Session.Placement.Drag;
@@ -289,7 +264,7 @@ public partial class GameManager : MonoBehaviour
     {
         if (!CanAct()) return;
         Cell a = Cells[from.x, from.y], b = Cells[to.x, to.y];
-        if (a.tile == null || a.locked || b.obstacle || b.tile != null) return;
+        if (a.tile == null || a.locked || b.obstacle || b.closed || b.tile != null) return; // closed: for the tutorial
         board.FinishUndo();
 
         var t = a.tile.Value;
@@ -320,7 +295,6 @@ public partial class GameManager : MonoBehaviour
     // clicking a door names it
     void OnDoorClicked(DoorSpec door)
     {
-        if (inputLocked) return; // for the tutorial (see LockInput)
         Report(new GameAction { kind = GameActionKind.ClickDoor, door = door.label }); // for the tutorial
     }
 
@@ -329,7 +303,6 @@ public partial class GameManager : MonoBehaviour
     {
         DropPickedUp();
         if (levelOver || busy) return;
-        if (inputLocked) return; // for the tutorial (see LockInput)
         board.FinishUndo(); // an undo rewind still going: it finishes first
         menu.HideMenu(); // pressed from the paused menu: the end window replaces it
         var cell = Cells[p.x, p.y];

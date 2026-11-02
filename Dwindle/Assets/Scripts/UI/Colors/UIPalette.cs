@@ -7,7 +7,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Dwindle/UI Palette", fileName = "UIPalette")]
 public class UIPalette : ScriptableObject
 {
-    public enum Role { Background, Panel, Button, Text, MutedText, Accent, Star, StarEmpty, Success, Danger, Dim, Hint }
+    public enum Role { Background, Panel, Button, Text, MutedText, Accent, Star, StarEmpty, Success, Danger, Dim, Hint, Tutorial }
 
     [Header("Surfaces")]
     [Tooltip("Behind everything: the title screen, the Levels page")]
@@ -26,6 +26,8 @@ public class UIPalette : ScriptableObject
     [Header("Meaning")]
     [Tooltip("Hints and best plans: purple stars, tutorial levels, the chosen setting, switches that are on")]
     public Color accent = Hex("#7C83F7");
+    [Tooltip("The tutorial's frames and its Next button (TutorialOverlay)")]
+    public Color tutorial = Hex("#F2C740");
     public Color star = Hex("#FFD133");
     [Tooltip("A star still to earn")]
     public Color starEmpty = Hex("#1C1D22");
@@ -49,6 +51,7 @@ public class UIPalette : ScriptableObject
         Role.Success => success,
         Role.Danger => danger,
         Role.Hint => hint,
+        Role.Tutorial => tutorial,
         _ => dim,
     };
 

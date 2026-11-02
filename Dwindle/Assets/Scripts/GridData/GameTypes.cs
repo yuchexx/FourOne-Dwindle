@@ -9,6 +9,7 @@ public class Cell
     public bool obstacle;
     public TileView tileView;
     public bool locked;    // an object has gone through this tile, so it can no longer be returned to the supply
+    public bool closed;    // for the tutorial (BoardView.SetClosed): no tile can be put here for now
 }
 
 // one object being guided to its ring
