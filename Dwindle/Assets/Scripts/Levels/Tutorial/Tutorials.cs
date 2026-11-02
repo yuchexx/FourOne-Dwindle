@@ -18,6 +18,7 @@ public class TutorialStep
     public float bubbleWidth;    // 0 = as wide as its text, up to the Bubble Width in TutorialController's Style; below 0 = no limit (one line)
     public string buttonText;    // the Next button's label; null = "Next"
     public bool skippable;       // a Skip button next to Next, passing this run of Next steps (see TutorialController.SkipFrom)
+    public bool backable;        // a Back button left of Next (never on the first step): the step before shows again
     public Action onShow;        // runs as the step shows, to set the game up for what the step teaches
     public Action onDone;        // runs as the step ends, e.g. to undo what onShow changed
 }
@@ -35,6 +36,9 @@ public static class Target
 
     // an object's ring
     public static Func<RectTransform> Ring(GameManager game, string name) => () => game.RingRect(name);
+
+    // a board's square, as (board, x, y) as in Levels.cs
+    public static Func<RectTransform> Cell(GameManager game, int board, int x, int y) => () => game.CellRect(board, x, y);
 
     // a tile type's card in the supply bar, its count included
     public static Func<RectTransform> Slot(GameManager game, TileType tile) => () => game.hud.SlotRect(tile);
@@ -125,4 +129,7 @@ public class TutorialCoach
     public Func<RectTransform>[] noteAbove;       // what the note stays above, so it covers none of it (see Target)
     public Action onDone;                         // on Done: take the guides down
     public List<TutorialStep> doneSteps;          // shown after Done, like the tutorial's steps (e.g. what the player just earned)
+    // until Done: as each delivered object's tile breaks (the delivered object, everyone delivered with it), steps to
+    // show it before the next one breaks; null = carry on (GameManager.onRemoval)
+    public Func<Arrival, string[], List<TutorialStep>> removalSteps;
 }

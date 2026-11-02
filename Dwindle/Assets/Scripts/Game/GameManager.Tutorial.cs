@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
 
 // for the tutorial (TutorialController and Tutorials.cs): what its steps and coaches look at and do on the level.
@@ -15,6 +14,14 @@ public partial class GameManager
     public RectTransform ObjectRect(string name) => Named(name)?.view.Rect;
     public RectTransform RingRect(string name) { var o = Named(name); return o != null ? (RectTransform)o.dest.transform : null; }
     MovingObject Named(string name) => objects?.Find(o => o.spec.name == name);
+
+    // a board's square (its cell, with or without a tile), as (board, x, y) as in Levels.cs; null off the boards
+    public RectTransform CellRect(int boardIndex, int x, int y)
+    {
+        var p = level.At(boardIndex, x, y);
+        var cell = board.Cells != null && board.InGrid(p) ? board.Cells[p.x, p.y] : null;
+        return cell?.view != null ? (RectTransform)cell.view.transform : null;
+    }
 
     // the ring of the object with this color (the score history's rows know objects by color); null when none has it
     public RectTransform RingRectOf(Color color)
@@ -116,6 +123,13 @@ public partial class GameManager
     bool levelEndHeld;
     public void HoldLevelEnd(bool hold) => levelEndHeld = hold;
 
+    // called as each object a placement delivered breaks its tile (gone from the board already), one at a time, with
+    // the names of everyone that placement delivered; true holds the deliveries there (the next tile, the combo, the
+    // Delivered report) until ReleaseRemoval, so a step can show that tile. LoadLevel lets go of a hold
+    public System.Func<Arrival, string[], bool> onRemoval;
+    bool removalHeld;
+    public void ReleaseRemoval() => removalHeld = false;
+
     // while held, delivering together doesn't flash the + slot (the earned flash) right away: the tutorial plays it
     // later with FlashEarnedPlus, once a step frames the slot. LoadLevel lets go
     bool earnedFlashHeld;
@@ -136,46 +150,61 @@ public partial class GameManager
 
     // ---- the Tutorial button, top left, just right of the level's title, on levels with a tutorial ----
 
-    // made from the "More" menu's Rules button (the game screen's button that calls ShowRules) the first time it's
-    // needed, so it's round like the menu's buttons, at their size; it goes beside the title, not in the menu. its own
-    // click plays the tutorial again (ReplayTutorial) instead
+    // made from code the first time it's needed, beside the title: a rectangle like the tutorial's own Next button
+    // (the Style's Button Size, the palette's Tutorial yellow, a dark bold label at Next's size), so it reads as the
+    // tutorial's. its click plays the tutorial again (ReplayTutorial)
     Button tutorialButton;
     const float TutorialButtonGap = 16f; // from the end of the title's text
 
     bool MakeTutorialButton()
     {
-        if (menu == null || menu.gameScreen == null || hud == null || hud.levelTitleText == null) return false;
-        var rules = menu.gameScreen.GetComponentsInChildren<Button>(true).FirstOrDefault(b => Calls(b, nameof(ShowRules)));
-        if (rules == null) { Debug.LogWarning("No Rules button in the game screen to make the Tutorial button from."); return false; }
+        if (tutorial == null || hud == null || hud.levelTitleText == null) return false;
+        var style = tutorial.style;
 
-        // beside the title (the menu's own box shows only while the menu is open)
-        tutorialButton = Instantiate(rules, hud.levelTitleText.transform.parent);
-        tutorialButton.name = "TutorialButton";
-        for (int i = 0; i < tutorialButton.onClick.GetPersistentEventCount(); i++)
-            tutorialButton.onClick.SetPersistentListenerState(i, UnityEventCallState.Off); // not Rules: the copy's own
+        var go = new GameObject("TutorialButton", typeof(RectTransform), typeof(Image), typeof(Button));
+        var rt = (RectTransform)go.transform;
+        rt.SetParent(hud.levelTitleText.transform.parent, false);
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = style.buttonSize;
+        var background = go.GetComponent<Image>();
+        background.color = UIPalette.Current.tutorial;
+        tutorialButton = go.GetComponent<Button>();
+        tutorialButton.targetGraphic = background;
         tutorialButton.onClick.AddListener(ReplayTutorial);
-        // its background in the theme color (the palette's Accent), as the tutorial's Next button is, through its
-        // PaletteColor if it has one, so it follows the palette
-        if (tutorialButton.targetGraphic != null)
-        {
-            var paint = tutorialButton.targetGraphic.GetComponent<PaletteColor>();
-            if (paint != null) { paint.role = UIPalette.Role.Accent; paint.Apply(); }
-            else tutorialButton.targetGraphic.color = UIPalette.Current.accent;
-        }
-        var label = tutorialButton.GetComponentInChildren<TMP_Text>(true);
-        if (label != null) label.text = "Tutorial"; // at the menu's text size, which fits "Settings" too
-        tutorialButton.gameObject.SetActive(false);
+
+        var label = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
+        label.rectTransform.SetParent(rt, false);
+        label.rectTransform.anchorMin = Vector2.zero;
+        label.rectTransform.anchorMax = Vector2.one;
+        label.rectTransform.offsetMin = label.rectTransform.offsetMax = Vector2.zero;
+        label.text = "Tutorial";
+        label.fontSize = style.fontSize * 0.85f; // as Next's
+        label.fontStyle = FontStyles.Bold;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = TutorialOverlay.NextTextColor;
+        label.raycastTarget = false;
+
+        go.SetActive(false);
         return true;
     }
 
-    bool Calls(Button b, string method)
+    // levels with a tutorial whose button shows: once one's end window has come up (after its score recap, if any) or
+    // it has been restarted (the Restart button, not a coach's reset) this launch, its button stays
+    readonly HashSet<int> tutorialButtonEarned = new HashSet<int>();
+
+    // the level's end window just came up, or it's being restarted: from now on its Tutorial button shows (see LoadLevel)
+    void EarnTutorialButton()
     {
-        for (int i = 0; i < b.onClick.GetPersistentEventCount(); i++)
-            if (b.onClick.GetPersistentMethodName(i) == method && b.onClick.GetPersistentTarget(i) == this) return true;
-        return false;
+        if (tutorial == null || level == null || string.IsNullOrEmpty(level.tutorial)) return;
+        tutorialButtonEarned.Add(levelIndex);
+        ShowTutorialButton(true);
     }
 
-    // called on every level load (LoadLevel)
+    // whether the level that's on gets the button: it has a tutorial, and has ended or been restarted before
+    bool TutorialButtonFor(int index) =>
+        tutorial != null && !string.IsNullOrEmpty(Levels.All[index].tutorial) && tutorialButtonEarned.Contains(index);
+
+    // called on every level load (LoadLevel), and when a level earns its button
     void ShowTutorialButton(bool show)
     {
         if (show && tutorialButton == null && !MakeTutorialButton()) return;

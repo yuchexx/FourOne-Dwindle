@@ -7,8 +7,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // the tutorial's look, set on TutorialController (in Play mode, changes show from the next step). the frames and the
-// Next button are in the UI Palette's Tutorial color (a yellow), Skip a fixed grey (SkipColor), the dim fixed too
-// (Dim); the notes and the floating points are in the UI Palette's Accent (the theme color)
+// Next button and the floating points are in the UI Palette's Tutorial color (a yellow), Skip and Back a fixed grey
+// (SkipColor), the dim fixed too (Dim); the notes are in the UI Palette's Accent (the theme color)
 [Serializable]
 public class TutorialStyle
 {
@@ -45,12 +45,12 @@ public class TutorialOverlay : MonoBehaviour
     readonly List<Image> dims = new();      // the dim, in as many pieces as the areas cut the screen into
     readonly List<Image> frames = new();    // four edges per area
     Image blocker;                          // see-through, over everything but the bubble, for look-only steps
-    Image bubble, button, skipButton;
-    TMP_Text text, buttonLabel, skipLabel;
+    Image bubble, button, skipButton, backButton;
+    TMP_Text text, buttonLabel, skipLabel, backLabel;
 
     TutorialStep step;
     Vector2 bubbleSize;
-    bool nextClicked, skipClicked;
+    bool nextClicked, skipClicked, backClicked;
     float shakeStart = -1; // when the frames started shaking; -1 = still
     readonly Vector3[] corners = new Vector3[4]; // a target's world corners, reused every frame
 
@@ -66,8 +66,8 @@ public class TutorialOverlay : MonoBehaviour
     Func<RectTransform>[] noteAbove; // what the notes keep above (ShowNote)
     const float NoteSlide = 14f;     // how fast a note slides to its place (the higher, the quicker)
 
-    // floating points (ShowPop): bold text in the UI Palette's Accent, over the elements it's about, rising a little
-    // as it fades in
+    // floating points (ShowPop): bold text in the UI Palette's Tutorial yellow, over the elements it's about, rising
+    // a little as it fades in
     const float PopRise = 10f, PopSeconds = 0.3f;
     public class Pop
     {
@@ -140,6 +140,19 @@ public class TutorialOverlay : MonoBehaviour
         skipLabel.fontStyle = FontStyles.Bold;
         skipLabel.alignment = TextAlignmentOptions.Center;
         Stretch(skipLabel.rectTransform);
+
+        backButton = MakeImage("BackButton", bubble.rectTransform, raycast: true);
+        var brt = backButton.rectTransform; // the bottom-right corner too, moved left of Next (and Skip) in Show
+        brt.anchorMin = brt.anchorMax = brt.pivot = new Vector2(1, 0);
+        var back = backButton.gameObject.AddComponent<Button>();
+        back.targetGraphic = backButton;
+        back.onClick.AddListener(() => backClicked = true);
+
+        backLabel = MakeText("Label", brt);
+        backLabel.text = "Back";
+        backLabel.fontStyle = FontStyles.Bold;
+        backLabel.alignment = TextAlignmentOptions.Center;
+        Stretch(backLabel.rectTransform);
 
     }
 
@@ -257,7 +270,7 @@ public class TutorialOverlay : MonoBehaviour
     {
         var t = MakeText("Pop", root);
         t.text = message;
-        t.color = UIPalette.Current.accent; // the theme color
+        t.color = UIPalette.Current.tutorial; // the tutorial's yellow, as the frames
         t.fontSize = style.fontSize;
         t.fontStyle = FontStyles.Bold;
         t.alignment = TextAlignmentOptions.Center;
@@ -318,11 +331,11 @@ public class TutorialOverlay : MonoBehaviour
         }
     }
 
-    // canSkip: Skip shows next to Next (TutorialController decides which steps get it)
-    public void Show(TutorialStep s, bool canSkip = false)
+    // canSkip: Skip shows left of Next; canBack: Back shows left of them (TutorialController decides which steps get them)
+    public void Show(TutorialStep s, bool canSkip = false, bool canBack = false)
     {
         step = s;
-        nextClicked = skipClicked = false;
+        nextClicked = skipClicked = backClicked = false;
         StopShake();
         HideNotes(); // a step takes over the screen
 
@@ -330,16 +343,17 @@ public class TutorialOverlay : MonoBehaviour
         bubble.color = style.bubbleColor;
         button.color = UIPalette.Current.tutorial; // like the frames; Skip a quiet dark grey, so Next stays the main one
         buttonLabel.color = NextTextColor;
-        skipButton.color = SkipColor;
-        skipLabel.color = Color.white;
+        skipButton.color = backButton.color = SkipColor;
+        skipLabel.color = backLabel.color = Color.white;
         text.color = style.textColor;
         text.fontSize = style.fontSize;
-        buttonLabel.fontSize = skipLabel.fontSize = style.fontSize * 0.85f;
+        buttonLabel.fontSize = skipLabel.fontSize = backLabel.fontSize = style.fontSize * 0.85f;
 
         SetDimAndBubble(true); // Block may have hidden them
         blocker.gameObject.SetActive(true); // only the bubble's buttons take clicks
         button.gameObject.SetActive(true);
         skipButton.gameObject.SetActive(canSkip);
+        backButton.gameObject.SetActive(canBack);
         buttonLabel.text = string.IsNullOrEmpty(s.buttonText) ? "Next" : s.buttonText;
 
         // the bubble is as tall as its text, plus the buttons below it. a step in the middle of the screen (nothing
@@ -348,7 +362,8 @@ public class TutorialOverlay : MonoBehaviour
         // is below 0. a step's own width wins over both. no text: just the buttons
         bool hasText = !string.IsNullOrEmpty(s.text);
         bool centered = s.targets == null || s.targets.Length == 0;
-        float buttonsWidth = style.buttonSize.x + (canSkip ? style.gap + style.buttonSize.x : 0);
+        int buttons = 1 + (canSkip ? 1 : 0) + (canBack ? 1 : 0); // in a row from the right: Next, Skip, Back
+        float buttonsWidth = buttons * style.buttonSize.x + (buttons - 1) * style.gap;
         float snug = Mathf.Max(hasText ? text.GetPreferredValues(s.text).x + 1f : 0, buttonsWidth) + 2 * style.padding;
         float width = s.bubbleWidth > 0 ? s.bubbleWidth
             : s.bubbleWidth < 0 ? snug
@@ -361,8 +376,11 @@ public class TutorialOverlay : MonoBehaviour
         text.rectTransform.sizeDelta = new Vector2(-2 * style.padding, textHeight);
         button.rectTransform.anchoredPosition = new Vector2(-style.padding, style.padding);
         button.rectTransform.sizeDelta = style.buttonSize;
-        skipButton.rectTransform.anchoredPosition = new Vector2(-style.padding - style.buttonSize.x - style.gap, style.padding);
+        float slot = style.buttonSize.x + style.gap; // from one button's right edge to the next one's
+        skipButton.rectTransform.anchoredPosition = new Vector2(-style.padding - slot, style.padding);
         skipButton.rectTransform.sizeDelta = style.buttonSize;
+        backButton.rectTransform.anchoredPosition = new Vector2(-style.padding - slot * (canSkip ? 2 : 1), style.padding);
+        backButton.rectTransform.sizeDelta = style.buttonSize;
         bubbleSize = new Vector2(width,
             style.padding + textHeight + (hasText ? style.gap : 0) + style.buttonSize.y + style.padding);
 
@@ -408,6 +426,14 @@ public class TutorialOverlay : MonoBehaviour
     }
 
     // true once per click on Skip
+    // true once per click on Back
+    public bool ConsumeBack()
+    {
+        bool clicked = backClicked;
+        backClicked = false;
+        return clicked;
+    }
+
     public bool ConsumeSkip()
     {
         bool clicked = skipClicked;
@@ -484,8 +510,10 @@ public class TutorialOverlay : MonoBehaviour
         return MergeTouching(holes.Where(h => h.width > 0 && h.height > 0).ToList(), Mathf.Max(0f, style.frameWidth));
     }
 
-    // any two closer than `slack` (their frames would meet) become the box around both, again and again until no
-    // two are. for things in a row or a column that box is just them; an L of them would take in its corner
+    // any two that touch (closer than `slack`: their frames would meet) side by side or one above the other (sharing
+    // at least half of the smaller one's height, or width) become the box around both, again and again until no two
+    // do. for things in a row or a column that box is just them; two that only meet at a corner (squares diagonal to
+    // each other) stay apart
     static List<Rect> MergeTouching(List<Rect> holes, float slack)
     {
         bool merged = true;
@@ -496,8 +524,11 @@ public class TutorialOverlay : MonoBehaviour
                 for (int j = i + 1; j < holes.Count && !merged; j++)
                 {
                     Rect a = holes[i], b = holes[j];
-                    if (a.xMin - slack > b.xMax || b.xMin - slack > a.xMax || a.yMin - slack > b.yMax || b.yMin - slack > a.yMax)
-                        continue; // apart
+                    float overlapX = Mathf.Min(a.xMax, b.xMax) - Mathf.Max(a.xMin, b.xMin);
+                    float overlapY = Mathf.Min(a.yMax, b.yMax) - Mathf.Max(a.yMin, b.yMin);
+                    if (overlapX < -slack || overlapY < -slack) continue; // apart
+                    if (overlapX < 0.5f * Mathf.Min(a.width, b.width) && overlapY < 0.5f * Mathf.Min(a.height, b.height))
+                        continue; // only corner to corner
                     holes[i] = Rect.MinMaxRect(Mathf.Min(a.xMin, b.xMin), Mathf.Min(a.yMin, b.yMin),
                                                Mathf.Max(a.xMax, b.xMax), Mathf.Max(a.yMax, b.yMax));
                     holes.RemoveAt(j);
@@ -602,7 +633,7 @@ public class TutorialOverlay : MonoBehaviour
     static readonly Color Dim = new Color(0f, 0f, 0f, 0.6f);
 
     // the Next button's label, dark on the palette's Tutorial yellow; the Skip button, left of Next
-    static readonly Color NextTextColor = new Color(0.08f, 0.08f, 0.10f);
+    public static readonly Color NextTextColor = new Color(0.08f, 0.08f, 0.10f); // the Tutorial button's too
     static readonly Color SkipColor = new Color(0.27f, 0.29f, 0.34f);
 
     // 0, the screen's length and every cut between them, in order

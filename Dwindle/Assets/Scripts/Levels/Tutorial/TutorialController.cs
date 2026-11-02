@@ -107,28 +107,39 @@ public class TutorialController : MonoBehaviour
     }
 
     // each step in turn, until the player presses its Next, then `after` with the game (the tutorial's: its coach
-    // starts). one coroutine all through, so Stop stops all of it
+    // starts). Back (on a backable step) shows the one before again, without its delay. one coroutine all through, so
+    // Stop stops all of it
     IEnumerator Run(List<TutorialStep> steps, System.Action<GameManager> after)
     {
+        bool cameBack = false; // this step shows again after a Back: its delay was waited for the first time
         for (int i = 0; i < steps.Count; i++)
         {
             var step = steps[i];
-            if (step.delay > 0)
+            if (step.delay > 0 && !cameBack)
             {
                 overlay.Block();
                 yield return new WaitForSeconds(step.delay);
             }
+            cameBack = false;
             step.onShow?.Invoke();
             bool canSkip = SkipFrom(steps, i);
-            overlay.Show(step, canSkip);
+            bool canBack = step.backable && i > 0;
+            overlay.Show(step, canSkip, canBack);
             yield return null; // the click that ended the last step can't end this one too
-            bool skipped = false;
+            bool skipped = false, back = false;
             while (!overlay.ConsumeNext())
             {
                 if (canSkip && overlay.ConsumeSkip()) { skipped = true; break; }
+                if (canBack && overlay.ConsumeBack()) { back = true; break; }
                 yield return null;
             }
-            step.onDone?.Invoke();
+            step.onDone?.Invoke(); // what it set up goes either way: Back shows the step before from its own onShow
+            if (back)
+            {
+                i -= 2; // the loop's i++ lands on the step before
+                cameBack = true;
+                continue;
+            }
 
             // Skip: the rest of the steps go by unseen. each still runs its onShow and onDone, so what they set up and
             // undo stays in balance (an end window held, say, is let go)
@@ -171,6 +182,7 @@ public class TutorialController : MonoBehaviour
         coachGame = g;
         g.ActionDone += OnCoachAction;
         if (!coachTaught) coach.onLoaded?.Invoke();
+        if (!coachTaught && coach.removalSteps != null) g.onRemoval = OnRemoval;
         if (noteOnResume && !string.IsNullOrEmpty(coach.resetNote)) overlay.ShowNote(coach.resetNote, noteSeconds, coach.noteAbove);
         noteOnResume = false;
     }
@@ -178,7 +190,11 @@ public class TutorialController : MonoBehaviour
     // its level is left or loads again: it stops listening (the board, and its guides, are gone or about to be)
     void PauseCoach()
     {
-        if (coachGame != null) coachGame.ActionDone -= OnCoachAction;
+        if (coachGame != null)
+        {
+            coachGame.ActionDone -= OnCoachAction;
+            coachGame.onRemoval = null;
+        }
         coachGame = null;
         if (resetting != null) StopCoroutine(resetting); // a reset cut short by leaving (LoadLevel lets the level end go)
         resetting = null;
@@ -212,6 +228,7 @@ public class TutorialController : MonoBehaviour
                 if (coachTaught) break;
                 coachTaught = true;
                 var g = coachGame;
+                g.onRemoval = null; // taught: tiles break without a word from now on
                 var after = coach.doneSteps;
                 if (Tutorials.RecapFor(Levels.All[coachLevel]) != null) WatchForRecap(g, coachLevel);
                 overlay.HideNotes();
@@ -223,6 +240,19 @@ public class TutorialController : MonoBehaviour
                 }
                 break;
         }
+    }
+
+    // a delivered object's tile just broke, the deliveries waiting on the answer: the coach's steps for it, if it has
+    // any, show now, and the deliveries go on when they end (true: hold them till then)
+    bool OnRemoval(Arrival arrival, string[] together)
+    {
+        var steps = coach?.removalSteps?.Invoke(arrival, together);
+        if (steps == null || steps.Count == 0) return false;
+        var g = coachGame;
+        if (running != null) StopCoroutine(running);
+        game = g;
+        running = StartCoroutine(Run(steps, done => done.ReleaseRemoval()));
+        return true;
     }
 
     // the slip (a wrong way, a tile in the wrong spot) shows for Undo Delay, with the level held from ending (a wrong
@@ -347,6 +377,7 @@ public class TutorialController : MonoBehaviour
             });
         steps[0].delay = RecapStart;
         steps[steps.Count - 1].buttonText = "End"; // the end window comes next
+        for (int i = 1; i < steps.Count; i++) steps[i].backable = true; // from the second on, Back to the one before
         return steps;
     }
 

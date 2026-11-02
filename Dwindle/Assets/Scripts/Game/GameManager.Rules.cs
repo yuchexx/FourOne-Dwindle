@@ -144,6 +144,7 @@ public partial class GameManager
     {
         RecordDelivery(deliveredNow); // for the hints, before any tile breaks
         var arrivals = new List<Arrival>(); // for analytics (the Delivered report)
+        var together = deliveredNow.Select(x => x.spec.name).ToArray(); // for the tutorial (onRemoval)
         foreach (var o in deliveredNow)
         {
             var (c, neededBy) = PickRemoval(o);
@@ -157,6 +158,15 @@ public partial class GameManager
             arrivals.Add(arrival);
 
             board.ClearTile(c.Value);
+
+            // for the tutorial (GameManager.Tutorial.cs, onRemoval): it may hold here to show this tile gone, before
+            // the next one breaks
+            if (onRemoval != null && onRemoval(arrival, together))
+            {
+                RefreshAll();
+                removalHeld = true;
+                while (removalHeld) yield return null;
+            }
         }
 
         RefreshAll();
