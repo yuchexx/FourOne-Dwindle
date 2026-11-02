@@ -48,7 +48,6 @@ public partial class GameManager
     public void Undo()
     {
         if (levelOver || !history.CanUndo) return;
-        if (inputLocked) return; // for the tutorial (see LockInput)
 
         var snapshot = history.Pop();
         board.BeginUndo(objects, snapshot.rewind); // where everything is now, to rewind from (see BoardView.animateUndo)

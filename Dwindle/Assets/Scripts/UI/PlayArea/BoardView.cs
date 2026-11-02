@@ -71,9 +71,6 @@ public partial class BoardView : MonoBehaviour
     LevelData level;
     Dir? pickedDirection;
 
-    // for the tutorial (GameManager.LockInput): while locked, a click on a junction's or a door's arrow is ignored
-    bool inputLocked;
-    public void LockInput(bool locked) => inputLocked = locked;
     Action<DoorSpec> onDoorClicked;
 
     // builds the boards, the doors, the destination rings and the objects, and hands back the objects.
@@ -93,6 +90,7 @@ public partial class BoardView : MonoBehaviour
         StopAllCoroutines(); // a Flash left over from the last level would touch a destroyed cell
         UIBuilder.Clear(cellsRoot);
         frames.Clear();
+        ForgetGuides(); // for the tutorial: its lines and closed marks go with the markers (BoardView.Tutorial.cs)
         UIBuilder.Clear(markersRoot);
         UIBuilder.Clear(objectsRoot);
         UIBuilder.Clear(choicesRoot);
@@ -134,6 +132,7 @@ public partial class BoardView : MonoBehaviour
         }
 
         doorHighlights.Clear();
+        doorViews.Clear(); // for the tutorial (BoardView.Tutorial.cs)
         MakeDoorHighlightRoot();
         foreach (var door in level.doors) MakeDoor(door);
 
@@ -266,6 +265,7 @@ public partial class BoardView : MonoBehaviour
         badge.rectTransform.anchorMin = badge.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         badge.rectTransform.anchoredPosition = Vector2.zero;
         badge.rectTransform.sizeDelta = Vector2.one * CellSize * 0.3f;
+        doorViews.Add((door, bar.rectTransform, badge.rectTransform)); // for the tutorial (BoardView.Tutorial.cs)
 
         if (onDoorClicked != null)
         {
@@ -588,8 +588,9 @@ public partial class BoardView : MonoBehaviour
         StartCoroutine(Flash(cell.view.background));
     }
 
-    // a cell's own color: dark for an obstacle, darker for a tile an object has used
-    Color CellColor(Cell cell) => cell.obstacle ? obstacleColor : cell.locked ? lockedCellColor : cellColor;
+    // a cell's own color: dark for an obstacle, darker for a tile an object has used.
+    // closed (for the tutorial, see BoardView.Tutorial.cs): dimmed
+    Color CellColor(Cell cell) => cell.obstacle ? obstacleColor : cell.closed ? closedCellColor : cell.locked ? lockedCellColor : cellColor;
 
     // an object went through this tile: from now on it can't be returned to the supply
     public void SetLocked(Vector2Int p, bool locked)
@@ -632,7 +633,7 @@ public partial class BoardView : MonoBehaviour
         HideGhost(p);
         var cell = Cells[p.x, p.y];
         var t = draggedFrom != null ? draggedTile : previewTile?.Invoke(); // a board tile being dragged previews itself
-        if (t == null || cell == null || cell.obstacle || cell.tile != null) return;
+        if (t == null || cell == null || cell.obstacle || cell.closed || cell.tile != null) return; // closed: for the tutorial
         ghost = Instantiate(tilePrefab, cell.view.transform);
         ghost.Show(t.Value, Color.Lerp(tileColor, cellColor, ghostFade));
         ghostCell = p;
@@ -760,6 +761,7 @@ public partial class BoardView : MonoBehaviour
         recording?.steps.Add(new RewindStep { kind = StepKind.Delivered, obj = o }); // for undo's rewind
         o.view.gameObject.SetActive(false);
         o.dest.SetDelivered(true);
+        ClearGuideLines(o.spec); // for the tutorial: its road's guide line goes (BoardView.Tutorial.cs)
     }
 
     // for undo: matches an object's view to its state - shown or delivered, facing, full size, crossed out if blocked.
@@ -798,7 +800,7 @@ public partial class BoardView : MonoBehaviour
             rt.localEulerAngles = new Vector3(0, 0, DirUtil.Angle(d)); // the prefab's arrow points up
             button.GetComponent<Graphic>().color = o.spec.color;
             if (hinted == d) hintedArrow = button.GetComponent<Graphic>();
-            button.onClick.AddListener(() => { if (!inputLocked) pickedDirection = dir; }); // for the tutorial: see LockInput
+            button.onClick.AddListener(() => pickedDirection = dir);
         }
 
         while (pickedDirection == null) yield return null; // wait for a click

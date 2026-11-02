@@ -167,7 +167,7 @@ public partial class GameManager
             comboPoints += bonus;
             inventory[TileType.Cross]++;
 
-            hud.FlashSlot(TileType.Cross, hud.earnedFlashColor);
+            if (!earnedFlashHeld) hud.FlashSlot(TileType.Cross, hud.earnedFlashColor); // held: for the tutorial (HoldEarnedFlash)
             hud.LogTogether(deliveredNow.Select(o => o.spec.color).ToArray(), bonus, $"{comboPointsPerObject}×{deliveredNow.Count} =");
 
             RefreshAll();
@@ -176,11 +176,6 @@ public partial class GameManager
         Report(new GameAction { kind = GameActionKind.Delivered, arrivals = arrivals.ToArray(), score = Score }); // for analytics
         yield break;
     }
-    // for the tutorial (Tutorials.cs), so a scripted lesson can't break the wrong tile: the next delivery whose path
-    // has (x, y) on the given board breaks that tile instead of a random one. one time only. it isn't part of undo's
-    // snapshots, so undoing that delivery doesn't bring it back: a redone delivery breaks a random tile as usual
-    public void ForceNextRemoval(int board, int x, int y) => forcedRemoval = level.At(board, x, y);
-
     // which tile of a delivered object's path breaks. if some of them are still needed by an object that hasn't
     // arrived (it can reach them along the tiles ahead of it), one of those breaks; otherwise any of them.
     // within that, junctions are the likeliest, then tiles near a board's middle or next to a door
@@ -188,13 +183,6 @@ public partial class GameManager
     {
         var candidates = o.path.Distinct().Where(c => Cells[c.x, c.y].tile != null).ToList();
         if (candidates.Count == 0) return (null, null);
-
-        // for the tutorial: a forced cell on this path breaks instead of a random one (see ForceNextRemoval)
-        if (forcedRemoval is Vector2Int forced && candidates.Contains(forced))
-        {
-            forcedRemoval = null;
-            return (forced, null);
-        }
 
         var neededBy = new Dictionary<Vector2Int, string>();
         foreach (var w in objects.Where(w => !w.completed))
@@ -273,6 +261,7 @@ public partial class GameManager
     void CheckLevelEnd()
     {
         if (levelOver) return;
+        if (levelEndHeld) return; // for the tutorial: the level is about to be reset (see HoldLevelEnd)
         UpdateBlocked();
         // the level ends on its own only when it's plainly over and a right-click take-back couldn't change that
         // (a tile no object has used can still be returned); the subtler dead ends get the stuck notice instead

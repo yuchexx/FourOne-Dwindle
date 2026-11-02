@@ -16,20 +16,22 @@ public static class Levels
         Level7(), Level8(), Level9(), Level10(), Level11(), Level12(),
     };
 
-    // Laid out for the Basics tutorial (Tutorials.Basics): Red and Blue both need the top-left square.
-    // The tutorial first delivers Red alone with an L there, undoes that, then shows the better plan:
-    // a + on the shared square, placed last, delivers both together.
-    // Score 675 with 3 tiles (target): 2 x 100 + combo 2 x 50 + 5 unused x 75 (4 left, plus the + the combo earns).
-    // worked out by hand for the tutorial layout; check it with the Level Maker's solver
+    // The first level, with the Basics tutorial (Tutorials.Basics). Red goes straight up and Blue straight left, and
+    // both need the top-left square: a + there, placed last, delivers them together. Green then turns right on the +
+    // that earns, in the bottom-right square. the + given goes to Red and Blue: given to Green, they'd block each other.
+    // the two L's (the supply's 5th and 6th slots, open to the west) are spare: no object can use them.
+    // Score 550 with 4 tiles (target): 3 x 100 + combo 2 x 50 + 2 unused x 75 (the two L's left over).
+    // worked out by hand; check it with the Level Maker's solver (Solve), then Rebuild all solutions
     static LevelData Level1()
     {
-        var l = new LevelData { title = "Level 1", targetScore = 675, bestTiles = 3,
+        var l = new LevelData { title = "Level 1", targetScore = 550, bestTiles = 4,
             bestPlanHint = "deliver some together." };
         l.tutorial = "Basics";
         l.SetBoards((2, 2));
-        l.inventory = Inv(cross: 1, ne: 1, sw: 1, h: 1, v: 3); // the + is for the tutorial's better plan
-        Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, -1, 1);
-        Obj(l, "Blue", Blue, 0, 2, 1, Dir.W, 0, 0, 2); // for the tutorial: shares the top-left square with Red
+        l.inventory = Inv(cross: 1, sw: 1, wn: 1, h: 1, v: 1);
+        Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, 0, 2);    // ring above the top-left square
+        Obj(l, "Blue", Blue, 0, 2, 1, Dir.W, 0, -1, 1);  // ring left of the top-left square, across Red's way
+        Obj(l, "Green", Green, 0, 1, -1, Dir.N, 0, 2, 0); // starts right of Red, ring below Blue
         l.solution = Solutions.Level1();
         return l;
     }

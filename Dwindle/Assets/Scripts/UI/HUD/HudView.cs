@@ -264,6 +264,11 @@ public class HudView : MonoBehaviour
     public bool OnDock(GameObject go) =>
         go != null && go.transform.IsChildOf(supplyDock != null ? supplyDock : slotsRoot.parent);
 
+    // for the tutorial (Target.Slot frames it): a tile type's whole card in the supply bar, its count included; null when
+    // the bar has none for it
+    public RectTransform SlotRect(TileType t) =>
+        slots.TryGetValue(t, out var slot) && slot != null ? (RectTransform)slot.transform : null;
+
     // where a tile type's picture sits in the supply bar (undo's rewind sends tiles there and back)
     public RectTransform SlotIconRect(TileType t) =>
         slots.TryGetValue(t, out var slot) && slot != null ? (slot.iconRoot != null ? slot.iconRoot : (RectTransform)slot.transform) : null;
@@ -386,8 +391,33 @@ public class HudView : MonoBehaviour
         ShowScoreLog();
     }
 
-    // a copy, for an undo snapshot
+    // a copy, for an undo snapshot (and for the tutorial's score recap, which shows it again row by row)
     public List<ScoreEntry> GetScoreLog() => new List<ScoreEntry>(scoreLog);
+
+    // for the tutorial (its score recap): the score's history held open, as if pinned, or let go (closed). the
+    // HoverReveal that opens it is found once, by its target
+    HoverReveal scoreReveal;
+    public void HoldScoreHistory(bool hold)
+    {
+        if (scoreHistory == null) return;
+        if (scoreReveal == null)
+            foreach (var r in FindObjectsByType<HoverReveal>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (r.target != null && scoreHistory.IsChildOf(r.target.transform)) { scoreReveal = r; break; }
+        if (scoreReveal != null) scoreReveal.Hold(hold);
+    }
+
+    // for the tutorial (Target.ScoreRow frames it): the history's row `index` from the top (0 = the newest); null when
+    // there's no such row. rows on their way out (ShowScoreLog) don't count
+    public RectTransform ScoreRow(int index)
+    {
+        if (scoreHistory == null || index < 0) return null;
+        foreach (Transform child in scoreHistory)
+        {
+            if (!child.gameObject.activeSelf) continue;
+            if (index-- == 0) return (RectTransform)child;
+        }
+        return null;
+    }
 
     public void SetScoreLog(List<ScoreEntry> entries)
     {

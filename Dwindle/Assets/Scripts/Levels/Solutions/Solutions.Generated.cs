@@ -5,13 +5,13 @@ public static partial class Solutions
     // ---- Level 1 (1 best plans, 1 tile layouts, 1 road family) ----
     public static LevelSolution Level1() => new LevelSolution
     {
-        target = 675, bestTiles = 3,
+        target = 550, bestTiles = 4,
         tricks = new[]
         {
             TrickOf("Delivered together", TrickNeed.RequiredToFinish),
             TrickOf("Detour", TrickNeed.NotUsed),
             TrickOf("Build ahead", TrickNeed.NotUsed),
-            TrickOf("Earned +", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.RequiredToFinish),
             TrickOf("Bridge", TrickNeed.NotUsed),
         },
         families = new[]
@@ -22,14 +22,17 @@ public static partial class Solutions
                 roads = new[]
                 {
                     RoadOf("Red", new[] { (0, 0, 0), (0, 0, 1) },
-                        Turn(0, 0, 1, Dir.W)),
-                    RoadOf("Blue", new[] { (0, 1, 1), (0, 0, 1) },
                         Turn(0, 0, 1, Dir.N)),
+                    RoadOf("Blue", new[] { (0, 1, 1), (0, 0, 1) },
+                        Turn(0, 0, 1, Dir.W)),
+                    RoadOf("Green", new[] { (0, 1, 0) },
+                        Turn(0, 1, 0, Dir.E)),
                 },
                 squares = new[]
                 {
                     Allow(0, 0, 0, TileType.StraightV),
                     Allow(0, 0, 1, TileType.Cross),
+                    Allow(0, 1, 0, TileType.Cross),
                     Allow(0, 1, 1, TileType.StraightH),
                 },
                 orders = new[]
@@ -39,6 +42,7 @@ public static partial class Solutions
                         deliveries = new[]
                         {
                             Deliver(new[] { "Red", "Blue" }, At(0, 0, 1)),
+                            Deliver(new[] { "Green" }, At(0, 1, 0)),
                         },
                     },
                 },
