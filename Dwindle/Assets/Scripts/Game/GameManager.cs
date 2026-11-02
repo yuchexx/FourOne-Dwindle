@@ -112,7 +112,8 @@ public partial class GameManager : MonoBehaviour
         endWindowHeld = false; // for the tutorial: a held end window never outlives its level
         levelEndHeld = false;  // for the tutorial: nor a held level end (GameManager.Tutorial.cs)
         earnedFlashHeld = false; // for the tutorial: nor a held earned flash (GameManager.Tutorial.cs)
-        ShowTutorialButton(tutorial != null && !string.IsNullOrEmpty(level.tutorial)); // for the tutorial: its button by the title
+        removalHeld = false;     // for the tutorial: nor a held tile removal (GameManager.Tutorial.cs)
+        ShowTutorialButton(TutorialButtonFor(index)); // for the tutorial: its button by the title, once it's earned
 
         // every tile type (x0 for the ones this level doesn't hand out), or only its own with Compact supply
         hud.BuildSlots(SupplyTypes(), SelectTile, SupplyDragStart, e => board.MoveDrag(e), SupplyDragEnd);
@@ -346,7 +347,7 @@ public partial class GameManager : MonoBehaviour
                 hud.LogText($"{unusedTiles} unused", unusedPoints, $"{pointsPerUnusedTile}×{unusedTiles} =");
         }
         RefreshAll();
-        if (showNow && !endWindowHeld) ShowMenu(true); // from the Leave screen: no wait
+        if (showNow && !endWindowHeld) { ShowMenu(true); EarnTutorialButton(); } // from the Leave screen: no wait (the button: for the tutorial)
         else StartCoroutine(ShowEndMenuAfterDelay());
         int stars = Stars();
         bool purple = SaveResult(stars); // this session's best for the level
@@ -359,6 +360,7 @@ public partial class GameManager : MonoBehaviour
         yield return new WaitForSeconds(endPopupDelay);
         while (endWindowHeld) yield return null; // for the tutorial (see HoldEndWindow)
         ShowMenu(true);
+        EarnTutorialButton(); // for the tutorial: with the end window up (after any score recap), the level's Tutorial button shows from now on
     }
 
     // for the tutorial (Tutorials.cs): while held, a finished level waits to show its end window, so a step can
@@ -410,6 +412,7 @@ public partial class GameManager : MonoBehaviour
         // for analytics: the attempt being thrown away, before the level reloads
         Report(new GameAction { kind = GameActionKind.Restart, score = Score, tilesUsed = history.TilesUsed, delivered = Delivered });
         ReportLevel();
+        EarnTutorialButton(); // for the tutorial: a restart shows the level's Tutorial button from now on
         LoadLevel(levelIndex);
     }
     public void NextLevel()
