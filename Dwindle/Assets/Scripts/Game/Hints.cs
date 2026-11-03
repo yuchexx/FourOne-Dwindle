@@ -19,7 +19,10 @@ public class Hints
     public static string TilesText(LevelData l)
     {
         int left = TilesLeft(l);
-        return left >= 0 ? $"Best plans use {l.bestTiles} tiles and leave {left} unused" : $"Best plans use {l.bestTiles} tiles";
+
+        return left >= 0
+            ? $"Best plans use {l.bestTiles} tiles and leave {left} unused"
+            : $"Best plans use {l.bestTiles} tiles";
     }
 
     public static int TilesLeft(LevelData l)

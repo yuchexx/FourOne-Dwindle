@@ -74,11 +74,15 @@ public partial class GameManager
     // the end window's Undo button: back into the level, as it was before its last placement. Undo itself refuses
     // once the level is over, so this reopens the level first. it undoes a placement even when the level was ended
     // with End level: the placement before that is what comes back
+
     public void UndoFromEndWindow()
     {
         if (!levelOver || !history.CanUndo) return;
+
         menu.HideMenu();
         levelOver = false;
+        cachedEndTitle = null;
+
         Undo();
     }
 
