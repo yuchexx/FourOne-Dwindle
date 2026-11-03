@@ -17,6 +17,16 @@ public class SettingsView : MonoBehaviour
     public GameManager game;
     public LevelSelectView levelSelect; // its locks change with Unlock all
 
+    void OnEnable()
+    {
+        UIPalette.Changed += ShowPlacement;
+    }
+
+    void OnDisable()
+    {
+        UIPalette.Changed -= ShowPlacement;
+    }
+
     void Start()
     {
         Choice(clickButton, Session.Placement.Click);
@@ -41,7 +51,7 @@ public class SettingsView : MonoBehaviour
     // the chosen way is highlighted
     void ShowPlacement()
     {
-        void Mark(Button b, Session.Placement p) { if (b != null && b.targetGraphic != null) b.targetGraphic.color = Session.placement == p ? UIPalette.Current.accent : UIPalette.Current.button; }
+        void Mark(Button b, Session.Placement p) { if (b != null && b.targetGraphic != null) b.targetGraphic.color = Session.placement == p ? UIPalette.Current.ThemeAccent : UIPalette.Current.button; }
         Mark(clickButton, Session.Placement.Click);
         Mark(dragButton, Session.Placement.Drag);
         Mark(bothButton, Session.Placement.Both);
