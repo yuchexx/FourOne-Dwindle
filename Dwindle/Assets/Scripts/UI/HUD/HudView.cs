@@ -457,7 +457,7 @@ public class HudView : MonoBehaviour
                 var c = e.objects[i];
                 if (i > 0) HistoryText(row, "+", historyMutedColor); // together: object + object
                 var icon = Instantiate(objectPrefab, Holder(row, historyIconSize));
-                icon.Setup(c, Shrink(icon.transform, objectPrefab.transform, historyIconSize));
+                icon.Setup(c, UIBuilder.FitIcon(icon.transform, objectPrefab.transform, historyIconSize));
                 icon.Face(Dir.E);
             }
         if (e.door)
@@ -484,7 +484,7 @@ public class HudView : MonoBehaviour
             art.offsetMin = art.offsetMax = Vector2.zero;
             art.anchoredPosition = new Vector2(0, historyArrowOffset);
             var ring = Instantiate(destinationPrefab, Holder(row, historyIconSize));
-            ring.Setup(e.objects[0], Shrink(ring.transform, destinationPrefab.transform, historyIconSize));
+            ring.Setup(e.objects[0], UIBuilder.FitIcon(ring.transform, destinationPrefab.transform, historyIconSize));
             ring.SetDelivered(true);
         }
         if (e.label != null) HistoryText(row, e.label, historyTextColor);
@@ -523,18 +523,6 @@ public class HudView : MonoBehaviour
         go.transform.SetParent(row, false);
         UIBuilder.FixedSize(go, size);
         return (RectTransform)go.transform;
-    }
-
-    // a board icon drawn at its prefab's own size and scaled down, so its parts keep their places. returns that size
-    static float Shrink(Transform icon, Transform prefab, float size)
-    {
-        var rt = (RectTransform)icon;
-        float native = Mathf.Max(1f, ((RectTransform)prefab).sizeDelta.x);
-        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = Vector2.zero;
-        rt.sizeDelta = Vector2.one * native;
-        rt.localScale = Vector3.one * (size / native);
-        return native;
     }
 }
 

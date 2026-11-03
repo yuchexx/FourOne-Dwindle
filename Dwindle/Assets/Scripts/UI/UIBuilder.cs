@@ -5,9 +5,14 @@ using UnityEngine.UI;
 // small UI parts built in code: images, texts, rows and badges. none of them take the mouse
 public static class UIBuilder
 {
+    // hidden now (out of any layout), destroyed at the end of the frame
     public static void Clear(Transform root)
     {
-        foreach (Transform child in root) Object.Destroy(child.gameObject);
+        foreach (Transform child in root)
+        {
+            child.gameObject.SetActive(false);
+            Object.Destroy(child.gameObject);
+        }
     }
 
     public static Image NewImage(string name, Transform parent, Color color)
@@ -71,6 +76,18 @@ public static class UIBuilder
         t.fontStyle = FontStyles.Bold;
         t.alignment = TextAlignmentOptions.Center;
         return t;
+    }
+
+    // a board icon drawn at its prefab's own size and scaled down, so its parts keep their places. returns that size
+    public static float FitIcon(Transform icon, Transform prefab, float size)
+    {
+        var rt = (RectTransform)icon;
+        float native = Mathf.Max(1f, ((RectTransform)prefab).sizeDelta.x);
+        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = Vector2.one * native;
+        rt.localScale = Vector3.one * (size / native);
+        return native;
     }
 
     // the board's circle: an object with only its body showing

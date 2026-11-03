@@ -14,6 +14,7 @@ public class SettingsView : MonoBehaviour
     public Toggle unlockAllToggle;
     public Toggle compactSupplyToggle; // the supply shows only this level's tiles (and the +)
     public Toggle showTutorialsToggle;
+    public Toggle hintTipsToggle; // hovering a stage 2 hint mark says what it means
     public GameManager game;
     public LevelSelectView levelSelect; // its locks change with Unlock all
 
@@ -30,6 +31,7 @@ public class SettingsView : MonoBehaviour
         });
         if (compactSupplyToggle != null) compactSupplyToggle.onValueChanged.AddListener(on => game.CompactSupply = on);
         if (showTutorialsToggle != null) showTutorialsToggle.onValueChanged.AddListener(on => game.ShowTutorials = on);
+        if (hintTipsToggle != null) hintTipsToggle.onValueChanged.AddListener(on => game.ShowHintTips = on);
     }
 
     void Choice(Button b, Session.Placement p)
@@ -53,6 +55,7 @@ public class SettingsView : MonoBehaviour
         unlockAllToggle.SetIsOnWithoutNotify(game.UnlockAll);
         if (compactSupplyToggle != null) compactSupplyToggle.SetIsOnWithoutNotify(game.CompactSupply);
         if (showTutorialsToggle != null) showTutorialsToggle.SetIsOnWithoutNotify(game.ShowTutorials);
+        if (hintTipsToggle != null) hintTipsToggle.SetIsOnWithoutNotify(game.ShowHintTips);
         ShowPlacement();
         panel.SetActive(true);
     }
