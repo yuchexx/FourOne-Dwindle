@@ -39,6 +39,9 @@ public partial class BoardView : MonoBehaviour
     public float boardGap = 40f;
     // set by GameManager: the top bar's parts (the boards stay below them) and the dock (they stay above it)
     [HideInInspector] public RectTransform[] keepBelow, keepAbove;
+    [Header("Hint banner layout")]
+    public RectTransform hintBannerSpace;
+    [Min(0f)] public float hintBannerGap = 16f;
     [Range(0.2f, 1f)] public float objectSize = 0.55f; // an object's circle, as a fraction of a cell
     [Range(0.2f, 1f)] public float ringSize = 0.62f;   // a ring, as a fraction of a cell
     [Tooltip("How far an object's start and its ring sit from the board's edge, in squares (0.5 = the middle of the " +
@@ -190,9 +193,25 @@ public partial class BoardView : MonoBehaviour
         }
         float left = screen.xMin + boardSideMargin, right = screen.xMax - boardSideMargin, low = bottom + boardDockGap;
         // the boards' top at the screen's top, or just below one of the corners: the biggest fit that clears them all
-        var tops = new List<float> { screen.yMax - boardTopMargin };
-        foreach (var c in corners) tops.Add(c.yMin);
-        Rect best = Rect.MinMaxRect(left, low, right, tops.Min());
+        float topLimit = screen.yMax - boardTopMargin;
+
+        // Reserve the space even while the visible banner is hidden.
+        if (hintBannerSpace != null)
+        {
+            topLimit = Mathf.Min(
+                topLimit,
+                Bounds(hintBannerSpace, area).yMin - hintBannerGap
+            );
+        }
+
+        var tops = new List<float> { topLimit };
+
+        foreach (var c in corners)
+        {
+            if (c.yMin < topLimit)
+                tops.Add(c.yMin);
+        }
+                Rect best = Rect.MinMaxRect(left, low, right, tops.Min());
         float bestCell = -1f;
         foreach (var top in tops)
         {
