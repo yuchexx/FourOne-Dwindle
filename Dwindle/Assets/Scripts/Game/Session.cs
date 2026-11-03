@@ -19,6 +19,9 @@ public static class Session
     // Settings: tutorial levels show their step-by-step boxes
     public static bool showTutorials = true;
 
+    // Settings: hovering a stage 2 hint mark says what it means
+    public static bool showHintTips = true;
+
     // the best result per level (index in Levels.All) this session
     public struct Record
     {
@@ -58,5 +61,6 @@ public static class Session
         placement = Placement.Both;
         compactSupply = false;
         showTutorials = true;
+        showHintTips = true;
     }
 }

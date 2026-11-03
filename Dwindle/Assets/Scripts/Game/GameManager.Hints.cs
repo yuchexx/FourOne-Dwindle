@@ -209,6 +209,7 @@ public partial class GameManager
     public bool AnimateUndo { get => board.animateUndo; set => board.animateUndo = value; }
     public bool UnlockAll { get => Session.unlockAll; set => Session.unlockAll = value; }
     public bool ShowTutorials { get => Session.showTutorials; set => Session.showTutorials = value; } // from the next level start
+    public bool ShowHintTips { get => Session.showHintTips; set => Session.showHintTips = value; }
     public bool CompactSupply
     {
         get => Session.compactSupply;

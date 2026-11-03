@@ -70,9 +70,13 @@ public class HintButton : MonoBehaviour
         if (confirmPanel != null) confirmPanel.SetActive(false);
     }
 
+    int shownStage;
+
     void Refresh()
     {
         int stage = game.HintStage;
+        bool reached = stage == 2 && shownStage < 2; // stage 2 just came: its menu opens once, like a hover
+        shownStage = stage;
         bool hidden = game.HintHidden;
         bool showHint = stage >= 1 && !hidden;
 
@@ -109,11 +113,16 @@ public class HintButton : MonoBehaviour
             stageNote.Show(stage, game.board);
             stageNote.gameObject.SetActive(stage >= 2 && !hidden);
         }
-
+        
         if (hideLabel != null)
             hideLabel.text = hidden ? showText : hideText;
 
         if (hoverPanel != null)
+        {
             hoverPanel.enabled = stage >= 1;
+
+            if (reached)
+                hoverPanel.Open();
+        }
     }
 }
