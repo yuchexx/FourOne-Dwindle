@@ -1036,7 +1036,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Home
+  m_text: Main Menu
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3012,8 +3012,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 86, y: -50}
-  m_SizeDelta: {x: 120, y: 55}
+  m_AnchoredPosition: {x: 126, y: -50}
+  m_SizeDelta: {x: 200, y: 55}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &249662183
 MonoBehaviour:
@@ -3834,7 +3834,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &347531792
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3853,10 +3853,10 @@ RectTransform:
   - {fileID: 1496108468}
   m_Father: {fileID: 1020843585}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 380, y: -87.62}
-  m_SizeDelta: {x: 380, y: 132}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &347531793
 MonoBehaviour:
@@ -3927,7 +3927,7 @@ MonoBehaviour:
   m_MinWidth: -1
   m_MinHeight: -1
   m_PreferredWidth: 380
-  m_PreferredHeight: 132
+  m_PreferredHeight: 240
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
@@ -4957,7 +4957,7 @@ MonoBehaviour:
   selectedSlotColor: {r: 0.98039216, g: 0.81960785, b: 0.34901962, a: 0.9019608}
   flashColor: {r: 0.9372549, g: 0.41960785, b: 0.41960785, a: 1}
   earnedFlashColor: {r: 0.38039216, g: 0.7882353, b: 0.54509807, a: 1}
-  flashHoldSeconds: 0.5
+  flashHoldSeconds: 1
   flashFadeSeconds: 0.5
 --- !u!1 &452587433
 GameObject:
@@ -12750,7 +12750,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -14}
+  m_AnchoredPosition: {x: 0, y: -50}
   m_SizeDelta: {x: -28, y: 64}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1224623899
@@ -12773,7 +12773,14 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: NO ROUTE AVAILABLE
+  m_text: '<size=26><b>No More Deliveries Possible</b></size>
+
+
+    <size=19>None
+    of the remaining objects can reach its ring with the current paths and available
+    tiles.</size>
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -12885,7 +12892,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1232323017
 RectTransform:
   m_ObjectHideFlags: 0
@@ -18906,7 +18913,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Leave
+  m_text: Quit
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

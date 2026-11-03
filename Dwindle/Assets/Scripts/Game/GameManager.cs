@@ -89,6 +89,7 @@ public partial class GameManager : MonoBehaviour
 
     public void LoadLevel(int index)
     {
+        cachedEndTitle = null;
         StopAllCoroutines();
         if (tutorial != null) tutorial.Stop();
         TelemetryManager.Instance.StartLevel(index);
