@@ -145,52 +145,11 @@ public static class Levels
         return l;
     }
 
-    // The bridge again, on two boards: Blue goes north and Green goes west through the same square without meeting. Red's ring is on its own board, but its road goes out through a door and back.
-    // Score 675 with 9 tiles (target).
-    static LevelData Level8()
-    {
-        var l = new LevelData { title = "Level 8", targetScore = 675, bestTiles = 9,
-            bestPlanHint = "deliver some together." };
-        l.SetBoards((3, 3), (3, 3));
-        l.inventory = Inv(bridge: 1, ne: 2, es: 2, wn: 2, h: 1, v: 1, tNES: 1, tESW: 1);
-        Door(l, "A", 0, 2, 0, Dir.S);
-        Door(l, "A", 1, 2, 2, Dir.W);
-        Door(l, "B", 0, 0, 2, Dir.N);
-        Door(l, "B", 1, 0, 2, Dir.S);
-        Obj(l, "Red", Red, 0, 1, 3, Dir.S, 0, 3, 0);
-        Obj(l, "Blue", Blue, 1, 1, -1, Dir.N, 1, 0, 3);
-        Obj(l, "Green", Green, 1, 3, 0, Dir.W, 1, 0, -1);
-        l.solution = Solutions.Level8();
-        return l;
-    }
-
-    // Four small boards, a pairs trap: pairs look best on paper but break junctions someone still needs. Build Blue's road first (through doors A and C), then Red, Green and Orange arrive together, and Blue finishes.
-    // Score 975 with 9 tiles (target).
-    static LevelData Level9()
-    {
-        var l = new LevelData { title = "Level 9", targetScore = 975, bestTiles = 9,
-            bestPlanHint = "pairs break a junction. Bring more in together." };
-        l.SetBoards((2, 2), (2, 2), (2, 2), (2, 2));
-        l.inventory = Inv(cross: 1, ne: 3, wn: 1, v: 3, tNES: 1, tESW: 1, tWNE: 1);
-        Door(l, "A", 0, 0, 1, Dir.E);
-        Door(l, "A", 3, 1, 0, Dir.W);
-        Door(l, "B", 2, 1, 0, Dir.W);
-        Door(l, "B", 0, 1, 1, Dir.S);
-        Door(l, "C", 1, 1, 1, Dir.S);
-        Door(l, "C", 0, 0, 0, Dir.S);
-        Obj(l, "Red", Red, 0, -1, 1, Dir.E, 2, 1, -1);
-        Obj(l, "Blue", Blue, 3, 0, 2, Dir.S, 1, 2, 0);
-        Obj(l, "Green", Green, 0, 2, 0, Dir.W, 2, 2, 0);
-        Obj(l, "Orange", Orange, 2, 1, 2, Dir.S, 0, 1, 2);
-        l.solution = Solutions.Level9();
-        return l;
-    }
-
     // An advanced detour on two 4x3 boards: everyone crosses boards, and Blue and Green share one long road out through the doors and back, which saves a tile. Without the detour the best is 1075, short of the 3rd star.
     // Score 1175 with 12 tiles (target).
-    static LevelData Level10()
+    static LevelData Level8()
     {
-        var l = new LevelData { title = "Level 10", targetScore = 1175, bestTiles = 12,
+        var l = new LevelData { title = "Level 8", targetScore = 1175, bestTiles = 12,
             bestPlanHint = "a door can be a shortcut home." };
         l.SetBoards((4, 3), (4, 3));
         l.inventory = Inv(cross: 1, ne: 1, es: 2, sw: 1, wn: 1, h: 1, v: 3, tNES: 2, tESW: 1, tSWN: 1, tWNE: 1);
@@ -204,6 +163,47 @@ public static class Levels
         Obj(l, "Blue", Blue, 1, 0, 3, Dir.S, 1, 1, -1);
         Obj(l, "Green", Green, 1, -1, 2, Dir.E, 0, 2, -1);
         Obj(l, "Orange", Orange, 1, 4, 1, Dir.W, 1, 1, 3);
+        l.solution = Solutions.Level8();
+        return l;
+    }
+
+    // The bridge again, on two boards: Blue goes north and Green goes west through the same square without meeting. Red's ring is on its own board, but its road goes out through a door and back.
+    // Score 675 with 9 tiles (target).
+    static LevelData Level9()
+    {
+        var l = new LevelData { title = "Level 9", targetScore = 675, bestTiles = 9,
+            bestPlanHint = "deliver some together." };
+        l.SetBoards((3, 3), (3, 3));
+        l.inventory = Inv(bridge: 1, ne: 2, es: 2, wn: 2, h: 1, v: 1, tNES: 1, tESW: 1);
+        Door(l, "A", 0, 2, 0, Dir.S);
+        Door(l, "A", 1, 2, 2, Dir.W);
+        Door(l, "B", 0, 0, 2, Dir.N);
+        Door(l, "B", 1, 0, 2, Dir.S);
+        Obj(l, "Red", Red, 0, 1, 3, Dir.S, 0, 3, 0);
+        Obj(l, "Blue", Blue, 1, 1, -1, Dir.N, 1, 0, 3);
+        Obj(l, "Green", Green, 1, 3, 0, Dir.W, 1, 0, -1);
+        l.solution = Solutions.Level9();
+        return l;
+    }
+
+    // Four small boards, a pairs trap: pairs look best on paper but break junctions someone still needs. Build Blue's road first (through doors A and C), then Red, Green and Orange arrive together, and Blue finishes.
+    // Score 975 with 9 tiles (target).
+    static LevelData Level10()
+    {
+        var l = new LevelData { title = "Level 10", targetScore = 975, bestTiles = 9,
+            bestPlanHint = "pairs break a junction. Bring more in together." };
+        l.SetBoards((2, 2), (2, 2), (2, 2), (2, 2));
+        l.inventory = Inv(cross: 1, ne: 3, wn: 1, v: 3, tNES: 1, tESW: 1, tWNE: 1);
+        Door(l, "A", 0, 0, 1, Dir.E);
+        Door(l, "A", 3, 1, 0, Dir.W);
+        Door(l, "B", 2, 1, 0, Dir.W);
+        Door(l, "B", 0, 1, 1, Dir.S);
+        Door(l, "C", 1, 1, 1, Dir.S);
+        Door(l, "C", 0, 0, 0, Dir.S);
+        Obj(l, "Red", Red, 0, -1, 1, Dir.E, 2, 1, -1);
+        Obj(l, "Blue", Blue, 3, 0, 2, Dir.S, 1, 2, 0);
+        Obj(l, "Green", Green, 0, 2, 0, Dir.W, 2, 2, 0);
+        Obj(l, "Orange", Orange, 2, 1, 2, Dir.S, 0, 1, 2);
         l.solution = Solutions.Level10();
         return l;
     }
