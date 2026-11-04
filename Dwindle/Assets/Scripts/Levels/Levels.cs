@@ -38,22 +38,23 @@ public static class Levels
 
     // Generated level.
     // Solution:
-    //   1. (2,2) L E-S
-    //   2. (2,1) L W-N
-    //   3. (1,1) L N-E
-    //   4. (1,2) L S-W
-    //   5. (0,2) I-h -> Red arrives
-    //   6. (2,0) I-h
-    //   7. (1,0) L E-S -> Blue arrives
-    // Score 350 with 7 tiles (target).
+    //   1. (0,1) I-v
+    //   2. (0,2) L E-S
+    //   3. (1,2) I-h
+    //   4. (2,2) L W-N
+    //   5. (0,0) L W-N -> Red arrives
+    //   6. (2,1) L E-S
+    //   7. (2,0) L W-N
+    //   8. (1,0) L E-S -> Blue arrives
+    // Score 200 with 8 tiles (target).
     static LevelData Level2()
     {
-        var l = new LevelData { title = "Level 2", targetScore = 350, bestTiles = 7,
+        var l = new LevelData { title = "Level 2", targetScore = 200, bestTiles = 8,
             bestPlanHint = "use fewer tiles." };
         l.SetBoards((3, 3));
-        l.inventory = Inv(ne: 1, es: 3, sw: 1, wn: 1, h: 3);
-        Obj(l, "Red", Red, 0, 3, 2, Dir.W, 0, -1, 2);
-        Obj(l, "Blue", Blue, 0, 1, -1, Dir.N, 0, 3, 0);
+        l.inventory = Inv(es: 3, wn: 3, h: 1, v: 1);
+        Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 2, 3);
+        Obj(l, "Blue", Blue, 0, 3, 1, Dir.W, 0, 1, -1);
         l.solution = Solutions.Level2();
         return l;
     }

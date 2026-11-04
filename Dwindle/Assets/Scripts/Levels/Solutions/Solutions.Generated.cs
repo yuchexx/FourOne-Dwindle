@@ -52,10 +52,10 @@ public static partial class Solutions
     };
     // ---- end of Level 1 ----
 
-    // ---- Level 2 (60 best plans, 3 tile layouts, 3 road families) ----
+    // ---- Level 2 (30 best plans, 1 tile layouts, 1 road family) ----
     public static LevelSolution Level2() => new LevelSolution
     {
-        target = 350, bestTiles = 7,
+        target = 200, bestTiles = 8,
         tricks = new[]
         {
             TrickOf("Delivered together", TrickNeed.NotUsed),
@@ -71,18 +71,19 @@ public static partial class Solutions
             {
                 roads = new[]
                 {
-                    RoadOf("Red", new[] { (0, 2, 2), (0, 1, 2), (0, 1, 1), (0, 0, 1), (0, 0, 2) }),
-                    RoadOf("Blue", new[] { (0, 1, 0), (0, 2, 0) }),
+                    RoadOf("Red", new[] { (0, 0, 0), (0, 0, 1), (0, 0, 2), (0, 1, 2), (0, 2, 2) }),
+                    RoadOf("Blue", new[] { (0, 2, 1), (0, 2, 0), (0, 1, 0) }),
                 },
                 squares = new[]
                 {
-                    Allow(0, 0, 1, TileType.CornerNE),
-                    Allow(0, 0, 2, TileType.CornerSW),
+                    Allow(0, 0, 0, TileType.CornerWN),
+                    Allow(0, 0, 1, TileType.StraightV),
+                    Allow(0, 0, 2, TileType.CornerES),
                     Allow(0, 1, 0, TileType.CornerES),
-                    Allow(0, 1, 1, TileType.CornerWN),
-                    Allow(0, 1, 2, TileType.CornerES),
-                    Allow(0, 2, 0, TileType.StraightH),
-                    Allow(0, 2, 2, TileType.StraightH),
+                    Allow(0, 1, 2, TileType.StraightH),
+                    Allow(0, 2, 0, TileType.CornerWN),
+                    Allow(0, 2, 1, TileType.CornerES),
+                    Allow(0, 2, 2, TileType.CornerWN),
                 },
                 orders = new[]
                 {
@@ -90,92 +91,16 @@ public static partial class Solutions
                     {
                         deliveries = new[]
                         {
-                            Deliver(new[] { "Red" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 1), At(0, 1, 2), At(0, 2, 2)),
-                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0)),
+                            Deliver(new[] { "Red" }, At(0, 0, 0), At(0, 0, 1), At(0, 0, 2), At(0, 1, 2), At(0, 2, 2)),
+                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0), At(0, 2, 1)),
                         },
                     },
                     new DeliveryOrder
                     {
                         deliveries = new[]
                         {
-                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0)),
-                            Deliver(new[] { "Red" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 1), At(0, 1, 2), At(0, 2, 2)),
-                        },
-                    },
-                },
-            },
-            // family B: 1 tile layouts
-            new RoadFamily
-            {
-                roads = new[]
-                {
-                    RoadOf("Red", new[] { (0, 2, 2), (0, 2, 1), (0, 1, 1), (0, 0, 1), (0, 0, 2) }),
-                    RoadOf("Blue", new[] { (0, 1, 0), (0, 2, 0) }),
-                },
-                squares = new[]
-                {
-                    Allow(0, 0, 1, TileType.CornerNE),
-                    Allow(0, 0, 2, TileType.CornerSW),
-                    Allow(0, 1, 0, TileType.CornerES),
-                    Allow(0, 1, 1, TileType.StraightH),
-                    Allow(0, 2, 0, TileType.StraightH),
-                    Allow(0, 2, 1, TileType.CornerWN),
-                    Allow(0, 2, 2, TileType.CornerES),
-                },
-                orders = new[]
-                {
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Red" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 1), At(0, 2, 1), At(0, 2, 2)),
-                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0)),
-                        },
-                    },
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0)),
-                            Deliver(new[] { "Red" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 1), At(0, 2, 1), At(0, 2, 2)),
-                        },
-                    },
-                },
-            },
-            // family C: 1 tile layouts
-            new RoadFamily
-            {
-                roads = new[]
-                {
-                    RoadOf("Red", new[] { (0, 2, 2), (0, 2, 1), (0, 1, 1), (0, 1, 2), (0, 0, 2) }),
-                    RoadOf("Blue", new[] { (0, 1, 0), (0, 2, 0) }),
-                },
-                squares = new[]
-                {
-                    Allow(0, 0, 2, TileType.StraightH),
-                    Allow(0, 1, 0, TileType.CornerES),
-                    Allow(0, 1, 1, TileType.CornerNE),
-                    Allow(0, 1, 2, TileType.CornerSW),
-                    Allow(0, 2, 0, TileType.StraightH),
-                    Allow(0, 2, 1, TileType.CornerWN),
-                    Allow(0, 2, 2, TileType.CornerES),
-                },
-                orders = new[]
-                {
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Red" }, At(0, 0, 2), At(0, 1, 1), At(0, 1, 2), At(0, 2, 1), At(0, 2, 2)),
-                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0)),
-                        },
-                    },
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0)),
-                            Deliver(new[] { "Red" }, At(0, 0, 2), At(0, 1, 1), At(0, 1, 2), At(0, 2, 1), At(0, 2, 2)),
+                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0), At(0, 2, 1)),
+                            Deliver(new[] { "Red" }, At(0, 0, 0), At(0, 0, 1), At(0, 0, 2), At(0, 1, 2), At(0, 2, 2)),
                         },
                     },
                 },
