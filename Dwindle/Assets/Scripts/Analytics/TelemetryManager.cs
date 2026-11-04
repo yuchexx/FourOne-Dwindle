@@ -82,6 +82,7 @@ public class TelemetryManager : MonoBehaviour
 
     public void EndLevel(int score, int starLevel)
     {
+#if !UNITY_EDITOR
         // If level is still 0, it was not set meaning a tutorial happened, not a real level
         if (currLevel != 0)
         {
@@ -123,7 +124,9 @@ public class TelemetryManager : MonoBehaviour
                           levelAttemptsPostCompletion[currLevel - 1].ToString()));
             }
         }
+#endif
     }
+
 
     private IEnumerator FillOutAnalytics(string formType, string mySession, string finalLevel,
                                          string timeElapsed, string totalPieces, string totalStars, string totalScore,
