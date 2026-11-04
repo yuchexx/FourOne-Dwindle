@@ -10,6 +10,8 @@ public class HintButton : MonoBehaviour
     public Button button;
     public Graphic[] dots;           // one per stage, left to right
     public TMP_Text tilesLine;       // stage 1: "Best plans use 8 tiles, 3 left"
+    [Tooltip("Optional: a box behind the stage 1 line, shown and hidden with it")]
+    public GameObject tilesBox;
     public GameObject noPurpleLabel; // shown once the answer has been used
     [Tooltip("Optional: the note above Hide / Show, there from stage 2")]
     public HintNote stageNote;
@@ -76,7 +78,7 @@ public class HintButton : MonoBehaviour
             if (dots[i] != null) dots[i].color = i < stage ? palette.accent : palette.mutedText;
         if (tilesLine != null)
         {
-            tilesLine.gameObject.SetActive(stage >= 1 && !hidden);
+            (tilesBox != null ? tilesBox : tilesLine.gameObject).SetActive(stage >= 1 && !hidden);
             if (stage >= 1) tilesLine.text = game.HintTilesText;
         }
         if (noPurpleLabel != null) noPurpleLabel.SetActive(game.PurpleLost);
