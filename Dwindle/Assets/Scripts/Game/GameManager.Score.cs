@@ -37,8 +37,30 @@ public partial class GameManager
             canUndo: history.CanUndo, canNext: stars >= 1 && !isLast);
     }
 
-    static string EndTitle(int stars, bool purple) =>
-        stars == 3 ? (purple ? "Genius!" : "Solved!") : stars == 2 ? "Nice!" : stars == 1 ? "Good start" : "So close";
+    // the end window's title: one of a few per result (0-3 stars, purple), never last time's for that result. picked
+    // once per ending (FinishLevel clears it), so reopening the window keeps it
+    static readonly string[][] EndTitles =
+    {
+        new[] { "So close", "Almost there", "Not quite" },
+        new[] { "Good start!", "Getting there!", "Nearly!" },
+        new[] { "All home!", "Nice work!", "Well done!" },
+        new[] { "Solved!", "Great plan!", "Nailed it!" },
+        new[] { "Genius!", "Brilliant!", "Masterful!" },
+    };
+    static readonly int[] lastEndTitle = { -1, -1, -1, -1, -1 };
+    static readonly System.Random titleRandom = new System.Random(); // apart from the game's own randomness
+    string endTitle;
+
+    string EndTitle(int stars, bool purple)
+    {
+        if (endTitle != null) return endTitle;
+        int group = purple ? 4 : stars;
+        var titles = EndTitles[group];
+        int pick;
+        do pick = titleRandom.Next(titles.Length); while (titles.Length > 1 && pick == lastEndTitle[group]);
+        lastEndTitle[group] = pick;
+        return endTitle = titles[pick];
+    }
 
     // the end window's short line: a tip toward the next star, or a cheer
     string EndNote(int stars, bool purple, bool isLast)

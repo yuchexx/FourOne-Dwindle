@@ -99,6 +99,7 @@ public class HudView : MonoBehaviour
     public Color flashColor = new Color(1f, 0.45f, 0.45f);
     public Color earnedFlashColor = new Color(0.45f, 0.85f, 0.55f); // the + slot when delivering together earns one
     public float flashHoldSeconds = 0.2f;
+    public float earnedFlashHoldSeconds = 1f; // the earned + lingers longer than a lost tile
     public float flashFadeSeconds = 0.2f;
 
     readonly Dictionary<TileType, TileCard> slots = new Dictionary<TileType, TileCard>();
@@ -312,17 +313,19 @@ public class HudView : MonoBehaviour
     // red by default (a tile lost), or another color, e.g. green for the + earned by delivering together
     public void FlashSlot(TileType t, Color? color = null)
     {
-        if (slots.ContainsKey(t)) StartCoroutine(FlashSlotRoutine(t, color ?? flashColor));
+        var flash = color ?? flashColor;
+        float hold = flash == earnedFlashColor ? earnedFlashHoldSeconds : flashHoldSeconds;
+        if (slots.ContainsKey(t)) StartCoroutine(FlashSlotRoutine(t, flash, hold));
     }
 
-    IEnumerator FlashSlotRoutine(TileType t, Color flash)
+    IEnumerator FlashSlotRoutine(TileType t, Color flash, float hold)
     {
         var img = slots[t].background;
         flashingSlots.Add(t);
         img.color = flash;
-        for (float f = 0; f < flashHoldSeconds + flashFadeSeconds; f += Time.deltaTime)
+        for (float f = 0; f < hold + flashFadeSeconds; f += Time.deltaTime)
         {
-            img.color = Color.Lerp(flash, SlotColor(t), Mathf.Clamp01((f - flashHoldSeconds) / flashFadeSeconds));
+            img.color = Color.Lerp(flash, SlotColor(t), Mathf.Clamp01((f - hold) / flashFadeSeconds));
             yield return null;
         }
         flashingSlots.Remove(t);

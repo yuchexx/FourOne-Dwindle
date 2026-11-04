@@ -331,6 +331,7 @@ public partial class GameManager : MonoBehaviour
     // the level is over: count the unused tiles and show the end window
     void FinishLevel(string reason, bool showNow = false)
     {
+        endTitle = null; // this ending picks its own (see EndTitle)
         stuck = false;
         HideStuckNotice();
         levelOver = true;
