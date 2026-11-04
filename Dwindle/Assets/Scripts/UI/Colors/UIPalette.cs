@@ -7,7 +7,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Dwindle/UI Palette", fileName = "UIPalette")]
 public class UIPalette : ScriptableObject
 {
-    public enum Role { Background, Panel, Button, Text, MutedText, Accent, Star, StarEmpty, Success, Danger, Dim, Hint, Tutorial, ThemeAccent }
+    public enum Role { Background, Panel, Button, Text, MutedText, Accent, Star, StarEmpty, Success, Danger, Dim, Hint, Tutorial }
 
     [Header("Surfaces")]
     [Tooltip("Behind everything: the title screen, the Levels page")]
@@ -25,11 +25,7 @@ public class UIPalette : ScriptableObject
 
     [Header("Meaning")]
     [Tooltip("Hints and best plans: purple stars, tutorial levels, the chosen setting, switches that are on")]
-    [UnityEngine.Serialization.FormerlySerializedAs("accent")]
-    public Color defaultAccent = Hex("#7C83F7");
-
-    // existing code that reads "accent" now gets the player's choice.
-    public Color accent => ThemeAccent;
+    public Color accent = Hex("#7C83F7");
     [Tooltip("The tutorial's frames and its Next button (TutorialOverlay)")]
     public Color tutorial = Hex("#F2C740");
     public Color star = Hex("#FFD133");
@@ -41,28 +37,6 @@ public class UIPalette : ScriptableObject
     public Color danger = Hex("#FF7373");
     [Tooltip("The hints drawn on the board: numbers, frames, ghost tiles")]
     public Color hint = Hex("#403B8A");
-
-    static Color? chosenThemeColor;
-
-    // use the original accent until the player chooses another color.
-   public Color ThemeAccent =>
-    Application.isPlaying && chosenThemeColor.HasValue
-        ? chosenThemeColor.Value
-        : defaultAccent;
-
-    public static void SetThemeColor(Color color)
-    {
-        color.a = 1f;
-        chosenThemeColor = color;
-        Changed?.Invoke();
-    }
-
-    [RuntimeInitializeOnLoadMethod(
-        RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetThemeColor()
-    {
-        chosenThemeColor = null;
-    }
 
     public Color Get(Role role) => role switch
     {
@@ -78,7 +52,6 @@ public class UIPalette : ScriptableObject
         Role.Danger => danger,
         Role.Hint => hint,
         Role.Tutorial => tutorial,
-        Role.ThemeAccent => ThemeAccent,
         _ => dim,
     };
 

@@ -10,7 +10,6 @@ public class HintButton : MonoBehaviour
     public Button button;
     public Graphic[] dots;           // one per stage, left to right
     public TMP_Text tilesLine;       // stage 1: "Best plans use 8 tiles, 3 left"
-    public GameObject hintBanner;
     public GameObject noPurpleLabel; // shown once the answer has been used
     [Tooltip("Optional: the note above Hide / Show, there from stage 2")]
     public HintNote stageNote;
@@ -37,17 +36,11 @@ public class HintButton : MonoBehaviour
     void Update()
     {
         bool can = game.HintAvailable;
-        if (button.interactable != can)
-            button.interactable = can;
-
-        // keep the written hint fully visible
-        if (tilesLine != null)
-            tilesLine.alpha = 1f;
-
-        // other hint markers keep their existing pulse.
+        if (button.interactable != can) button.interactable = can;
+        // the lines pulse with the board's hints
         float k = game.board.HintPulseLevel;
-        if (stageNote != null && stageNote.gameObject.activeInHierarchy)
-            stageNote.Pulse(k);
+        if (tilesLine != null && tilesLine.gameObject.activeSelf) tilesLine.alpha = k;
+        if (stageNote != null && stageNote.gameObject.activeInHierarchy) stageNote.Pulse(k);
     }
 
     public void ToggleHidden() => game.ToggleHintHidden();
@@ -78,51 +71,25 @@ public class HintButton : MonoBehaviour
         bool reached = stage == 2 && shownStage < 2; // stage 2 just came: its menu opens once, like a hover
         shownStage = stage;
         bool hidden = game.HintHidden;
-        bool showHint = stage >= 1 && !hidden;
-
         var palette = UIPalette.Current;
-
         for (int i = 0; i < dots.Length; i++)
-        {
-            if (dots[i] != null)
-            {
-                dots[i].color = i < stage
-                    ? palette.accent
-                    : palette.mutedText;
-            }
-        }
-
-        if (hintBanner != null)
-            hintBanner.SetActive(showHint);
-
+            if (dots[i] != null) dots[i].color = i < stage ? palette.accent : palette.mutedText;
         if (tilesLine != null)
         {
-            tilesLine.gameObject.SetActive(showHint);
-
-            if (stage >= 1)
-            {
-               tilesLine.text = game.HintTilesText;
-            }
+            tilesLine.gameObject.SetActive(stage >= 1 && !hidden);
+            if (stage >= 1) tilesLine.text = game.HintTilesText;
         }
-
-        if (noPurpleLabel != null)
-            noPurpleLabel.SetActive(game.PurpleLost);
-
+        if (noPurpleLabel != null) noPurpleLabel.SetActive(game.PurpleLost);
         if (stageNote != null)
         {
             stageNote.Show(stage, game.board);
             stageNote.gameObject.SetActive(stage >= 2 && !hidden);
         }
-        
-        if (hideLabel != null)
-            hideLabel.text = hidden ? showText : hideText;
-
+        if (hideLabel != null) hideLabel.text = hidden ? showText : hideText;
         if (hoverPanel != null)
         {
-            hoverPanel.enabled = stage >= 1;
-
-            if (reached)
-                hoverPanel.Open();
+            hoverPanel.enabled = stage >= 1; // nothing to show or hide before the first hint
+            if (reached) hoverPanel.Open();
         }
     }
 }

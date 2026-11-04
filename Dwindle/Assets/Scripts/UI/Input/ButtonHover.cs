@@ -22,30 +22,16 @@ public class ButtonHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     void Awake()
     {
         button = GetComponent<Button>();
-
-        // circular buttons should highlight their circle
-        var circle = GetComponent<CircleGraphic>();
-        if (circle != null)
-            button.targetGraphic = circle;
-
         var colors = button.colors;
         colors.highlightedColor = colors.normalColor;
         colors.selectedColor = colors.normalColor;
         button.colors = colors;
 
-        if (button.targetGraphic != null &&
-            !(button.targetGraphic is Image))
+        if (button.targetGraphic != null && !(button.targetGraphic is Image))
         {
             tinted = button.targetGraphic;
-
-            // hide any overlay left from an older button setup
-            var oldLayer = tinted.transform.Find(LayerName);
-
-            if (oldLayer != null)
-                oldLayer.gameObject.SetActive(false);
-
             return;
-}
+        }
 
         // the layer sits on the background graphic, first in its children so the text draws over it.
         // a clone of a button that already had one (a level card) reuses it

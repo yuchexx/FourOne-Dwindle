@@ -23,6 +23,6 @@ public class SwitchToggle : MonoBehaviour
         at = at < 0 || slideSeconds <= 0 ? target : Mathf.MoveTowards(at, target, Time.unscaledDeltaTime / slideSeconds);
         float travel = (((RectTransform)track.transform).rect.width - knob.rect.width) / 2f - 4f;
         knob.anchoredPosition = new Vector2(Mathf.Lerp(-travel, travel, at), 0);
-        track.color = Color.Lerp(UIPalette.Current.button, UIPalette.Current.ThemeAccent, at); // the palette's Button off, Accent on
+        track.color = Color.Lerp(UIPalette.Current.button, UIPalette.Current.accent, at); // the palette's Button off, Accent on
     }
 }

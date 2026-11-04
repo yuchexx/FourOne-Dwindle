@@ -37,72 +37,9 @@ public partial class GameManager
             canUndo: history.CanUndo, canNext: stars >= 1 && !isLast);
     }
 
-    // headline groups: 0, 1, 2, 3 stars, then purple stars.
-static readonly string[][] endHeadlines =
-{
-    new[]
-    {
-        "Try another approach",
-        "Keep experimenting",
-        "Time for a new plan"
-    },
-    new[]
-    {
-        "Good start!",
-        "Progress made!",
-    },
-    new[]
-    {
-        "All objects delivered!",
-        "Every object home!",
-        "Deliveries complete!"
-    },
-    new[]
-    {
-        "Target reached!",
-        "Three stars!",
-        "Nicely solved!"
-    },
-    new[]
-    {
-        "Genius!",
-        "Brilliant finish!",
-        "Excellent planning!"
-    }
-};
+    static string EndTitle(int stars, bool purple) =>
+        stars == 3 ? (purple ? "Genius!" : "Solved!") : stars == 2 ? "Nice!" : stars == 1 ? "Good start" : "So close";
 
-// Separate from gameplay randomness.
-readonly System.Random headlineRandom = new System.Random();
-
-// Remember the previous headline in each group.
-readonly int[] lastHeadline = { -1, -1, -1, -1, -1 };
-
-    // keep the same headline while reopening one result
-    string cachedEndTitle;
-
-    string EndTitle(int stars, bool purple)
-    {
-        if (cachedEndTitle != null)
-            return cachedEndTitle;
-
-        int group = stars == 3 && purple
-            ? 4
-            : Mathf.Clamp(stars, 0, 3);
-
-        string[] messages = endHeadlines[group];
-
-        int pick;
-        do
-        {
-            pick = headlineRandom.Next(messages.Length);
-        }
-        while (messages.Length > 1 && pick == lastHeadline[group]);
-
-        lastHeadline[group] = pick;
-        cachedEndTitle = messages[pick];
-
-        return cachedEndTitle;
-    }
     // the end window's short line: a tip toward the next star, or a cheer
     string EndNote(int stars, bool purple, bool isLast)
     {
