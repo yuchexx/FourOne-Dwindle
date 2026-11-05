@@ -8,7 +8,7 @@ using UnityEngine.UI;
 public class LevelSelectView : MonoBehaviour
 {
     public LevelCard cardTemplate;
-    [Min(1)] public int cardsPerRow = 4;
+    [Min(1)] public int cardsPerRow = 5;
     [Tooltip("Space between cards side by side")]
     public float cardSpacing = 24f;
     [Tooltip("Space between rows")]

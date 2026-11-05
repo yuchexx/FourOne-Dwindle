@@ -16325,7 +16325,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelSelectView
   cardTemplate: {fileID: 729762767}
-  cardsPerRow: 4
+  cardsPerRow: 5
   cardSpacing: 30
   rowSpacing: 30
   cardText: Level {n}
