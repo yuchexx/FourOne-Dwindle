@@ -188,8 +188,9 @@ public partial class GameManager
         return true;
     }
 
-    // levels with a tutorial whose button shows: once one's end window has come up (after its score recap, if any) or
-    // it has been restarted (the Restart button, not a coach's reset) this launch, its button stays
+    // levels with a tutorial that have earned their button (with tutorials off in Settings it shows without this, see
+    // TutorialButtonFor): once one's end window has come up (after its score recap, if any) or it has been restarted
+    // (the Restart button, not a coach's reset) this launch, its button stays
     readonly HashSet<int> tutorialButtonEarned = new HashSet<int>();
 
     // the level's end window just came up, or it's being restarted: from now on its Tutorial button shows (see LoadLevel)
@@ -200,11 +201,16 @@ public partial class GameManager
         ShowTutorialButton(true);
     }
 
-    // whether the level that's on gets the button: it has a tutorial, and has ended or been restarted before
+    // whether the level that's on gets the button: it has a tutorial, and either tutorials are off in Settings (nothing
+    // pops up by itself, so the button is the way in) or it has ended or been restarted before
     bool TutorialButtonFor(int index) =>
-        tutorial != null && !string.IsNullOrEmpty(Levels.All[index].tutorial) && tutorialButtonEarned.Contains(index);
+        tutorial != null && !string.IsNullOrEmpty(Levels.All[index].tutorial)
+        && (!Session.showTutorials || tutorialButtonEarned.Contains(index));
 
-    // called on every level load (LoadLevel), and when a level earns its button
+    // Settings' Show tutorials just changed: the level that's on gets or loses its button right away
+    void RefreshTutorialButton() { if (level != null) ShowTutorialButton(TutorialButtonFor(levelIndex)); }
+
+    // called on every level load (LoadLevel), when a level earns its button, and when Show tutorials changes
     void ShowTutorialButton(bool show)
     {
         if (show && tutorialButton == null && !MakeTutorialButton()) return;
