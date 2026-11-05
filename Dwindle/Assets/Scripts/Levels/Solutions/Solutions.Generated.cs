@@ -299,8 +299,97 @@ public static partial class Solutions
     };
     // ---- end of Level 5 ----
 
-    // ---- Level 6 (8 best plans, 3 tile layouts, 2 road families) ----
+    // ---- Level 6 (45 best plans, 9 tile layouts, 2 road families) ----
     public static LevelSolution Level6() => new LevelSolution
+    {
+        target = 550, bestTiles = 8,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredToFinish),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.Optional),
+            TrickOf("Earned +", TrickNeed.RequiredToFinish),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 6 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 0, 2), (0, 1, 2), (0, 2, 2) },
+                        Turn(0, 0, 2, Dir.E), Turn(0, 1, 2, Dir.E), Turn(0, 2, 2, Dir.N)),
+                    RoadOf("Blue", new[] { (0, 3, 1), (0, 2, 1), (0, 2, 0), (0, 1, 0), (0, 0, 0) },
+                        Turn(0, 3, 1, Dir.W), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.W), Turn(0, 1, 0, Dir.W), Turn(0, 0, 0, Dir.W)),
+                    RoadOf("Green", new[] { (0, 2, 0), (0, 2, 1), (0, 2, 2), (0, 1, 2), (0, 0, 2) },
+                        Turn(0, 2, 0, Dir.N), Turn(0, 2, 1, Dir.N), Turn(0, 2, 2, Dir.W), Turn(0, 1, 2, Dir.W), Turn(0, 0, 2, Dir.N)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.Cross, TileType.StraightH, TileType.TeeESW),
+                    Allow(0, 0, 2, TileType.TeeWNE),
+                    Allow(0, 1, 0, TileType.Cross, TileType.StraightH, TileType.TeeESW),
+                    Allow(0, 1, 2, TileType.StraightH, TileType.TeeESW),
+                    Allow(0, 2, 0, TileType.TeeSWN),
+                    Allow(0, 2, 1, TileType.TeeNES),
+                    Allow(0, 2, 2, TileType.TeeSWN),
+                    Allow(0, 3, 1, TileType.StraightH, TileType.TeeESW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Green" }, At(0, 0, 2, (0, 3, 1)), At(0, 1, 2, (0, 3, 1)), At(0, 2, 2, (0, 3, 1))),
+                            Deliver(new[] { "Blue" }, At(0, 0, 0), At(0, 1, 0)),
+                        },
+                    },
+                },
+            },
+            // family B: 3 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 0, 2), (0, 0, 1), (0, 0, 0), (0, 1, 0), (0, 2, 0), (0, 2, 1), (0, 2, 2) },
+                        Turn(0, 0, 2, Dir.S), Turn(0, 0, 0, Dir.E), Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.N), Turn(0, 2, 1, Dir.N), Turn(0, 2, 2, Dir.N)),
+                    RoadOf("Blue", new[] { (0, 3, 1), (0, 2, 1), (0, 2, 0), (0, 1, 0), (0, 0, 0) },
+                        Turn(0, 3, 1, Dir.W), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.W), Turn(0, 1, 0, Dir.W), Turn(0, 0, 0, Dir.W)),
+                    RoadOf("Green", new[] { (0, 2, 0), (0, 1, 0), (0, 0, 0), (0, 0, 1), (0, 0, 2) },
+                        Turn(0, 2, 0, Dir.W), Turn(0, 1, 0, Dir.W), Turn(0, 0, 0, Dir.N), Turn(0, 0, 2, Dir.N)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.TeeWNE),
+                    Allow(0, 0, 1, TileType.StraightV),
+                    Allow(0, 0, 2, TileType.TeeSWN),
+                    Allow(0, 1, 0, TileType.StraightH, TileType.TeeESW),
+                    Allow(0, 2, 0, TileType.TeeSWN),
+                    Allow(0, 2, 1, TileType.TeeNES),
+                    Allow(0, 2, 2, TileType.Cross),
+                    Allow(0, 3, 1, TileType.StraightH, TileType.TeeESW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue", "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                            Deliver(new[] { "Red" }, At(0, 2, 2)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 6 ----
+
+    // ---- Level 7 (8 best plans, 3 tile layouts, 2 road families) ----
+    public static LevelSolution Level7() => new LevelSolution
     {
         target = 825, bestTiles = 10,
         tricks = new[]
@@ -394,10 +483,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 6 ----
+    // ---- end of Level 7 ----
 
-    // ---- Level 7 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level7() => new LevelSolution
+    // ---- Level 8 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level8() => new LevelSolution
     {
         target = 825, bestTiles = 10,
         tricks = new[]
@@ -452,10 +541,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 7 ----
+    // ---- end of Level 8 ----
 
-    // ---- Level 8 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level8() => new LevelSolution
+    // ---- Level 9 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level9() => new LevelSolution
     {
         target = 150, bestTiles = 2,
         tricks = new[]
@@ -495,10 +584,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 8 ----
+    // ---- end of Level 9 ----
 
-    // ---- Level 9 (12 best plans, 3 tile layouts, 1 road family) ----
-    public static LevelSolution Level9() => new LevelSolution
+    // ---- Level 10 (12 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level10() => new LevelSolution
     {
         target = 675, bestTiles = 9,
         tricks = new[]
@@ -566,10 +655,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 9 ----
+    // ---- end of Level 10 ----
 
-    // ---- Level 10 (7 best plans, 2 tile layouts, 1 road family) ----
-    public static LevelSolution Level10() => new LevelSolution
+    // ---- Level 11 (7 best plans, 2 tile layouts, 1 road family) ----
+    public static LevelSolution Level11() => new LevelSolution
     {
         target = 975, bestTiles = 9,
         tricks = new[]
@@ -631,10 +720,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 10 ----
+    // ---- end of Level 11 ----
 
-    // ---- Level 11 (1347 best plans, 449 tile layouts, 3 road families) ----
-    public static LevelSolution Level11() => new LevelSolution
+    // ---- Level 12 (1347 best plans, 449 tile layouts, 3 road families) ----
+    public static LevelSolution Level12() => new LevelSolution
     {
         target = 1175, bestTiles = 12,
         tricks = new[]
@@ -773,10 +862,10 @@ public static partial class Solutions
         },
         answerFamily = 2, answerOrder = 0,
     };
-    // ---- end of Level 11 ----
+    // ---- end of Level 12 ----
 
-    // ---- Level 12 (3 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level12() => new LevelSolution
+    // ---- Level 13 (3 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level13() => new LevelSolution
     {
         target = 1025, bestTiles = 11,
         tricks = new[]
@@ -832,10 +921,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 12 ----
+    // ---- end of Level 13 ----
 
-    // ---- Level 13 (9 best plans, 3 tile layouts, 2 road families) ----
-    public static LevelSolution Level13() => new LevelSolution
+    // ---- Level 14 (9 best plans, 3 tile layouts, 2 road families) ----
+    public static LevelSolution Level14() => new LevelSolution
     {
         target = 1025, bestTiles = 15,
         tricks = new[]
@@ -939,10 +1028,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 13 ----
+    // ---- end of Level 14 ----
 
-    // ---- Level 14 (56 best plans, 14 tile layouts, 4 road families) ----
-    public static LevelSolution Level14() => new LevelSolution
+    // ---- Level 15 (56 best plans, 14 tile layouts, 4 road families) ----
+    public static LevelSolution Level15() => new LevelSolution
     {
         target = 975, bestTiles = 14,
         tricks = new[]
@@ -1130,5 +1219,5 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 14 ----
+    // ---- end of Level 15 ----
 }
