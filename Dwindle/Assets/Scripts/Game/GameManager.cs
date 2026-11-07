@@ -352,8 +352,17 @@ public partial class GameManager : MonoBehaviour
         else StartCoroutine(ShowEndMenuAfterDelay());
         int stars = Stars();
         bool purple = SaveResult(stars); // this session's best for the level
-        Report(new GameAction { kind = GameActionKind.LevelEnd, score = Score, stars = stars, purple = purple, hintStage = hints.Stage,
-            tilesUsed = history.TilesUsed, delivered = Delivered, reason = reason }); // for analytics
+        Report(new GameAction
+        {
+            kind = GameActionKind.LevelEnd,
+            score = Score,
+            stars = stars,
+            purple = purple,
+            hintStage = hints.Stage,
+            tilesUsed = history.TilesUsed,
+            delivered = Delivered,
+            reason = reason
+        }); // for analytics
     }
 
     IEnumerator ShowEndMenuAfterDelay()

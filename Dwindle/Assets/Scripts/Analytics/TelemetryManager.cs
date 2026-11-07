@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
+using NUnit.Framework.Internal;
+using System.Runtime.CompilerServices;
+using UnityEditor.AdaptivePerformance.Editor;
 
 
 // Persistent metric tracker that operates all throughout a
@@ -22,9 +25,13 @@ public class TelemetryManager : MonoBehaviour
 
     [Header("Parameters")]
     [SerializeField]
-    private int LEVEL_COUNT = 12;
+    private int LEVEL_COUNT = 25; // Just some overshooting so new levels don't break the array
 
     public static TelemetryManager Instance { get; private set; }
+
+    public GameObject gameManager;
+    private GameManager gameManagerScript;
+
 
     //private string filePath;
     //private StreamWriter fileWriter;
@@ -38,6 +45,7 @@ public class TelemetryManager : MonoBehaviour
     private List<int> levelAttemptsPreCompletion; // Holds for each level until they beat it
     private List<int> levelAttemptsPostCompletion; // Holds for each level until they get 3 Stars
     private List<bool> levelCompletion;
+    //private Dictionary<Vector2Int, TileType> tilePlacements;
 
     // Can change manager to intercept actions rather than get them passed in at the end
 
@@ -47,6 +55,7 @@ public class TelemetryManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            gameManagerScript = gameManager.GetComponent<GameManager>();
             sessionID = Guid.NewGuid().ToString();
             levelAttemptsPreCompletion = new List<int>(LEVEL_COUNT);
             levelAttemptsPostCompletion = new List<int>(LEVEL_COUNT);
@@ -64,6 +73,18 @@ public class TelemetryManager : MonoBehaviour
         }
     }
 
+
+    private void OnEnable()
+    {
+        gameManagerScript.ActionDone += eventSub;
+    }
+
+    private void OnDisable()
+    {
+        gameManagerScript.ActionDone -= eventSub;
+    }
+
+
     public void StartLevel(int level)
     {
         currLevel = level + 1;
@@ -75,9 +96,31 @@ public class TelemetryManager : MonoBehaviour
         finalPiecesUsed++;
     }
 
+    /*
+    public void AddPiece(Vector2Int cellNum, TileType tile)
+    {
+        //tilePlacements.Add(cellNum, tile);
+        finalPiecesUsed++;
+    }
+    */
+
     public void RemovePiece()
     {
         finalPiecesUsed--;
+    }
+
+    /*
+    public void RemovePiece(Vector2Int cellNum)
+    {
+        //tilePlacements.Remove(cellNum);
+        finalPiecesUsed--;
+    }
+    */
+
+
+    public void eventSub(GameAction gameAction)
+    {
+        Debug.Log($"GETTING the EVENT");
     }
 
     public void EndLevel(int score, int starLevel)
@@ -124,6 +167,8 @@ public class TelemetryManager : MonoBehaviour
                           levelAttemptsPostCompletion[currLevel - 1].ToString()));
             }
         }
+        finalPiecesUsed = 0;
+        tilePlacements.Clear();
 #endif
     }
 
