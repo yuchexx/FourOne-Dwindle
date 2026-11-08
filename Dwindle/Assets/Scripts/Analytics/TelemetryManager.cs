@@ -45,7 +45,7 @@ public class TelemetryManager : MonoBehaviour
     private List<int> levelAttemptsPreCompletion; // Holds for each level until they beat it
     private List<int> levelAttemptsPostCompletion; // Holds for each level until they get 3 Stars
     private List<bool> levelCompletion;
-    //private Dictionary<Vector2Int, TileType> tilePlacements;
+    private Dictionary<Vector2Int, TileType> tilePlacements;
 
     // Can change manager to intercept actions rather than get them passed in at the end
 
@@ -60,6 +60,7 @@ public class TelemetryManager : MonoBehaviour
             levelAttemptsPreCompletion = new List<int>(LEVEL_COUNT);
             levelAttemptsPostCompletion = new List<int>(LEVEL_COUNT);
             levelCompletion = new List<bool>(LEVEL_COUNT);
+            tilePlacements = new Dictionary<Vector2Int, TileType>();
             for (int i = 0; i < LEVEL_COUNT; i++)
             {
                 levelAttemptsPreCompletion.Add(0);
@@ -121,6 +122,15 @@ public class TelemetryManager : MonoBehaviour
     public void eventSub(GameAction gameAction)
     {
         Debug.Log($"GETTING the EVENT");
+        if (gameAction.kind == GameActionKind.LevelEnd)
+        {
+            for (int i = 0; i < tilePlacements.Count; i++)
+            {
+                // TODO Match placements to optimal answer
+            }
+
+            // TODO Add weighting for hints used and proper pieces removed
+        }
     }
 
     public void EndLevel(int score, int starLevel)
