@@ -45,7 +45,7 @@ public class TelemetryManager : MonoBehaviour
     private List<int> levelAttemptsPreCompletion; // Holds for each level until they beat it
     private List<int> levelAttemptsPostCompletion; // Holds for each level until they get 3 Stars
     private List<bool> levelCompletion;
-    private Dictionary<Vector2Int, TileType> tilePlacements;
+    private Dictionary<Vector3Int, List<TileType?>> tilePlacements;
 
     // Can change manager to intercept actions rather than get them passed in at the end
 
@@ -60,7 +60,7 @@ public class TelemetryManager : MonoBehaviour
             levelAttemptsPreCompletion = new List<int>(LEVEL_COUNT);
             levelAttemptsPostCompletion = new List<int>(LEVEL_COUNT);
             levelCompletion = new List<bool>(LEVEL_COUNT);
-            tilePlacements = new Dictionary<Vector2Int, TileType>();
+            tilePlacements = new Dictionary<Vector3Int, List<TileType?>>();
             for (int i = 0; i < LEVEL_COUNT; i++)
             {
                 levelAttemptsPreCompletion.Add(0);
@@ -122,7 +122,25 @@ public class TelemetryManager : MonoBehaviour
     public void eventSub(GameAction gameAction)
     {
         Debug.Log($"GETTING the EVENT");
-        if (gameAction.kind == GameActionKind.LevelEnd)
+        if (gameAction.kind == GameActionKind.Undo || gameAction.kind == GameActionKind.TakeBack)
+        {
+            int board = gameAction.board;
+            Vector2Int cellNum = gameAction.square;
+            tilePlacements.Remove(new Vector3Int(board, cellNum.x, cellNum.y));
+        }
+        else if (gameAction.kind == GameActionKind.PlaceTile)
+        {
+            int board = gameAction.board;
+            Vector2Int cellNum = gameAction.square;
+            Vector3Int fullCell = new Vector3Int(board, cellNum.x, cellNum.y);
+            if (!tilePlacements.TryGetValue(fullCell, out List<TileType?> tilesHistory))
+            {
+                tilesHistory = new List<TileType?>();
+                tilePlacements[fullCell] = tilesHistory;
+            }
+            tilePlacements[fullCell].Add(gameAction.tile);
+        }
+        else if (gameAction.kind == GameActionKind.LevelEnd)
         {
             for (int i = 0; i < tilePlacements.Count; i++)
             {
