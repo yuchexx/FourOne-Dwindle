@@ -4,12 +4,12 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// the Levels page: cards in pages, < and > to turn
+// the Levels page: cards in pages, < and > to turn; each part starts on a new row under its heading
 public class LevelSelectView : MonoBehaviour
 {
     public LevelCard cardTemplate;
     [Min(1)] public int cardsPerRow = 4;
-    [Tooltip("Rows on one page; more levels go on the next page")]
+    [Tooltip("Rows of cards on one page; more go on the next page")]
     [Min(1)] public int rowsPerPage = 4;
     [Tooltip("Space between cards side by side")]
     public float cardSpacing = 24f;
@@ -26,6 +26,16 @@ public class LevelSelectView : MonoBehaviour
     [Tooltip("{p} is the page's number, {total} the number of pages")]
     public string pageText = "{p}/{total}";
 
+    [Header("Parts (in Play mode, changes show right away)")]
+    [Tooltip("Each part (LevelData.section) starts on a new row under its heading")]
+    public bool showParts = true;
+    [Tooltip("A heading text to copy for each part on a page (hidden itself); its pivot sits above the part's first row")]
+    public TMP_Text headingTemplate;
+    [Tooltip("Extra space above a part's first row, where its heading goes")]
+    public float headingSpace = 40f;
+    [Tooltip("A part that carries on from the page before; {name} is its name")]
+    public string continuedText = "{name} (continued)";
+
     [Header("Tutorial levels (in Play mode, changes show right away)")]
     [Tooltip("An open tutorial level's card: a deeper purple than Accent, so purple stars still show on it")]
     public Color tutorialCardColor = new Color32(0x4A, 0x4F, 0xA8, 0xFF);
@@ -36,14 +46,15 @@ public class LevelSelectView : MonoBehaviour
 
     readonly List<LevelCard> cards = new List<LevelCard>();
     readonly List<bool> hasTutorial = new List<bool>();
+    readonly List<string> partOf = new List<string>();  // each card's part (LevelData.section, carried forward)
+    readonly List<int> pageOf = new List<int>();        // each card's page
+    readonly List<TMP_Text> headings = new List<TMP_Text>();
+    readonly List<int> headingPage = new List<int>();   // each heading's page
     Color cardColor;
     Vector2 labelAnchorMin, labelAnchorMax, labelPosition, labelSize;
     TextAlignmentOptions labelAlignment;
-    Vector2 cardSize, firstCard; // the template's size and spot (the first card of a page)
-    int page;
-
-    int PerPage => cardsPerRow * rowsPerPage;
-    int PageCount => Mathf.Max(1, (cards.Count + PerPage - 1) / PerPage);
+    Vector2 cardSize, firstCard; // the template's size and spot (the top row of a page)
+    int page, pageCount = 1;
 
     void OnValidate()
     {
@@ -56,7 +67,10 @@ public class LevelSelectView : MonoBehaviour
         foreach (var c in cards) Destroy(c.gameObject);
         cards.Clear();
         hasTutorial.Clear();
+        partOf.Clear();
+        string part = null;
         cardTemplate.gameObject.SetActive(false);
+        if (headingTemplate != null) headingTemplate.gameObject.SetActive(false);
         if (cardTemplate.button.targetGraphic != null) cardColor = cardTemplate.button.targetGraphic.color;
         var label = cardTemplate.label.rectTransform;
         labelAnchorMin = label.anchorMin; labelAnchorMax = label.anchorMax;
@@ -73,6 +87,8 @@ public class LevelSelectView : MonoBehaviour
             card.button.onClick.AddListener(() => onPick(index));
             cards.Add(card);
             hasTutorial.Add(!string.IsNullOrEmpty(levels[i].tutorial) || levels[i].teach); // tutorial and teach levels
+            if (!string.IsNullOrEmpty(levels[i].section)) part = levels[i].section;
+            partOf.Add(part);
         }
         if (prevButton != null) { prevButton.onClick.RemoveListener(PrevPage); prevButton.onClick.AddListener(PrevPage); }
         if (nextButton != null) { nextButton.onClick.RemoveListener(NextPage); nextButton.onClick.AddListener(NextPage); }
@@ -80,20 +96,59 @@ public class LevelSelectView : MonoBehaviour
         Refresh();
     }
 
-    // each page's cards in rows from the template's spot; a short last row is centered
+    // rows: a row ends when full or where a new part starts. pages: rowsPerPage rows each. a part's first row on a
+    // page gets a heading above it ("(continued)" when the part began on the page before)
     void Layout()
     {
+        foreach (var h in headings) Destroy(h.gameObject);
+        headings.Clear();
+        headingPage.Clear();
+        pageOf.Clear();
+
+        // the rows, each as (first card, how many)
+        var rows = new List<(int start, int count)>();
         for (int i = 0; i < cards.Count; i++)
         {
-            int start = i / PerPage * PerPage, k = i - start; // k: its place on its page
-            int onPage = Mathf.Min(PerPage, cards.Count - start);
-            int row = k / cardsPerRow, col = k % cardsPerRow;
-            int inRow = Mathf.Min(cardsPerRow, onPage - row * cardsPerRow);
-            ((RectTransform)cards[i].transform).anchoredPosition = new Vector2(
-                firstCard.x + (col - (inRow - 1) / 2f) * (cardSize.x + cardSpacing),
-                firstCard.y - row * (cardSize.y + rowSpacing));
+            bool newPart = showParts && i > 0 && partOf[i] != partOf[i - 1];
+            if (i == 0 || newPart || rows[rows.Count - 1].count == cardsPerRow) rows.Add((i, 0));
+            rows[rows.Count - 1] = (rows[rows.Count - 1].start, rows[rows.Count - 1].count + 1);
+        }
+        pageCount = Mathf.Max(1, (rows.Count + rowsPerPage - 1) / rowsPerPage);
+
+        float y = firstCard.y;
+        for (int r = 0; r < rows.Count; r++)
+        {
+            int p = r / rowsPerPage;
+            if (r % rowsPerPage == 0) y = firstCard.y; // a new page starts at the top
+            var (start, count) = rows[r];
+            string part = showParts ? partOf[start] : null;
+            bool partStarts = start == 0 || partOf[start] != partOf[start - 1];
+            if (!string.IsNullOrEmpty(part) && (partStarts || r % rowsPerPage == 0))
+            {
+                y -= headingSpace;
+                AddHeading(partStarts ? part : continuedText.Replace("{name}", part), p, y + cardSize.y / 2f + headingSpace / 2f);
+            }
+            for (int k = 0; k < count; k++)
+            {
+                ((RectTransform)cards[start + k].transform).anchoredPosition = new Vector2(
+                    firstCard.x + (k - (count - 1) / 2f) * (cardSize.x + cardSpacing), y);
+                pageOf.Add(p);
+            }
+            y -= cardSize.y + rowSpacing;
         }
         ShowPage(page);
+    }
+
+    // a copy of the heading template, centered over the cards at height y, on page p
+    void AddHeading(string text, int p, float y)
+    {
+        if (headingTemplate == null) return;
+        var h = Instantiate(headingTemplate, headingTemplate.transform.parent);
+        h.name = $"Heading {text}";
+        h.text = text;
+        h.rectTransform.anchoredPosition = new Vector2(firstCard.x, y);
+        headings.Add(h);
+        headingPage.Add(p);
     }
 
     // the Levels button: open on the last opened level's page (before any, the level to play next)
@@ -101,24 +156,25 @@ public class LevelSelectView : MonoBehaviour
     {
         Refresh();
         int level = Session.lastOpened >= 0 ? Session.lastOpened : Session.StartLevel(cards.Count);
-        ShowPage(level / PerPage);
+        ShowPage(level >= 0 && level < pageOf.Count ? pageOf[level] : 0);
     }
 
     public void PrevPage() => ShowPage(page - 1);
     public void NextPage() => ShowPage(page + 1);
 
-    // only that page's cards; < and > greyed at the ends, hidden with one page
+    // only that page's cards and headings; < and > greyed at the ends, hidden with one page
     public void ShowPage(int p)
     {
-        page = Mathf.Clamp(p, 0, PageCount - 1);
-        for (int i = 0; i < cards.Count; i++) cards[i].gameObject.SetActive(i / PerPage == page);
-        bool several = PageCount > 1;
+        page = Mathf.Clamp(p, 0, pageCount - 1);
+        for (int i = 0; i < cards.Count; i++) cards[i].gameObject.SetActive(pageOf[i] == page);
+        for (int i = 0; i < headings.Count; i++) headings[i].gameObject.SetActive(headingPage[i] == page);
+        bool several = pageCount > 1;
         if (prevButton != null) { prevButton.gameObject.SetActive(several); prevButton.interactable = page > 0; }
-        if (nextButton != null) { nextButton.gameObject.SetActive(several); nextButton.interactable = page < PageCount - 1; }
+        if (nextButton != null) { nextButton.gameObject.SetActive(several); nextButton.interactable = page < pageCount - 1; }
         if (pageLabel != null)
         {
             pageLabel.gameObject.SetActive(several);
-            pageLabel.text = pageText.Replace("{p}", (page + 1).ToString()).Replace("{total}", PageCount.ToString());
+            pageLabel.text = pageText.Replace("{p}", (page + 1).ToString()).Replace("{total}", pageCount.ToString());
         }
     }
 

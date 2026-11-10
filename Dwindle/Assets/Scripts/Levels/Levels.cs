@@ -28,6 +28,7 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 1", targetScore = 550, bestTiles = 4,
             bestPlanHint = "deliver some together." };
+        l.section = "Learn"; // the Levels page starts a part here
         l.tutorial = "Basics";
         l.teach = true;
         l.SetBoards((2, 2));
@@ -231,6 +232,7 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 13", targetScore = 825, bestTiles = 10,
             bestPlanHint = "deliver some together." };
+        l.section = "Challenge"; // the Levels page starts a part here
         l.SetBoards((4, 3));
         l.inventory = Inv(bridge: 1, sw: 1, wn: 1, h: 3, v: 1, tNES: 2, tSWN: 2);
         Obj(l, "Red", Red, 0, 3, 3, Dir.S, 0, 4, 0);
@@ -442,6 +444,7 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 25", targetScore = 1025, bestTiles = 13,
             bestPlanHint = "pairs break a junction. Bring more in together." };
+        l.section = "Finale"; // the Levels page starts a part here
         l.SetBoards((5, 4), (5, 4));
         l.inventory = Inv(cross: 1, ne: 2, es: 1, sw: 3, wn: 1, v: 1, tNES: 1, tESW: 2, tSWN: 1, tWNE: 2);
         Door(l, "A", 1, 0, 3, Dir.W);
