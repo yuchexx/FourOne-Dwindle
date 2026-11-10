@@ -52,38 +52,41 @@ public static partial class Solutions
     };
     // ---- end of Level 1 ----
 
-    // ---- Level 2 (30 best plans, 1 tile layouts, 1 road family) ----
+    // ---- Level 2 (12 best plans, 2 tile layouts, 1 road family) ----
     public static LevelSolution Level2() => new LevelSolution
     {
-        target = 200, bestTiles = 8,
+        target = 475, bestTiles = 7,
         tricks = new[]
         {
-            TrickOf("Delivered together", TrickNeed.NotUsed),
+            TrickOf("Delivered together", TrickNeed.RequiredToFinish),
             TrickOf("Detour", TrickNeed.NotUsed),
             TrickOf("Build ahead", TrickNeed.NotUsed),
-            TrickOf("Earned +", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.RequiredToFinish),
             TrickOf("Bridge", TrickNeed.NotUsed),
         },
         families = new[]
         {
-            // family A: 1 tile layouts
+            // family A: 2 tile layouts
             new RoadFamily
             {
                 roads = new[]
                 {
-                    RoadOf("Red", new[] { (0, 0, 0), (0, 0, 1), (0, 0, 2), (0, 1, 2), (0, 2, 2) }),
-                    RoadOf("Blue", new[] { (0, 2, 1), (0, 2, 0), (0, 1, 0) }),
+                    RoadOf("Red", new[] { (0, 2, 2), (0, 2, 1) },
+                        Turn(0, 2, 2, Dir.S), Turn(0, 2, 1, Dir.E)),
+                    RoadOf("Blue", new[] { (0, 1, 2), (0, 1, 1), (0, 2, 1), (0, 2, 2) },
+                        Turn(0, 2, 1, Dir.N), Turn(0, 2, 2, Dir.E)),
+                    RoadOf("Green", new[] { (0, 0, 0), (0, 1, 0), (0, 2, 0) },
+                        Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.E)),
                 },
                 squares = new[]
                 {
-                    Allow(0, 0, 0, TileType.CornerWN),
-                    Allow(0, 0, 1, TileType.StraightV),
-                    Allow(0, 0, 2, TileType.CornerES),
-                    Allow(0, 1, 0, TileType.CornerES),
-                    Allow(0, 1, 2, TileType.StraightH),
-                    Allow(0, 2, 0, TileType.CornerWN),
-                    Allow(0, 2, 1, TileType.CornerES),
-                    Allow(0, 2, 2, TileType.CornerWN),
+                    Allow(0, 0, 0, TileType.CornerES),
+                    Allow(0, 1, 0, TileType.Cross, TileType.StraightH),
+                    Allow(0, 1, 1, TileType.CornerNE),
+                    Allow(0, 1, 2, TileType.StraightV),
+                    Allow(0, 2, 0, TileType.Cross, TileType.StraightH),
+                    Allow(0, 2, 1, TileType.TeeWNE),
+                    Allow(0, 2, 2, TileType.TeeNES),
                 },
                 orders = new[]
                 {
@@ -91,16 +94,8 @@ public static partial class Solutions
                     {
                         deliveries = new[]
                         {
-                            Deliver(new[] { "Red" }, At(0, 0, 0), At(0, 0, 1), At(0, 0, 2), At(0, 1, 2), At(0, 2, 2)),
-                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0), At(0, 2, 1)),
-                        },
-                    },
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0), At(0, 2, 1)),
-                            Deliver(new[] { "Red" }, At(0, 0, 0), At(0, 0, 1), At(0, 0, 2), At(0, 1, 2), At(0, 2, 2)),
+                            Deliver(new[] { "Red", "Blue" }, At(0, 2, 1), At(0, 2, 2)),
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
                         },
                     },
                 },
@@ -110,140 +105,8 @@ public static partial class Solutions
     };
     // ---- end of Level 2 ----
 
-    // ---- Level 3 (1 best plans, 1 tile layouts, 1 road family) ----
+    // ---- Level 3 (45 best plans, 9 tile layouts, 2 road families) ----
     public static LevelSolution Level3() => new LevelSolution
-    {
-        target = 450, bestTiles = 6,
-        tricks = new[]
-        {
-            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
-            TrickOf("Detour", TrickNeed.NotUsed),
-            TrickOf("Build ahead", TrickNeed.NotUsed),
-            TrickOf("Earned +", TrickNeed.NotUsed),
-            TrickOf("Bridge", TrickNeed.RequiredToFinish),
-        },
-        families = new[]
-        {
-            // family A: 1 tile layouts
-            new RoadFamily
-            {
-                roads = new[]
-                {
-                    RoadOf("Red", new[] { (0, 2, 1), (0, 2, 2) }),
-                    RoadOf("Blue", new[] { (0, 2, 2), (0, 1, 2), (0, 1, 1), (0, 1, 0), (0, 2, 0) }),
-                },
-                squares = new[]
-                {
-                    Allow(0, 1, 0, TileType.CornerNE),
-                    Allow(0, 1, 1, TileType.StraightV),
-                    Allow(0, 1, 2, TileType.CornerES),
-                    Allow(0, 2, 0, TileType.CornerSW),
-                    Allow(0, 2, 1, TileType.CornerNE),
-                    Allow(0, 2, 2, TileType.Bridge),
-                },
-                orders = new[]
-                {
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Red", "Blue" }, At(0, 2, 2)),
-                        },
-                    },
-                },
-            },
-        },
-        answerFamily = 0, answerOrder = 0,
-    };
-    // ---- end of Level 3 ----
-
-    // ---- Level 4 (16 best plans, 4 tile layouts, 2 road families) ----
-    public static LevelSolution Level4() => new LevelSolution
-    {
-        target = 550, bestTiles = 8,
-        tricks = new[]
-        {
-            TrickOf("Delivered together", TrickNeed.RequiredToFinish),
-            TrickOf("Detour", TrickNeed.NotUsed),
-            TrickOf("Build ahead", TrickNeed.NotUsed),
-            TrickOf("Earned +", TrickNeed.RequiredToFinish),
-            TrickOf("Bridge", TrickNeed.RequiredToFinish),
-        },
-        families = new[]
-        {
-            // family A: 2 tile layouts
-            new RoadFamily
-            {
-                roads = new[]
-                {
-                    RoadOf("Red", new[] { (0, 2, 2), (0, 2, 1), (0, 2, 0) }),
-                    RoadOf("Blue", new[] { (0, 1, 2), (0, 1, 1), (0, 0, 1), (0, 0, 0) },
-                        Turn(0, 1, 2, Dir.S), Turn(0, 0, 0, Dir.S)),
-                    RoadOf("Green", new[] { (0, 2, 0), (0, 1, 0) }),
-                },
-                squares = new[]
-                {
-                    Allow(0, 0, 0, TileType.Cross, TileType.StraightV),
-                    Allow(0, 0, 1, TileType.CornerES),
-                    Allow(0, 1, 0, TileType.CornerES),
-                    Allow(0, 1, 1, TileType.CornerWN),
-                    Allow(0, 1, 2, TileType.Cross, TileType.StraightV),
-                    Allow(0, 2, 0, TileType.Bridge),
-                    Allow(0, 2, 1, TileType.StraightV),
-                    Allow(0, 2, 2, TileType.StraightV),
-                },
-                orders = new[]
-                {
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Red", "Green" }, At(0, 2, 0)),
-                            Deliver(new[] { "Blue" }, At(0, 0, 0), At(0, 0, 1), At(0, 1, 1), At(0, 1, 2)),
-                        },
-                    },
-                },
-            },
-            // family B: 2 tile layouts
-            new RoadFamily
-            {
-                roads = new[]
-                {
-                    RoadOf("Red", new[] { (0, 2, 2), (0, 2, 1), (0, 2, 0) }),
-                    RoadOf("Blue", new[] { (0, 1, 2), (0, 0, 2), (0, 0, 1), (0, 0, 0) },
-                        Turn(0, 0, 1, Dir.S), Turn(0, 0, 0, Dir.S)),
-                    RoadOf("Green", new[] { (0, 2, 0), (0, 1, 0) }),
-                },
-                squares = new[]
-                {
-                    Allow(0, 0, 0, TileType.Cross, TileType.StraightV),
-                    Allow(0, 0, 1, TileType.Cross, TileType.StraightV),
-                    Allow(0, 0, 2, TileType.CornerES),
-                    Allow(0, 1, 0, TileType.CornerES),
-                    Allow(0, 1, 2, TileType.CornerWN),
-                    Allow(0, 2, 0, TileType.Bridge),
-                    Allow(0, 2, 1, TileType.StraightV),
-                    Allow(0, 2, 2, TileType.StraightV),
-                },
-                orders = new[]
-                {
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Red", "Green" }, At(0, 2, 0)),
-                            Deliver(new[] { "Blue" }, At(0, 0, 0), At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
-                        },
-                    },
-                },
-            },
-        },
-        answerFamily = 0, answerOrder = 0,
-    };
-    // ---- end of Level 4 ----
-
-    // ---- Level 5 (45 best plans, 9 tile layouts, 2 road families) ----
-    public static LevelSolution Level5() => new LevelSolution
     {
         target = 550, bestTiles = 8,
         tricks = new[]
@@ -329,10 +192,610 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
+    // ---- end of Level 3 ----
+
+    // ---- Level 4 (8 best plans, 4 tile layouts, 1 road family) ----
+    public static LevelSolution Level4() => new LevelSolution
+    {
+        target = 825, bestTiles = 10,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredToFinish),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.RequiredToFinish),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 4 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 3, 3), (0, 2, 3), (0, 1, 3), (0, 0, 3), (0, 0, 2) },
+                        Turn(0, 3, 3, Dir.W), Turn(0, 2, 3, Dir.W), Turn(0, 1, 3, Dir.W), Turn(0, 0, 3, Dir.S)),
+                    RoadOf("Blue", new[] { (0, 1, 3), (0, 2, 3), (0, 2, 2), (0, 3, 2), (0, 3, 1) },
+                        Turn(0, 1, 3, Dir.E), Turn(0, 2, 3, Dir.S), Turn(0, 3, 2, Dir.S), Turn(0, 3, 1, Dir.E)),
+                    RoadOf("Green", new[] { (0, 3, 2), (0, 3, 1), (0, 3, 0), (0, 2, 0) },
+                        Turn(0, 3, 2, Dir.S), Turn(0, 3, 1, Dir.S), Turn(0, 3, 0, Dir.W), Turn(0, 2, 0, Dir.S)),
+                    RoadOf("Orange", new[] { (0, 3, 3), (0, 2, 3), (0, 2, 2), (0, 3, 2), (0, 3, 1), (0, 3, 0) },
+                        Turn(0, 3, 3, Dir.W), Turn(0, 2, 3, Dir.S), Turn(0, 3, 2, Dir.S), Turn(0, 3, 1, Dir.S), Turn(0, 3, 0, Dir.S)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 2, TileType.CornerWN),
+                    Allow(0, 0, 3, TileType.Cross, TileType.TeeNES, TileType.TeeESW),
+                    Allow(0, 1, 3, TileType.TeeWNE),
+                    Allow(0, 2, 0, TileType.Cross),
+                    Allow(0, 2, 2, TileType.CornerNE),
+                    Allow(0, 2, 3, TileType.Cross, TileType.TeeESW),
+                    Allow(0, 3, 0, TileType.TeeSWN),
+                    Allow(0, 3, 1, TileType.Cross, TileType.TeeNES),
+                    Allow(0, 3, 2, TileType.Cross, TileType.TeeESW),
+                    Allow(0, 3, 3, TileType.TeeWNE),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Blue" }, At(0, 1, 3), At(0, 2, 3)),
+                            Deliver(new[] { "Green", "Orange" }, At(0, 3, 0)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 4 ----
+
+    // ---- Level 5 (432 best plans, 2 tile layouts, 2 road families) ----
+    public static LevelSolution Level5() => new LevelSolution
+    {
+        target = 300, bestTiles = 10,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.NotUsed),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.NotUsed),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 1 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 2, 2), (0, 3, 2), (0, 3, 1), (0, 3, 0) }),
+                    RoadOf("Blue", new[] { (0, 1, 2), (0, 0, 2), (0, 0, 1) }),
+                    RoadOf("Green", new[] { (0, 0, 0), (0, 1, 0), (0, 2, 0) }),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.StraightH),
+                    Allow(0, 0, 1, TileType.CornerWN),
+                    Allow(0, 0, 2, TileType.CornerES),
+                    Allow(0, 1, 0, TileType.StraightH),
+                    Allow(0, 1, 2, TileType.CornerWN),
+                    Allow(0, 2, 0, TileType.CornerSW),
+                    Allow(0, 2, 2, TileType.CornerNE),
+                    Allow(0, 3, 0, TileType.StraightV),
+                    Allow(0, 3, 1, TileType.StraightV),
+                    Allow(0, 3, 2, TileType.CornerSW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red" }, At(0, 2, 2), At(0, 3, 0), At(0, 3, 1), At(0, 3, 2)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red" }, At(0, 2, 2), At(0, 3, 0), At(0, 3, 1), At(0, 3, 2)),
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                            Deliver(new[] { "Red" }, At(0, 2, 2), At(0, 3, 0), At(0, 3, 1), At(0, 3, 2)),
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                            Deliver(new[] { "Red" }, At(0, 2, 2), At(0, 3, 0), At(0, 3, 1), At(0, 3, 2)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                            Deliver(new[] { "Red" }, At(0, 2, 2), At(0, 3, 0), At(0, 3, 1), At(0, 3, 2)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                            Deliver(new[] { "Red" }, At(0, 2, 2), At(0, 3, 0), At(0, 3, 1), At(0, 3, 2)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                        },
+                    },
+                },
+            },
+            // family B: 1 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 2, 2), (0, 2, 1), (0, 3, 1), (0, 3, 0) }),
+                    RoadOf("Blue", new[] { (0, 1, 2), (0, 0, 2), (0, 0, 1) }),
+                    RoadOf("Green", new[] { (0, 0, 0), (0, 1, 0), (0, 2, 0) }),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.StraightH),
+                    Allow(0, 0, 1, TileType.CornerWN),
+                    Allow(0, 0, 2, TileType.CornerES),
+                    Allow(0, 1, 0, TileType.StraightH),
+                    Allow(0, 1, 2, TileType.CornerWN),
+                    Allow(0, 2, 0, TileType.CornerSW),
+                    Allow(0, 2, 1, TileType.CornerNE),
+                    Allow(0, 2, 2, TileType.StraightV),
+                    Allow(0, 3, 0, TileType.StraightV),
+                    Allow(0, 3, 1, TileType.CornerSW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red" }, At(0, 2, 1), At(0, 2, 2), At(0, 3, 0), At(0, 3, 1)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red" }, At(0, 2, 1), At(0, 2, 2), At(0, 3, 0), At(0, 3, 1)),
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                            Deliver(new[] { "Red" }, At(0, 2, 1), At(0, 2, 2), At(0, 3, 0), At(0, 3, 1)),
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                            Deliver(new[] { "Red" }, At(0, 2, 1), At(0, 2, 2), At(0, 3, 0), At(0, 3, 1)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                            Deliver(new[] { "Red" }, At(0, 2, 1), At(0, 2, 2), At(0, 3, 0), At(0, 3, 1)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Green" }, At(0, 0, 0), At(0, 1, 0), At(0, 2, 0)),
+                            Deliver(new[] { "Red" }, At(0, 2, 1), At(0, 2, 2), At(0, 3, 0), At(0, 3, 1)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
     // ---- end of Level 5 ----
 
-    // ---- Level 6 (12 best plans, 6 tile layouts, 1 road family) ----
+    // ---- Level 6 (30 best plans, 1 tile layouts, 1 road family) ----
     public static LevelSolution Level6() => new LevelSolution
+    {
+        target = 200, bestTiles = 8,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.NotUsed),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.NotUsed),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 1 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 0, 0), (0, 0, 1), (0, 0, 2), (0, 1, 2), (0, 2, 2) }),
+                    RoadOf("Blue", new[] { (0, 2, 1), (0, 2, 0), (0, 1, 0) }),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.CornerWN),
+                    Allow(0, 0, 1, TileType.StraightV),
+                    Allow(0, 0, 2, TileType.CornerES),
+                    Allow(0, 1, 0, TileType.CornerES),
+                    Allow(0, 1, 2, TileType.StraightH),
+                    Allow(0, 2, 0, TileType.CornerWN),
+                    Allow(0, 2, 1, TileType.CornerES),
+                    Allow(0, 2, 2, TileType.CornerWN),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red" }, At(0, 0, 0), At(0, 0, 1), At(0, 0, 2), At(0, 1, 2), At(0, 2, 2)),
+                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0), At(0, 2, 1)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue" }, At(0, 1, 0), At(0, 2, 0), At(0, 2, 1)),
+                            Deliver(new[] { "Red" }, At(0, 0, 0), At(0, 0, 1), At(0, 0, 2), At(0, 1, 2), At(0, 2, 2)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 6 ----
+
+    // ---- Level 7 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level7() => new LevelSolution
+    {
+        target = 450, bestTiles = 6,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.NotUsed),
+            TrickOf("Bridge", TrickNeed.RequiredToFinish),
+        },
+        families = new[]
+        {
+            // family A: 1 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 2, 1), (0, 2, 2) }),
+                    RoadOf("Blue", new[] { (0, 2, 2), (0, 1, 2), (0, 1, 1), (0, 1, 0), (0, 2, 0) }),
+                },
+                squares = new[]
+                {
+                    Allow(0, 1, 0, TileType.CornerNE),
+                    Allow(0, 1, 1, TileType.StraightV),
+                    Allow(0, 1, 2, TileType.CornerES),
+                    Allow(0, 2, 0, TileType.CornerSW),
+                    Allow(0, 2, 1, TileType.CornerNE),
+                    Allow(0, 2, 2, TileType.Bridge),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Blue" }, At(0, 2, 2)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 7 ----
+
+    // ---- Level 8 (16 best plans, 4 tile layouts, 2 road families) ----
+    public static LevelSolution Level8() => new LevelSolution
+    {
+        target = 550, bestTiles = 8,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredToFinish),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.RequiredToFinish),
+            TrickOf("Bridge", TrickNeed.RequiredToFinish),
+        },
+        families = new[]
+        {
+            // family A: 2 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 2, 2), (0, 2, 1), (0, 2, 0) }),
+                    RoadOf("Blue", new[] { (0, 1, 2), (0, 1, 1), (0, 0, 1), (0, 0, 0) },
+                        Turn(0, 1, 2, Dir.S), Turn(0, 0, 0, Dir.S)),
+                    RoadOf("Green", new[] { (0, 2, 0), (0, 1, 0) }),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.Cross, TileType.StraightV),
+                    Allow(0, 0, 1, TileType.CornerES),
+                    Allow(0, 1, 0, TileType.CornerES),
+                    Allow(0, 1, 1, TileType.CornerWN),
+                    Allow(0, 1, 2, TileType.Cross, TileType.StraightV),
+                    Allow(0, 2, 0, TileType.Bridge),
+                    Allow(0, 2, 1, TileType.StraightV),
+                    Allow(0, 2, 2, TileType.StraightV),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Green" }, At(0, 2, 0)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 0), At(0, 0, 1), At(0, 1, 1), At(0, 1, 2)),
+                        },
+                    },
+                },
+            },
+            // family B: 2 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 2, 2), (0, 2, 1), (0, 2, 0) }),
+                    RoadOf("Blue", new[] { (0, 1, 2), (0, 0, 2), (0, 0, 1), (0, 0, 0) },
+                        Turn(0, 0, 1, Dir.S), Turn(0, 0, 0, Dir.S)),
+                    RoadOf("Green", new[] { (0, 2, 0), (0, 1, 0) }),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.Cross, TileType.StraightV),
+                    Allow(0, 0, 1, TileType.Cross, TileType.StraightV),
+                    Allow(0, 0, 2, TileType.CornerES),
+                    Allow(0, 1, 0, TileType.CornerES),
+                    Allow(0, 1, 2, TileType.CornerWN),
+                    Allow(0, 2, 0, TileType.Bridge),
+                    Allow(0, 2, 1, TileType.StraightV),
+                    Allow(0, 2, 2, TileType.StraightV),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Green" }, At(0, 2, 0)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 0), At(0, 0, 1), At(0, 0, 2), At(0, 1, 2)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 8 ----
+
+    // ---- Level 9 (48 best plans, 8 tile layouts, 1 road family) ----
+    public static LevelSolution Level9() => new LevelSolution
+    {
+        target = 825, bestTiles = 10,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.Optional),
+            TrickOf("Bridge", TrickNeed.RequiredToFinish),
+        },
+        families = new[]
+        {
+            // family A: 8 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 3, 2), (0, 3, 1), (0, 3, 0) },
+                        Turn(0, 3, 2, Dir.S), Turn(0, 3, 1, Dir.S), Turn(0, 3, 0, Dir.E)),
+                    RoadOf("Blue", new[] { (0, 1, 2), (0, 1, 1), (0, 1, 0) },
+                        Turn(0, 1, 1, Dir.S), Turn(0, 1, 0, Dir.S)),
+                    RoadOf("Green", new[] { (0, 0, 1), (0, 1, 1), (0, 1, 0), (0, 2, 0) },
+                        Turn(0, 0, 1, Dir.E), Turn(0, 1, 1, Dir.S), Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.S)),
+                    RoadOf("Orange", new[] { (0, 3, 0), (0, 3, 1), (0, 3, 2), (0, 2, 2), (0, 1, 2), (0, 0, 2) },
+                        Turn(0, 3, 0, Dir.N), Turn(0, 3, 1, Dir.N), Turn(0, 3, 2, Dir.W)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 1, TileType.Cross, TileType.StraightH),
+                    Allow(0, 0, 2, TileType.StraightH),
+                    Allow(0, 1, 0, TileType.Cross, TileType.TeeNES),
+                    Allow(0, 1, 1, TileType.Cross, TileType.TeeSWN),
+                    Allow(0, 1, 2, TileType.Bridge),
+                    Allow(0, 2, 0, TileType.Cross, TileType.CornerSW, TileType.TeeSWN),
+                    Allow(0, 2, 2, TileType.StraightH),
+                    Allow(0, 3, 0, TileType.TeeNES),
+                    Allow(0, 3, 1, TileType.StraightV, TileType.TeeNES, TileType.TeeSWN),
+                    Allow(0, 3, 2, TileType.TeeSWN),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Orange" }, At(0, 3, 0), At(0, 3, 1), At(0, 3, 2)),
+                            Deliver(new[] { "Blue", "Green" }, At(0, 1, 0), At(0, 1, 1)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 9 ----
+
+    // ---- Level 10 (18 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level10() => new LevelSolution
+    {
+        target = 550, bestTiles = 7,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredToFinish),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.RequiredToFinish),
+            TrickOf("Earned +", TrickNeed.NotUsed),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 3 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 0, 2), (0, 1, 2), (0, 1, 1), (0, 1, 0), (0, 2, 0), (0, 3, 0) },
+                        Turn(0, 0, 2, Dir.E), Turn(0, 1, 2, Dir.S), Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.E), Turn(0, 3, 0, Dir.E)),
+                    RoadOf("Blue", new[] { (0, 3, 1), (0, 3, 0), (0, 2, 0) },
+                        Turn(0, 3, 0, Dir.W), Turn(0, 2, 0, Dir.S)),
+                    RoadOf("Green", new[] { (0, 1, 2), (0, 1, 1), (0, 1, 0) },
+                        Turn(0, 1, 2, Dir.S), Turn(0, 1, 0, Dir.S)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 2, TileType.Cross, TileType.TeeNES, TileType.TeeWNE),
+                    Allow(0, 1, 0, TileType.Cross, TileType.TeeNES),
+                    Allow(0, 1, 1, TileType.StraightV),
+                    Allow(0, 1, 2, TileType.TeeSWN),
+                    Allow(0, 2, 0, TileType.TeeESW),
+                    Allow(0, 3, 0, TileType.Cross, TileType.TeeWNE),
+                    Allow(0, 3, 1, TileType.CornerES),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Green" }, At(0, 1, 0, (0, 0, 2)), At(0, 1, 1, (0, 0, 2)), At(0, 1, 2, (0, 0, 2))),
+                            Deliver(new[] { "Red", "Blue" }, At(0, 2, 0), At(0, 3, 0)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 10 ----
+
+    // ---- Level 11 (40 best plans, 8 tile layouts, 1 road family) ----
+    public static LevelSolution Level11() => new LevelSolution
+    {
+        target = 550, bestTiles = 8,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.RequiredForTarget),
+            TrickOf("Earned +", TrickNeed.Optional),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 8 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 3, 2), (0, 2, 2), (0, 2, 1), (0, 2, 0), (0, 3, 0) },
+                        Turn(0, 3, 2, Dir.W), Turn(0, 2, 2, Dir.S), Turn(0, 2, 0, Dir.E), Turn(0, 3, 0, Dir.E)),
+                    RoadOf("Blue", new[] { (0, 0, 1), (0, 0, 2), (0, 1, 2), (0, 2, 2), (0, 2, 1), (0, 2, 0) },
+                        Turn(0, 0, 1, Dir.N), Turn(0, 0, 2, Dir.E), Turn(0, 1, 2, Dir.E), Turn(0, 2, 2, Dir.S), Turn(0, 2, 0, Dir.S)),
+                    RoadOf("Green", new[] { (0, 1, 2), (0, 0, 2) },
+                        Turn(0, 1, 2, Dir.W), Turn(0, 0, 2, Dir.W)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 1, TileType.Cross, TileType.CornerWN, TileType.TeeWNE),
+                    Allow(0, 0, 2, TileType.TeeESW),
+                    Allow(0, 1, 2, TileType.Cross, TileType.TeeWNE),
+                    Allow(0, 2, 0, TileType.TeeNES),
+                    Allow(0, 2, 1, TileType.StraightV),
+                    Allow(0, 2, 2, TileType.TeeESW),
+                    Allow(0, 3, 0, TileType.Cross, TileType.StraightH),
+                    Allow(0, 3, 2, TileType.Cross, TileType.CornerWN, TileType.TeeWNE),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Green" }, At(0, 0, 2, (0, 0, 1)), At(0, 1, 2, (0, 0, 1))),
+                            Deliver(new[] { "Red", "Blue" }, At(0, 2, 0), At(0, 2, 1), At(0, 2, 2)),
+                        },
+                    },
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue", "Green" }, At(0, 0, 2, (0, 3, 2)), At(0, 1, 2, (0, 3, 2))),
+                            Deliver(new[] { "Red" }, At(0, 3, 0)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 11 ----
+
+    // ---- Level 12 (12 best plans, 6 tile layouts, 1 road family) ----
+    public static LevelSolution Level12() => new LevelSolution
     {
         target = 900, bestTiles = 9,
         tricks = new[]
@@ -386,10 +849,179 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 6 ----
+    // ---- end of Level 12 ----
 
-    // ---- Level 7 (8 best plans, 3 tile layouts, 2 road families) ----
-    public static LevelSolution Level7() => new LevelSolution
+    // ---- Level 13 (5 best plans, 5 tile layouts, 1 road family) ----
+    public static LevelSolution Level13() => new LevelSolution
+    {
+        target = 825, bestTiles = 9,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.RequiredForTarget),
+            TrickOf("Earned +", TrickNeed.Optional),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 5 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 1, 0), (0, 2, 0), (0, 3, 0) },
+                        Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.E)),
+                    RoadOf("Blue", new[] { (0, 3, 3), (0, 2, 3), (0, 2, 2), (0, 2, 1), (0, 2, 0), (0, 1, 0), (0, 0, 0) },
+                        Turn(0, 3, 3, Dir.W), Turn(0, 2, 3, Dir.S), Turn(0, 2, 2, Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.W), Turn(0, 1, 0, Dir.W), Turn(0, 0, 0, Dir.S)),
+                    RoadOf("Green", new[] { (0, 2, 3), (0, 2, 2), (0, 2, 1), (0, 2, 0) },
+                        Turn(0, 2, 3, Dir.S), Turn(0, 2, 2, Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.S)),
+                    RoadOf("Orange", new[] { (0, 3, 3), (0, 2, 3), (0, 2, 2), (0, 2, 1), (0, 2, 0), (0, 1, 0), (0, 0, 0), (0, 0, 1) },
+                        Turn(0, 3, 3, Dir.W), Turn(0, 2, 3, Dir.S), Turn(0, 2, 2, Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.W), Turn(0, 1, 0, Dir.W), Turn(0, 0, 0, Dir.N), Turn(0, 0, 1, Dir.W)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.Cross, TileType.TeeNES),
+                    Allow(0, 0, 1, TileType.Cross, TileType.CornerSW),
+                    Allow(0, 1, 0, TileType.TeeESW),
+                    Allow(0, 2, 0, TileType.Cross),
+                    Allow(0, 2, 1, TileType.StraightV, TileType.TeeNES),
+                    Allow(0, 2, 2, TileType.StraightV, TileType.TeeNES),
+                    Allow(0, 2, 3, TileType.TeeNES),
+                    Allow(0, 3, 0, TileType.StraightH),
+                    Allow(0, 3, 3, TileType.TeeWNE),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Green" }, At(0, 2, 0, (0, 3, 3))),
+                            Deliver(new[] { "Blue", "Orange" }, At(0, 0, 0)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 13 ----
+
+    // ---- Level 14 (8 best plans, 4 tile layouts, 1 road family) ----
+    public static LevelSolution Level14() => new LevelSolution
+    {
+        target = 750, bestTiles = 10,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredToFinish),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.RequiredForTarget),
+            TrickOf("Earned +", TrickNeed.RequiredToFinish),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 4 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 1, 0), (0, 0, 0) },
+                        Turn(0, 1, 0, Dir.W), Turn(0, 0, 0, Dir.W)),
+                    RoadOf("Blue", new[] { (0, 3, 1), (0, 3, 0), (0, 2, 0), (0, 1, 0), (0, 0, 0), (0, 0, 1), (0, 0, 2), (0, 0, 3) },
+                        Turn(0, 3, 1, Dir.S), Turn(0, 3, 0, Dir.W), Turn(0, 1, 0, Dir.W), Turn(0, 0, 0, Dir.N), Turn(0, 0, 1, Dir.N), Turn(0, 0, 2, Dir.N)),
+                    RoadOf("Green", new[] { (0, 3, 3), (0, 3, 2), (0, 3, 1), (0, 3, 0), (0, 2, 0), (0, 1, 0), (0, 0, 0), (0, 0, 1) },
+                        Turn(0, 3, 3, Dir.S), Turn(0, 3, 2, Dir.S), Turn(0, 3, 1, Dir.S), Turn(0, 3, 0, Dir.W), Turn(0, 1, 0, Dir.W), Turn(0, 0, 0, Dir.N), Turn(0, 0, 1, Dir.W)),
+                    RoadOf("Orange", new[] { (0, 0, 0), (0, 1, 0), (0, 2, 0), (0, 3, 0) },
+                        Turn(0, 0, 0, Dir.E), Turn(0, 1, 0, Dir.E), Turn(0, 3, 0, Dir.E)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.Cross),
+                    Allow(0, 0, 1, TileType.Cross, TileType.TeeSWN),
+                    Allow(0, 0, 2, TileType.Cross, TileType.StraightV, TileType.TeeSWN),
+                    Allow(0, 0, 3, TileType.CornerSW),
+                    Allow(0, 1, 0, TileType.TeeESW),
+                    Allow(0, 2, 0, TileType.StraightH),
+                    Allow(0, 3, 0, TileType.TeeWNE),
+                    Allow(0, 3, 1, TileType.TeeNES),
+                    Allow(0, 3, 2, TileType.StraightV, TileType.TeeSWN),
+                    Allow(0, 3, 3, TileType.StraightV, TileType.TeeSWN),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Orange" }, At(0, 0, 0, (0, 3, 1), (0, 3, 2), (0, 3, 3)), At(0, 1, 0, (0, 3, 1), (0, 3, 2), (0, 3, 3))),
+                            Deliver(new[] { "Blue", "Green" }, At(0, 0, 1)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 14 ----
+
+    // ---- Level 15 (6 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level15() => new LevelSolution
+    {
+        target = 825, bestTiles = 7,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredToFinish),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.NotUsed),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 3 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 3, 0), (0, 2, 0), (0, 1, 0), (0, 0, 0), (0, 0, 1) },
+                        Turn(0, 3, 0, Dir.W), Turn(0, 2, 0, Dir.W), Turn(0, 1, 0, Dir.W), Turn(0, 0, 0, Dir.N), Turn(0, 0, 1, Dir.W)),
+                    RoadOf("Blue", new[] { (0, 0, 0), (0, 1, 0), (0, 2, 0) },
+                        Turn(0, 0, 0, Dir.E), Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.S)),
+                    RoadOf("Green", new[] { (0, 0, 2), (0, 0, 1), (0, 0, 0), (0, 1, 0), (0, 2, 0), (0, 3, 0) },
+                        Turn(0, 0, 2, Dir.S), Turn(0, 0, 1, Dir.S), Turn(0, 0, 0, Dir.E), Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.E), Turn(0, 3, 0, Dir.S)),
+                    RoadOf("Orange", new[] { (0, 1, 0), (0, 2, 0), (0, 3, 0), (0, 3, 1) },
+                        Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.E), Turn(0, 3, 0, Dir.N), Turn(0, 3, 1, Dir.E)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.TeeWNE),
+                    Allow(0, 0, 1, TileType.TeeSWN),
+                    Allow(0, 0, 2, TileType.StraightV, TileType.TeeNES),
+                    Allow(0, 1, 0, TileType.TeeESW),
+                    Allow(0, 2, 0, TileType.TeeESW),
+                    Allow(0, 3, 0, TileType.Cross),
+                    Allow(0, 3, 1, TileType.CornerES, TileType.TeeNES),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Blue", "Green", "Orange" }, At(0, 1, 0), At(0, 2, 0)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 15 ----
+
+    // ---- Level 16 (8 best plans, 3 tile layouts, 2 road families) ----
+    public static LevelSolution Level16() => new LevelSolution
     {
         target = 825, bestTiles = 10,
         tricks = new[]
@@ -483,10 +1115,213 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 7 ----
+    // ---- end of Level 16 ----
 
-    // ---- Level 8 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level8() => new LevelSolution
+    // ---- Level 17 (399 best plans, 119 tile layouts, 3 road families) ----
+    public static LevelSolution Level17() => new LevelSolution
+    {
+        target = 825, bestTiles = 12,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.Optional),
+            TrickOf("Earned +", TrickNeed.Optional),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 100 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 0, 0), (0, 1, 0), (0, 2, 0), (0, 3, 0), (0, 4, 0), (0, 4, 1), (0, 4, 2), (0, 4, 3) },
+                        Turn(0, 0, 0, Dir.E), Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.E), Turn(0, 3, 0, Dir.E), Turn(0, 4, 0, Dir.N), Turn(0, 4, 1, Dir.N), Turn(0, 4, 2, Dir.N), Turn(0, 4, 3, Dir.N)),
+                    RoadOf("Blue", new[] { (0, 4, 2), (0, 4, 1), (0, 4, 0) },
+                        Turn(0, 4, 2, Dir.S), Turn(0, 4, 1, Dir.S), Turn(0, 4, 0, Dir.S)),
+                    RoadOf("Green", new[] { (0, 1, 0), (0, 2, 0), (0, 3, 0), (0, 4, 0), (0, 4, 1), (0, 4, 2), (0, 4, 3), (0, 3, 3) },
+                        Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.E), Turn(0, 3, 0, Dir.E), Turn(0, 4, 0, Dir.N), Turn(0, 4, 1, Dir.N), Turn(0, 4, 2, Dir.N), Turn(0, 4, 3, Dir.W), Turn(0, 3, 3, Dir.N)),
+                    RoadOf("Orange", new[] { (0, 0, 3), (0, 1, 3), (0, 2, 3), (0, 3, 3), (0, 4, 3), (0, 4, 2), (0, 4, 1), (0, 4, 0), (0, 3, 0) },
+                        Turn(0, 0, 3, Dir.E), Turn(0, 1, 3, Dir.E), Turn(0, 2, 3, Dir.E), Turn(0, 3, 3, Dir.E), Turn(0, 4, 3, Dir.S), Turn(0, 4, 2, Dir.S), Turn(0, 4, 1, Dir.S), Turn(0, 4, 0, Dir.W), Turn(0, 3, 0, Dir.S)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.Cross, TileType.StraightH, TileType.TeeESW, TileType.TeeWNE),
+                    Allow(0, 0, 3, TileType.Cross, TileType.CornerNE, TileType.TeeNES, TileType.TeeWNE),
+                    Allow(0, 1, 0, TileType.Cross, TileType.TeeESW),
+                    Allow(0, 1, 3, TileType.Cross, TileType.StraightH, TileType.TeeESW, TileType.TeeWNE),
+                    Allow(0, 2, 0, TileType.Cross, TileType.StraightH, TileType.TeeESW, TileType.TeeWNE),
+                    Allow(0, 2, 3, TileType.Cross, TileType.StraightH, TileType.TeeESW, TileType.TeeWNE),
+                    Allow(0, 3, 0, TileType.Cross, TileType.TeeESW),
+                    Allow(0, 3, 3, TileType.Cross, TileType.TeeWNE),
+                    Allow(0, 4, 0, TileType.Cross, TileType.TeeSWN),
+                    Allow(0, 4, 1, TileType.Cross, TileType.StraightV, TileType.TeeNES, TileType.TeeSWN),
+                    Allow(0, 4, 2, TileType.Cross, TileType.TeeNES),
+                    Allow(0, 4, 3, TileType.Cross, TileType.TeeSWN),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Blue", "Green", "Orange" }, At(0, 4, 0), At(0, 4, 1), At(0, 4, 2)),
+                        },
+                    },
+                },
+            },
+            // family B: 3 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 0, 0), (0, 1, 0), (0, 2, 0), (0, 3, 0), (0, 3, 1), (0, 4, 1), (0, 4, 2), (0, 4, 3) },
+                        Turn(0, 0, 0, Dir.E), Turn(0, 1, 0, Dir.E), Turn(0, 3, 0, Dir.N), Turn(0, 3, 1, Dir.E), Turn(0, 4, 2, Dir.N), Turn(0, 4, 3, Dir.N)),
+                    RoadOf("Blue", new[] { (0, 4, 2), (0, 4, 1), (0, 3, 1), (0, 3, 0), (0, 4, 0) },
+                        Turn(0, 4, 2, Dir.S), Turn(0, 3, 1, Dir.S), Turn(0, 3, 0, Dir.E), Turn(0, 4, 0, Dir.S)),
+                    RoadOf("Green", new[] { (0, 1, 0), (0, 2, 0), (0, 3, 0), (0, 3, 1), (0, 4, 1), (0, 4, 2), (0, 4, 3), (0, 3, 3) },
+                        Turn(0, 1, 0, Dir.E), Turn(0, 3, 0, Dir.N), Turn(0, 3, 1, Dir.E), Turn(0, 4, 2, Dir.N), Turn(0, 4, 3, Dir.W)),
+                    RoadOf("Orange", new[] { (0, 0, 3), (0, 0, 2), (0, 0, 1), (0, 0, 0), (0, 1, 0), (0, 2, 0), (0, 3, 0) },
+                        Turn(0, 0, 3, Dir.S), Turn(0, 0, 2, Dir.S), Turn(0, 0, 1, Dir.S), Turn(0, 0, 0, Dir.E), Turn(0, 1, 0, Dir.E), Turn(0, 3, 0, Dir.S)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.TeeWNE),
+                    Allow(0, 0, 1, TileType.StraightV, TileType.TeeSWN),
+                    Allow(0, 0, 2, TileType.StraightV, TileType.TeeSWN),
+                    Allow(0, 0, 3, TileType.StraightV, TileType.TeeSWN),
+                    Allow(0, 1, 0, TileType.TeeESW),
+                    Allow(0, 2, 0, TileType.StraightH),
+                    Allow(0, 3, 0, TileType.Cross),
+                    Allow(0, 3, 1, TileType.TeeESW),
+                    Allow(0, 3, 3, TileType.CornerNE),
+                    Allow(0, 4, 0, TileType.TeeESW),
+                    Allow(0, 4, 1, TileType.CornerWN),
+                    Allow(0, 4, 2, TileType.TeeNES),
+                    Allow(0, 4, 3, TileType.Cross),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue", "Orange" }, At(0, 3, 0)),
+                            Deliver(new[] { "Red", "Green" }, At(0, 4, 3)),
+                        },
+                    },
+                },
+            },
+            // family C: 16 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 0, 0), (0, 1, 0), (0, 2, 0), (0, 2, 1), (0, 2, 2), (0, 2, 3), (0, 3, 3), (0, 4, 3) },
+                        Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.N), Turn(0, 2, 1, Dir.N), Turn(0, 2, 2, Dir.N), Turn(0, 2, 3, Dir.E), Turn(0, 3, 3, Dir.E), Turn(0, 4, 3, Dir.N)),
+                    RoadOf("Blue", new[] { (0, 4, 2), (0, 4, 3), (0, 3, 3), (0, 2, 3), (0, 2, 2), (0, 2, 1), (0, 2, 0), (0, 3, 0), (0, 4, 0) },
+                        Turn(0, 4, 2, Dir.N), Turn(0, 4, 3, Dir.W), Turn(0, 3, 3, Dir.W), Turn(0, 2, 3, Dir.S), Turn(0, 2, 2, Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.E), Turn(0, 3, 0, Dir.E), Turn(0, 4, 0, Dir.S)),
+                    RoadOf("Green", new[] { (0, 1, 0), (0, 2, 0), (0, 2, 1), (0, 2, 2), (0, 2, 3), (0, 3, 3) },
+                        Turn(0, 1, 0, Dir.E), Turn(0, 2, 0, Dir.N), Turn(0, 2, 1, Dir.N), Turn(0, 2, 2, Dir.N), Turn(0, 2, 3, Dir.E), Turn(0, 3, 3, Dir.N)),
+                    RoadOf("Orange", new[] { (0, 0, 3), (0, 1, 3), (0, 2, 3), (0, 2, 2), (0, 2, 1), (0, 2, 0), (0, 3, 0) },
+                        Turn(0, 0, 3, Dir.E), Turn(0, 2, 3, Dir.S), Turn(0, 2, 2, Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.E), Turn(0, 3, 0, Dir.S)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.StraightH),
+                    Allow(0, 0, 3, TileType.CornerNE, TileType.TeeNES),
+                    Allow(0, 1, 0, TileType.TeeESW),
+                    Allow(0, 1, 3, TileType.StraightH),
+                    Allow(0, 2, 0, TileType.Cross, TileType.TeeWNE),
+                    Allow(0, 2, 1, TileType.StraightV, TileType.TeeSWN),
+                    Allow(0, 2, 2, TileType.StraightV, TileType.TeeSWN),
+                    Allow(0, 2, 3, TileType.TeeESW),
+                    Allow(0, 3, 0, TileType.Cross, TileType.TeeESW),
+                    Allow(0, 3, 3, TileType.Cross, TileType.TeeWNE),
+                    Allow(0, 4, 0, TileType.Cross, TileType.TeeESW),
+                    Allow(0, 4, 2, TileType.CornerNE, TileType.TeeNES),
+                    Allow(0, 4, 3, TileType.TeeSWN),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Green" }, At(0, 1, 0, (0, 0, 3), (0, 1, 3), (0, 4, 2)), At(0, 2, 0, (0, 0, 3), (0, 1, 3), (0, 4, 2)), At(0, 2, 1, (0, 0, 3), (0, 1, 3), (0, 4, 2)), At(0, 2, 2, (0, 0, 3), (0, 1, 3), (0, 4, 2)), At(0, 2, 3, (0, 0, 3), (0, 1, 3), (0, 4, 2)), At(0, 3, 3, (0, 0, 3), (0, 1, 3), (0, 4, 2))),
+                            Deliver(new[] { "Blue", "Orange" }, At(0, 3, 0)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 17 ----
+
+    // ---- Level 18 (36 best plans, 6 tile layouts, 1 road family) ----
+    public static LevelSolution Level18() => new LevelSolution
+    {
+        target = 850, bestTiles = 12,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
+            TrickOf("Detour", TrickNeed.NotUsed),
+            TrickOf("Build ahead", TrickNeed.RequiredForTarget),
+            TrickOf("Earned +", TrickNeed.NotUsed),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 6 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (0, 1, 3), (0, 0, 3) },
+                        Turn(0, 1, 3, Dir.W), Turn(0, 0, 3, Dir.W)),
+                    RoadOf("Blue", new[] { (0, 2, 0), (0, 3, 0), (0, 4, 0), (0, 4, 1), (0, 4, 2), (0, 3, 2), (0, 3, 3) },
+                        Turn(0, 2, 0, Dir.E), Turn(0, 4, 0, Dir.N), Turn(0, 4, 1, Dir.N), Turn(0, 4, 2, Dir.W), Turn(0, 3, 3, Dir.N)),
+                    RoadOf("Green", new[] { (0, 4, 2), (0, 3, 2), (0, 3, 3), (0, 2, 3) },
+                        Turn(0, 4, 2, Dir.W), Turn(0, 3, 3, Dir.W), Turn(0, 2, 3, Dir.N)),
+                    RoadOf("Orange", new[] { (0, 0, 1), (0, 0, 2), (0, 0, 3), (0, 1, 3), (0, 2, 3), (0, 3, 3), (0, 3, 2), (0, 4, 2), (0, 4, 1), (0, 4, 0) },
+                        Turn(0, 0, 2, Dir.N), Turn(0, 0, 3, Dir.E), Turn(0, 1, 3, Dir.E), Turn(0, 2, 3, Dir.E), Turn(0, 3, 3, Dir.S), Turn(0, 4, 2, Dir.S), Turn(0, 4, 1, Dir.S), Turn(0, 4, 0, Dir.E)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 1, TileType.CornerWN),
+                    Allow(0, 0, 2, TileType.StraightV, TileType.TeeNES),
+                    Allow(0, 0, 3, TileType.TeeESW),
+                    Allow(0, 1, 3, TileType.Cross, TileType.TeeWNE),
+                    Allow(0, 2, 0, TileType.TeeESW),
+                    Allow(0, 2, 3, TileType.Cross, TileType.TeeWNE),
+                    Allow(0, 3, 0, TileType.StraightH),
+                    Allow(0, 3, 2, TileType.CornerNE),
+                    Allow(0, 3, 3, TileType.TeeSWN),
+                    Allow(0, 4, 0, TileType.Cross, TileType.TeeWNE),
+                    Allow(0, 4, 1, TileType.StraightV, TileType.TeeNES),
+                    Allow(0, 4, 2, TileType.TeeESW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red" }, At(0, 0, 3, (0, 0, 1), (0, 0, 2)), At(0, 1, 3, (0, 0, 1), (0, 0, 2))),
+                            Deliver(new[] { "Blue", "Green", "Orange" }, At(0, 3, 2), At(0, 3, 3), At(0, 4, 2)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 18 ----
+
+    // ---- Level 19 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level19() => new LevelSolution
     {
         target = 825, bestTiles = 10,
         tricks = new[]
@@ -504,27 +1339,27 @@ public static partial class Solutions
             {
                 roads = new[]
                 {
-                    RoadOf("Red", new[] { (0, 3, 3), (0, 2, 3), (0, 1, 3), (0, 0, 3), (0, 0, 2) },
-                        Turn(0, 3, 3, Dir.W), Turn(0, 2, 3, Dir.W), Turn(0, 1, 3, Dir.W)),
-                    RoadOf("Blue", new[] { (0, 1, 3), (0, 2, 3), (0, 2, 2), (0, 3, 2), (0, 3, 1) },
-                        Turn(0, 1, 3, Dir.E), Turn(0, 2, 3, Dir.S), Turn(0, 3, 2, Dir.S), Turn(0, 3, 1, Dir.E)),
-                    RoadOf("Green", new[] { (0, 3, 2), (0, 3, 1), (0, 3, 0), (0, 2, 0) },
-                        Turn(0, 3, 2, Dir.S), Turn(0, 3, 1, Dir.S), Turn(0, 3, 0, Dir.W), Turn(0, 2, 0, Dir.S)),
-                    RoadOf("Orange", new[] { (0, 3, 3), (0, 2, 3), (0, 2, 2), (0, 3, 2), (0, 3, 1), (0, 3, 0) },
-                        Turn(0, 3, 3, Dir.W), Turn(0, 2, 3, Dir.S), Turn(0, 3, 2, Dir.S), Turn(0, 3, 1, Dir.S), Turn(0, 3, 0, Dir.S)),
+                    RoadOf("Red", new[] { (0, 0, 1), (0, 1, 1), (0, 2, 1), (0, 2, 0), (0, 3, 0) },
+                        Turn(0, 0, 1, Dir.E), Turn(0, 2, 0, Dir.E), Turn(0, 3, 0, Dir.S)),
+                    RoadOf("Blue", new[] { (0, 0, 2), (0, 0, 1), (0, 0, 0) },
+                        Turn(0, 0, 2, Dir.S), Turn(0, 0, 1, Dir.S)),
+                    RoadOf("Green", new[] { (0, 3, 0), (0, 2, 0), (0, 2, 1), (0, 1, 1), (0, 0, 1), (0, 0, 2), (0, 0, 3), (0, 1, 3), (0, 2, 3) },
+                        Turn(0, 3, 0, Dir.W), Turn(0, 2, 0, Dir.N), Turn(0, 0, 1, Dir.N), Turn(0, 0, 2, Dir.N), Turn(0, 0, 3, Dir.E), Turn(0, 2, 3, Dir.N)),
+                    RoadOf("Orange", new[] { (0, 2, 0), (0, 2, 1), (0, 1, 1), (0, 0, 1), (0, 0, 2), (0, 0, 3) },
+                        Turn(0, 2, 0, Dir.N), Turn(0, 0, 1, Dir.N), Turn(0, 0, 2, Dir.N), Turn(0, 0, 3, Dir.W)),
                 },
                 squares = new[]
                 {
-                    Allow(0, 0, 2, TileType.CornerWN),
-                    Allow(0, 0, 3, TileType.CornerES),
-                    Allow(0, 1, 3, TileType.TeeWNE),
-                    Allow(0, 2, 0, TileType.Cross),
-                    Allow(0, 2, 2, TileType.CornerNE),
-                    Allow(0, 2, 3, TileType.TeeESW),
-                    Allow(0, 3, 0, TileType.TeeSWN),
-                    Allow(0, 3, 1, TileType.TeeNES),
-                    Allow(0, 3, 2, TileType.TeeESW),
-                    Allow(0, 3, 3, TileType.TeeWNE),
+                    Allow(0, 0, 0, TileType.StraightV),
+                    Allow(0, 0, 1, TileType.Cross),
+                    Allow(0, 0, 2, TileType.TeeSWN),
+                    Allow(0, 0, 3, TileType.Cross),
+                    Allow(0, 1, 1, TileType.StraightH),
+                    Allow(0, 1, 3, TileType.StraightH),
+                    Allow(0, 2, 0, TileType.TeeNES),
+                    Allow(0, 2, 1, TileType.CornerSW),
+                    Allow(0, 2, 3, TileType.TeeSWN),
+                    Allow(0, 3, 0, TileType.TeeESW),
                 },
                 orders = new[]
                 {
@@ -532,8 +1367,8 @@ public static partial class Solutions
                     {
                         deliveries = new[]
                         {
-                            Deliver(new[] { "Red", "Blue" }, At(0, 1, 3), At(0, 2, 3)),
-                            Deliver(new[] { "Green", "Orange" }, At(0, 3, 0)),
+                            Deliver(new[] { "Red", "Blue" }, At(0, 0, 1)),
+                            Deliver(new[] { "Green", "Orange" }, At(0, 0, 3)),
                         },
                     },
                 },
@@ -541,10 +1376,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 8 ----
+    // ---- end of Level 19 ----
 
-    // ---- Level 9 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level9() => new LevelSolution
+    // ---- Level 20 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level20() => new LevelSolution
     {
         target = 150, bestTiles = 2,
         tricks = new[]
@@ -584,10 +1419,89 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 9 ----
+    // ---- end of Level 20 ----
 
-    // ---- Level 10 (12 best plans, 3 tile layouts, 1 road family) ----
-    public static LevelSolution Level10() => new LevelSolution
+    // ---- Level 21 (6 best plans, 1 tile layouts, 2 road families) ----
+    public static LevelSolution Level21() => new LevelSolution
+    {
+        target = 500, bestTiles = 6,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
+            TrickOf("Detour", TrickNeed.RequiredToFinish),
+            TrickOf("Build ahead", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.NotUsed),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 1 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (1, 1, 0), (1, 1, 1), (1, 0, 1) },
+                        Turn(1, 1, 0, Dir.N), Turn(1, 0, 1, Dir.W)),
+                    RoadOf("Blue", new[] { (0, 2, 0), (1, 0, 0), (1, 1, 0), (1, 1, 1), (1, 0, 1), (0, 1, 0) },
+                        OutOf("B", Dir.S), Turn(1, 1, 0, Dir.N), Turn(1, 0, 1, Dir.S), OutOf("B", Dir.W)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 1, 0, TileType.CornerES),
+                    Allow(0, 2, 0, TileType.StraightH),
+                    Allow(1, 0, 0, TileType.CornerNE),
+                    Allow(1, 0, 1, TileType.TeeESW),
+                    Allow(1, 1, 0, TileType.TeeSWN),
+                    Allow(1, 1, 1, TileType.CornerSW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Blue" }, At(1, 0, 1), At(1, 1, 0), At(1, 1, 1)),
+                        },
+                    },
+                },
+            },
+            // family B: 1 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (1, 1, 0), (1, 1, 1), (1, 0, 1) },
+                        Turn(1, 1, 0, Dir.N), Turn(1, 0, 1, Dir.W)),
+                    RoadOf("Blue", new[] { (0, 2, 0), (1, 0, 1), (1, 1, 1), (1, 1, 0), (1, 0, 0), (0, 1, 0) },
+                        OutOf("B", Dir.N), Turn(1, 0, 1, Dir.E), Turn(1, 1, 0, Dir.W), OutOf("B", Dir.W)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 1, 0, TileType.CornerES),
+                    Allow(0, 2, 0, TileType.StraightH),
+                    Allow(1, 0, 0, TileType.CornerNE),
+                    Allow(1, 0, 1, TileType.TeeESW),
+                    Allow(1, 1, 0, TileType.TeeSWN),
+                    Allow(1, 1, 1, TileType.CornerSW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Blue" }, At(1, 0, 1), At(1, 1, 0), At(1, 1, 1)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 0, answerOrder = 0,
+    };
+    // ---- end of Level 21 ----
+
+    // ---- Level 22 (12 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level22() => new LevelSolution
     {
         target = 675, bestTiles = 9,
         tricks = new[]
@@ -655,152 +1569,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 10 ----
+    // ---- end of Level 22 ----
 
-    // ---- Level 11 (1347 best plans, 449 tile layouts, 3 road families) ----
-    public static LevelSolution Level11() => new LevelSolution
-    {
-        target = 1175, bestTiles = 12,
-        tricks = new[]
-        {
-            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
-            TrickOf("Detour", TrickNeed.RequiredForTarget),
-            TrickOf("Build ahead", TrickNeed.NotUsed),
-            TrickOf("Earned +", TrickNeed.Optional),
-            TrickOf("Bridge", TrickNeed.NotUsed),
-        },
-        families = new[]
-        {
-            // family A: 231 tile layouts
-            new RoadFamily
-            {
-                roads = new[]
-                {
-                    RoadOf("Red", new[] { (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 2) },
-                        Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.N), Turn(0, 2, 2, Dir.N)),
-                    RoadOf("Blue", new[] { (1, 0, 2), (0, 0, 0), (1, 2, 2), (1, 2, 1), (1, 2, 0), (1, 1, 0) },
-                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.W), Turn(1, 2, 2, Dir.S), Turn(1, 2, 1, Dir.S), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.S)),
-                    RoadOf("Green", new[] { (1, 0, 2), (0, 0, 0), (1, 2, 2), (1, 2, 1), (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 1), (0, 2, 0) },
-                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.W), Turn(1, 2, 2, Dir.S), Turn(1, 2, 1, Dir.S), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.S)),
-                    RoadOf("Orange", new[] { (1, 3, 1), (1, 2, 1), (1, 2, 2), (0, 0, 0), (1, 1, 2) },
-                        Turn(1, 3, 1, Dir.W), Turn(1, 2, 1, Dir.N), Turn(1, 2, 2, Dir.E), OutOf("A", Dir.W), Turn(0, 0, 0, Dir.S), OutOf("C", Dir.E), Turn(1, 1, 2, Dir.N)),
-                },
-                squares = new[]
-                {
-                    Allow(0, 0, 0, TileType.Cross, TileType.CornerES, TileType.TeeNES, TileType.TeeESW),
-                    Allow(0, 2, 0, TileType.Cross, TileType.StraightV, TileType.TeeNES, TileType.TeeSWN),
-                    Allow(0, 2, 1, TileType.Cross, TileType.StraightV, TileType.TeeNES, TileType.TeeSWN),
-                    Allow(0, 2, 2, TileType.Cross, TileType.StraightV, TileType.TeeNES, TileType.TeeSWN),
-                    Allow(1, 0, 0, TileType.Cross, TileType.StraightH, TileType.TeeESW, TileType.TeeWNE),
-                    Allow(1, 0, 2, TileType.Cross, TileType.TeeWNE),
-                    Allow(1, 1, 0, TileType.Cross, TileType.TeeESW),
-                    Allow(1, 1, 2, TileType.Cross, TileType.CornerWN, TileType.TeeSWN, TileType.TeeWNE),
-                    Allow(1, 2, 0, TileType.Cross, TileType.TeeSWN),
-                    Allow(1, 2, 1, TileType.Cross, TileType.TeeNES),
-                    Allow(1, 2, 2, TileType.Cross, TileType.CornerES, TileType.TeeNES, TileType.TeeESW),
-                    Allow(1, 3, 1, TileType.Cross, TileType.StraightH, TileType.TeeESW, TileType.TeeWNE),
-                },
-                orders = new[]
-                {
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Blue", "Orange" }, At(0, 0, 0), At(1, 2, 1), At(1, 2, 2)),
-                            Deliver(new[] { "Red", "Green" }, At(1, 0, 0)),
-                        },
-                    },
-                },
-            },
-            // family B: 88 tile layouts
-            new RoadFamily
-            {
-                roads = new[]
-                {
-                    RoadOf("Red", new[] { (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 2) },
-                        Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.N), Turn(0, 2, 2, Dir.N)),
-                    RoadOf("Blue", new[] { (1, 0, 2), (0, 0, 0), (1, 3, 2), (1, 3, 1), (1, 3, 0), (1, 2, 0), (1, 1, 0) },
-                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.E), Turn(1, 3, 1, Dir.S), Turn(1, 3, 0, Dir.W), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.S)),
-                    RoadOf("Green", new[] { (1, 0, 2), (0, 0, 0), (1, 3, 2), (1, 3, 1), (1, 3, 0), (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 1), (0, 2, 0) },
-                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.E), Turn(1, 3, 1, Dir.S), Turn(1, 3, 0, Dir.W), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.S)),
-                    RoadOf("Orange", new[] { (1, 3, 1), (1, 3, 2), (0, 0, 0), (1, 1, 2) },
-                        Turn(1, 3, 1, Dir.N), OutOf("A", Dir.W), Turn(0, 0, 0, Dir.S), OutOf("C", Dir.E), Turn(1, 1, 2, Dir.N)),
-                },
-                squares = new[]
-                {
-                    Allow(0, 0, 0, TileType.CornerES, TileType.TeeNES),
-                    Allow(0, 2, 0, TileType.Cross, TileType.StraightV, TileType.TeeNES),
-                    Allow(0, 2, 1, TileType.Cross, TileType.StraightV, TileType.TeeNES),
-                    Allow(0, 2, 2, TileType.Cross, TileType.StraightV, TileType.TeeNES),
-                    Allow(1, 0, 0, TileType.Cross, TileType.StraightH),
-                    Allow(1, 0, 2, TileType.TeeWNE),
-                    Allow(1, 1, 0, TileType.Cross, TileType.TeeESW),
-                    Allow(1, 1, 2, TileType.CornerWN, TileType.TeeSWN),
-                    Allow(1, 2, 0, TileType.Cross, TileType.TeeESW),
-                    Allow(1, 3, 0, TileType.CornerWN, TileType.TeeSWN),
-                    Allow(1, 3, 1, TileType.TeeNES),
-                    Allow(1, 3, 2, TileType.CornerSW),
-                },
-                orders = new[]
-                {
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Blue", "Orange" }, At(0, 0, 0), At(1, 3, 1), At(1, 3, 2)),
-                            Deliver(new[] { "Red", "Green" }, At(1, 0, 0)),
-                        },
-                    },
-                },
-            },
-            // family C: 130 tile layouts
-            new RoadFamily
-            {
-                roads = new[]
-                {
-                    RoadOf("Red", new[] { (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 2) },
-                        Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.N), Turn(0, 2, 2, Dir.N)),
-                    RoadOf("Blue", new[] { (1, 0, 2), (0, 0, 0), (1, 3, 2), (1, 3, 1), (1, 2, 1), (1, 2, 0), (1, 1, 0) },
-                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.E), Turn(1, 3, 1, Dir.W), Turn(1, 2, 1, Dir.S), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.S)),
-                    RoadOf("Green", new[] { (1, 0, 2), (0, 0, 0), (1, 3, 2), (1, 3, 1), (1, 2, 1), (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 1), (0, 2, 0) },
-                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.E), Turn(1, 3, 1, Dir.W), Turn(1, 2, 1, Dir.S), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.S)),
-                    RoadOf("Orange", new[] { (1, 3, 1), (1, 3, 2), (0, 0, 0), (1, 1, 2) },
-                        Turn(1, 3, 1, Dir.N), OutOf("A", Dir.W), Turn(0, 0, 0, Dir.S), OutOf("C", Dir.E)),
-                },
-                squares = new[]
-                {
-                    Allow(0, 0, 0, TileType.CornerES, TileType.TeeNES),
-                    Allow(0, 2, 0, TileType.Cross, TileType.StraightV, TileType.TeeNES),
-                    Allow(0, 2, 1, TileType.Cross, TileType.StraightV, TileType.TeeNES),
-                    Allow(0, 2, 2, TileType.Cross, TileType.StraightV, TileType.TeeNES),
-                    Allow(1, 0, 0, TileType.Cross, TileType.StraightH),
-                    Allow(1, 0, 2, TileType.Cross, TileType.TeeWNE),
-                    Allow(1, 1, 0, TileType.TeeESW),
-                    Allow(1, 1, 2, TileType.CornerWN),
-                    Allow(1, 2, 0, TileType.TeeSWN),
-                    Allow(1, 2, 1, TileType.CornerES, TileType.TeeNES),
-                    Allow(1, 3, 1, TileType.Cross, TileType.TeeWNE),
-                    Allow(1, 3, 2, TileType.CornerSW),
-                },
-                orders = new[]
-                {
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Blue", "Orange" }, At(0, 0, 0), At(1, 3, 1), At(1, 3, 2)),
-                            Deliver(new[] { "Red", "Green" }, At(1, 0, 0)),
-                        },
-                    },
-                },
-            },
-        },
-        answerFamily = 2, answerOrder = 0,
-    };
-    // ---- end of Level 11 ----
-
-    // ---- Level 12 (7 best plans, 2 tile layouts, 1 road family) ----
-    public static LevelSolution Level12() => new LevelSolution
+    // ---- Level 23 (7 best plans, 2 tile layouts, 1 road family) ----
+    public static LevelSolution Level23() => new LevelSolution
     {
         target = 975, bestTiles = 9,
         tricks = new[]
@@ -862,10 +1634,294 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 12 ----
+    // ---- end of Level 23 ----
 
-    // ---- Level 13 (3 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level13() => new LevelSolution
+    // ---- Level 24 (1347 best plans, 449 tile layouts, 3 road families) ----
+    public static LevelSolution Level24() => new LevelSolution
+    {
+        target = 1175, bestTiles = 12,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
+            TrickOf("Detour", TrickNeed.RequiredForTarget),
+            TrickOf("Build ahead", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.Optional),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 231 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 2) },
+                        Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.N), Turn(0, 2, 2, Dir.N)),
+                    RoadOf("Blue", new[] { (1, 0, 2), (0, 0, 0), (1, 2, 2), (1, 2, 1), (1, 2, 0), (1, 1, 0) },
+                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.W), Turn(1, 2, 2, Dir.S), Turn(1, 2, 1, Dir.S), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.S)),
+                    RoadOf("Green", new[] { (1, 0, 2), (0, 0, 0), (1, 2, 2), (1, 2, 1), (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 1), (0, 2, 0) },
+                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.W), Turn(1, 2, 2, Dir.S), Turn(1, 2, 1, Dir.S), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.S)),
+                    RoadOf("Orange", new[] { (1, 3, 1), (1, 2, 1), (1, 2, 2), (0, 0, 0), (1, 1, 2) },
+                        Turn(1, 3, 1, Dir.W), Turn(1, 2, 1, Dir.N), Turn(1, 2, 2, Dir.E), OutOf("A", Dir.W), Turn(0, 0, 0, Dir.S), OutOf("C", Dir.E), Turn(1, 1, 2, Dir.N)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.Cross, TileType.CornerES, TileType.TeeNES, TileType.TeeESW),
+                    Allow(0, 2, 0, TileType.Cross, TileType.StraightV, TileType.TeeNES, TileType.TeeSWN),
+                    Allow(0, 2, 1, TileType.Cross, TileType.StraightV, TileType.TeeNES, TileType.TeeSWN),
+                    Allow(0, 2, 2, TileType.Cross, TileType.StraightV, TileType.TeeNES, TileType.TeeSWN),
+                    Allow(1, 0, 0, TileType.Cross, TileType.StraightH, TileType.TeeESW, TileType.TeeWNE),
+                    Allow(1, 0, 2, TileType.Cross, TileType.TeeWNE),
+                    Allow(1, 1, 0, TileType.Cross, TileType.TeeESW),
+                    Allow(1, 1, 2, TileType.Cross, TileType.CornerWN, TileType.TeeSWN, TileType.TeeWNE),
+                    Allow(1, 2, 0, TileType.Cross, TileType.TeeSWN),
+                    Allow(1, 2, 1, TileType.Cross, TileType.TeeNES),
+                    Allow(1, 2, 2, TileType.Cross, TileType.CornerES, TileType.TeeNES, TileType.TeeESW),
+                    Allow(1, 3, 1, TileType.Cross, TileType.StraightH, TileType.TeeESW, TileType.TeeWNE),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue", "Orange" }, At(0, 0, 0), At(1, 2, 1), At(1, 2, 2)),
+                            Deliver(new[] { "Red", "Green" }, At(1, 0, 0)),
+                        },
+                    },
+                },
+            },
+            // family B: 130 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 2) },
+                        Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.N), Turn(0, 2, 2, Dir.N)),
+                    RoadOf("Blue", new[] { (1, 0, 2), (0, 0, 0), (1, 3, 2), (1, 3, 1), (1, 2, 1), (1, 2, 0), (1, 1, 0) },
+                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.E), Turn(1, 3, 1, Dir.W), Turn(1, 2, 1, Dir.S), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.S)),
+                    RoadOf("Green", new[] { (1, 0, 2), (0, 0, 0), (1, 3, 2), (1, 3, 1), (1, 2, 1), (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 1), (0, 2, 0) },
+                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.E), Turn(1, 3, 1, Dir.W), Turn(1, 2, 1, Dir.S), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.S)),
+                    RoadOf("Orange", new[] { (1, 3, 1), (1, 3, 2), (0, 0, 0), (1, 1, 2) },
+                        Turn(1, 3, 1, Dir.N), OutOf("A", Dir.W), Turn(0, 0, 0, Dir.S), OutOf("C", Dir.E)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.CornerES, TileType.TeeNES),
+                    Allow(0, 2, 0, TileType.Cross, TileType.StraightV, TileType.TeeNES),
+                    Allow(0, 2, 1, TileType.Cross, TileType.StraightV, TileType.TeeNES),
+                    Allow(0, 2, 2, TileType.Cross, TileType.StraightV, TileType.TeeNES),
+                    Allow(1, 0, 0, TileType.Cross, TileType.StraightH),
+                    Allow(1, 0, 2, TileType.Cross, TileType.TeeWNE),
+                    Allow(1, 1, 0, TileType.TeeESW),
+                    Allow(1, 1, 2, TileType.CornerWN),
+                    Allow(1, 2, 0, TileType.TeeSWN),
+                    Allow(1, 2, 1, TileType.CornerES, TileType.TeeNES),
+                    Allow(1, 3, 1, TileType.Cross, TileType.TeeWNE),
+                    Allow(1, 3, 2, TileType.CornerSW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue", "Orange" }, At(0, 0, 0), At(1, 3, 1), At(1, 3, 2)),
+                            Deliver(new[] { "Red", "Green" }, At(1, 0, 0)),
+                        },
+                    },
+                },
+            },
+            // family C: 88 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 2) },
+                        Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.N), Turn(0, 2, 2, Dir.N)),
+                    RoadOf("Blue", new[] { (1, 0, 2), (0, 0, 0), (1, 3, 2), (1, 3, 1), (1, 3, 0), (1, 2, 0), (1, 1, 0) },
+                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.E), Turn(1, 3, 1, Dir.S), Turn(1, 3, 0, Dir.W), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.S)),
+                    RoadOf("Green", new[] { (1, 0, 2), (0, 0, 0), (1, 3, 2), (1, 3, 1), (1, 3, 0), (1, 2, 0), (1, 1, 0), (1, 0, 0), (0, 2, 1), (0, 2, 0) },
+                        Turn(1, 0, 2, Dir.E), Turn(0, 0, 0, Dir.E), OutOf("A", Dir.E), Turn(1, 3, 1, Dir.S), Turn(1, 3, 0, Dir.W), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.W), Turn(1, 0, 0, Dir.W), OutOf("B", Dir.S), Turn(0, 2, 1, Dir.S), Turn(0, 2, 0, Dir.S)),
+                    RoadOf("Orange", new[] { (1, 3, 1), (1, 3, 2), (0, 0, 0), (1, 1, 2) },
+                        Turn(1, 3, 1, Dir.N), OutOf("A", Dir.W), Turn(0, 0, 0, Dir.S), OutOf("C", Dir.E), Turn(1, 1, 2, Dir.N)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.CornerES, TileType.TeeNES),
+                    Allow(0, 2, 0, TileType.Cross, TileType.StraightV, TileType.TeeNES),
+                    Allow(0, 2, 1, TileType.Cross, TileType.StraightV, TileType.TeeNES),
+                    Allow(0, 2, 2, TileType.Cross, TileType.StraightV, TileType.TeeNES),
+                    Allow(1, 0, 0, TileType.Cross, TileType.StraightH),
+                    Allow(1, 0, 2, TileType.TeeWNE),
+                    Allow(1, 1, 0, TileType.Cross, TileType.TeeESW),
+                    Allow(1, 1, 2, TileType.CornerWN, TileType.TeeSWN),
+                    Allow(1, 2, 0, TileType.Cross, TileType.TeeESW),
+                    Allow(1, 3, 0, TileType.CornerWN, TileType.TeeSWN),
+                    Allow(1, 3, 1, TileType.TeeNES),
+                    Allow(1, 3, 2, TileType.CornerSW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Blue", "Orange" }, At(0, 0, 0), At(1, 3, 1), At(1, 3, 2)),
+                            Deliver(new[] { "Red", "Green" }, At(1, 0, 0)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 1, answerOrder = 0,
+    };
+    // ---- end of Level 24 ----
+
+    // ---- Level 25 (30 best plans, 30 tile layouts, 3 road families) ----
+    public static LevelSolution Level25() => new LevelSolution
+    {
+        target = 1025, bestTiles = 13,
+        tricks = new[]
+        {
+            TrickOf("Delivered together", TrickNeed.RequiredToFinish),
+            TrickOf("Detour", TrickNeed.RequiredForTarget),
+            TrickOf("Build ahead", TrickNeed.NotUsed),
+            TrickOf("Earned +", TrickNeed.NotUsed),
+            TrickOf("Bridge", TrickNeed.NotUsed),
+        },
+        families = new[]
+        {
+            // family A: 4 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (1, 0, 2), (0, 4, 3) },
+                        Turn(1, 0, 2, Dir.S), Turn(0, 4, 3, Dir.E)),
+                    RoadOf("Blue", new[] { (0, 0, 1), (0, 0, 2), (1, 0, 3), (1, 0, 2), (0, 4, 3), (0, 3, 3) },
+                        Turn(0, 0, 1, Dir.N), Turn(0, 0, 2, Dir.W), Turn(1, 0, 3, Dir.S), Turn(1, 0, 2, Dir.S), Turn(0, 4, 3, Dir.W), Turn(0, 3, 3, Dir.N)),
+                    RoadOf("Green", new[] { (0, 2, 3), (0, 3, 3), (0, 4, 3), (1, 0, 2), (1, 1, 2), (1, 2, 2), (1, 2, 1), (1, 2, 0) },
+                        Turn(0, 3, 3, Dir.E), Turn(0, 4, 3, Dir.N), OutOf("C", Dir.N), Turn(1, 0, 2, Dir.E), Turn(1, 1, 2, Dir.E), Turn(1, 2, 2, Dir.S), Turn(1, 2, 0, Dir.S)),
+                    RoadOf("Orange", new[] { (1, 3, 0), (1, 2, 0), (1, 2, 1), (1, 2, 2), (1, 1, 2), (1, 0, 2), (1, 0, 3), (0, 0, 2), (0, 0, 1), (0, 0, 0) },
+                        Turn(1, 3, 0, Dir.W), Turn(1, 2, 0, Dir.N), Turn(1, 2, 2, Dir.W), Turn(1, 1, 2, Dir.W), Turn(1, 0, 2, Dir.N), Turn(1, 0, 3, Dir.W), Turn(0, 0, 2, Dir.S), Turn(0, 0, 1, Dir.S)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.CornerWN),
+                    Allow(0, 0, 1, TileType.TeeSWN),
+                    Allow(0, 0, 2, TileType.CornerSW, TileType.TeeESW),
+                    Allow(0, 2, 3, TileType.CornerNE),
+                    Allow(0, 3, 3, TileType.TeeWNE),
+                    Allow(0, 4, 3, TileType.TeeWNE),
+                    Allow(1, 0, 2, TileType.Cross),
+                    Allow(1, 0, 3, TileType.CornerSW, TileType.TeeESW),
+                    Allow(1, 1, 2, TileType.TeeESW),
+                    Allow(1, 2, 0, TileType.TeeNES),
+                    Allow(1, 2, 1, TileType.StraightV),
+                    Allow(1, 2, 2, TileType.CornerSW, TileType.TeeESW),
+                    Allow(1, 3, 0, TileType.CornerSW, TileType.TeeESW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Blue", "Green", "Orange" }, At(1, 0, 2)),
+                        },
+                    },
+                },
+            },
+            // family B: 16 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (1, 0, 2), (0, 4, 3) },
+                        Turn(1, 0, 2, Dir.S), Turn(0, 4, 3, Dir.E)),
+                    RoadOf("Blue", new[] { (0, 0, 1), (0, 0, 2), (1, 0, 3), (1, 0, 2), (0, 4, 3), (0, 3, 3) },
+                        Turn(0, 0, 1, Dir.N), Turn(0, 0, 2, Dir.W), Turn(1, 0, 3, Dir.S), Turn(1, 0, 2, Dir.S), Turn(0, 4, 3, Dir.W), Turn(0, 3, 3, Dir.N)),
+                    RoadOf("Green", new[] { (0, 2, 3), (0, 3, 3), (0, 4, 3), (1, 0, 2), (1, 1, 2), (1, 1, 1), (1, 1, 0), (1, 2, 0) },
+                        Turn(0, 2, 3, Dir.E), Turn(0, 3, 3, Dir.E), Turn(0, 4, 3, Dir.N), OutOf("C", Dir.N), Turn(1, 0, 2, Dir.E), Turn(1, 1, 2, Dir.S), Turn(1, 1, 1, Dir.S), Turn(1, 1, 0, Dir.E), Turn(1, 2, 0, Dir.S)),
+                    RoadOf("Orange", new[] { (1, 3, 0), (1, 2, 0), (1, 1, 0), (1, 1, 1), (1, 1, 2), (1, 0, 2), (1, 0, 3), (0, 0, 2), (0, 0, 1), (0, 0, 0) },
+                        Turn(1, 3, 0, Dir.W), Turn(1, 2, 0, Dir.W), Turn(1, 1, 0, Dir.N), Turn(1, 1, 1, Dir.N), Turn(1, 1, 2, Dir.W), Turn(1, 0, 2, Dir.N), Turn(1, 0, 3, Dir.W), Turn(0, 0, 2, Dir.S), Turn(0, 0, 1, Dir.S)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.CornerWN),
+                    Allow(0, 0, 1, TileType.TeeSWN),
+                    Allow(0, 0, 2, TileType.CornerSW, TileType.TeeESW),
+                    Allow(0, 2, 3, TileType.CornerNE, TileType.TeeNES),
+                    Allow(0, 3, 3, TileType.TeeWNE),
+                    Allow(0, 4, 3, TileType.TeeWNE),
+                    Allow(1, 0, 2, TileType.Cross),
+                    Allow(1, 0, 3, TileType.CornerSW, TileType.TeeESW),
+                    Allow(1, 1, 0, TileType.CornerNE, TileType.TeeNES),
+                    Allow(1, 1, 1, TileType.StraightV, TileType.TeeNES),
+                    Allow(1, 1, 2, TileType.CornerSW, TileType.TeeESW),
+                    Allow(1, 2, 0, TileType.TeeESW),
+                    Allow(1, 3, 0, TileType.CornerSW, TileType.TeeESW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Blue", "Green", "Orange" }, At(1, 0, 2)),
+                        },
+                    },
+                },
+            },
+            // family C: 10 tile layouts
+            new RoadFamily
+            {
+                roads = new[]
+                {
+                    RoadOf("Red", new[] { (1, 0, 2), (0, 4, 3) },
+                        Turn(1, 0, 2, Dir.S), Turn(0, 4, 3, Dir.E)),
+                    RoadOf("Blue", new[] { (0, 0, 1), (0, 0, 2), (1, 0, 3), (1, 0, 2), (0, 4, 3), (0, 3, 3) },
+                        Turn(0, 0, 1, Dir.N), Turn(0, 0, 2, Dir.W), Turn(1, 0, 3, Dir.S), Turn(1, 0, 2, Dir.S), Turn(0, 4, 3, Dir.W), Turn(0, 3, 3, Dir.N)),
+                    RoadOf("Green", new[] { (0, 2, 3), (0, 3, 3), (0, 4, 3), (1, 0, 2), (1, 1, 2), (1, 1, 1), (1, 2, 1), (1, 2, 0) },
+                        Turn(0, 3, 3, Dir.E), Turn(0, 4, 3, Dir.N), OutOf("C", Dir.N), Turn(1, 0, 2, Dir.E), Turn(1, 1, 2, Dir.S), Turn(1, 2, 1, Dir.S), Turn(1, 2, 0, Dir.S)),
+                    RoadOf("Orange", new[] { (1, 3, 0), (1, 2, 0), (1, 2, 1), (1, 1, 1), (1, 1, 2), (1, 0, 2), (1, 0, 3), (0, 0, 2), (0, 0, 1), (0, 0, 0) },
+                        Turn(1, 3, 0, Dir.W), Turn(1, 2, 0, Dir.N), Turn(1, 2, 1, Dir.W), Turn(1, 1, 2, Dir.W), Turn(1, 0, 2, Dir.N), Turn(1, 0, 3, Dir.W), Turn(0, 0, 2, Dir.S), Turn(0, 0, 1, Dir.S)),
+                },
+                squares = new[]
+                {
+                    Allow(0, 0, 0, TileType.CornerWN),
+                    Allow(0, 0, 1, TileType.TeeSWN),
+                    Allow(0, 0, 2, TileType.CornerSW, TileType.TeeESW),
+                    Allow(0, 2, 3, TileType.CornerNE),
+                    Allow(0, 3, 3, TileType.TeeWNE),
+                    Allow(0, 4, 3, TileType.TeeWNE),
+                    Allow(1, 0, 2, TileType.Cross),
+                    Allow(1, 0, 3, TileType.CornerSW, TileType.TeeESW),
+                    Allow(1, 1, 1, TileType.CornerNE),
+                    Allow(1, 1, 2, TileType.CornerSW, TileType.TeeESW),
+                    Allow(1, 2, 0, TileType.TeeNES),
+                    Allow(1, 2, 1, TileType.CornerSW, TileType.TeeESW),
+                    Allow(1, 3, 0, TileType.CornerSW, TileType.TeeESW),
+                },
+                orders = new[]
+                {
+                    new DeliveryOrder
+                    {
+                        deliveries = new[]
+                        {
+                            Deliver(new[] { "Red", "Blue", "Green", "Orange" }, At(1, 0, 2)),
+                        },
+                    },
+                },
+            },
+        },
+        answerFamily = 1, answerOrder = 0,
+    };
+    // ---- end of Level 25 ----
+
+    // ---- Level 26 (3 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level26() => new LevelSolution
     {
         target = 1025, bestTiles = 11,
         tricks = new[]
@@ -921,10 +1977,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 13 ----
+    // ---- end of Level 26 ----
 
-    // ---- Level 14 (9 best plans, 3 tile layouts, 2 road families) ----
-    public static LevelSolution Level14() => new LevelSolution
+    // ---- Level 27 (9 best plans, 3 tile layouts, 2 road families) ----
+    public static LevelSolution Level27() => new LevelSolution
     {
         target = 1025, bestTiles = 15,
         tricks = new[]
@@ -1028,10 +2084,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 14 ----
+    // ---- end of Level 27 ----
 
-    // ---- Level 15 (56 best plans, 14 tile layouts, 4 road families) ----
-    public static LevelSolution Level15() => new LevelSolution
+    // ---- Level 28 (56 best plans, 14 tile layouts, 4 road families) ----
+    public static LevelSolution Level28() => new LevelSolution
     {
         target = 975, bestTiles = 14,
         tricks = new[]
@@ -1219,5 +2275,5 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 15 ----
+    // ---- end of Level 28 ----
 }

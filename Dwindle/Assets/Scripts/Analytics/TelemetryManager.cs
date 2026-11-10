@@ -130,60 +130,9 @@ public class TelemetryManager : MonoBehaviour
         }
         else if (gameAction.kind == GameActionKind.LevelEnd)
         {
-            LevelSolution currSolution = null;
-            // I'm gonna rewrite this to be dynamic but I'm too tired rn
-            // so we're hardcoding
-            switch (currLevel)
-            {
-                case 1:
-                    currSolution = Solutions.Level1();
-                    break;
-                case 2:
-                    currSolution = Solutions.Level2();
-                    break;
-                case 3:
-                    currSolution = Solutions.Level3();
-                    break;
-                case 4:
-                    currSolution = Solutions.Level4();
-                    break;
-                case 5:
-                    currSolution = Solutions.Level5();
-                    break;
-                case 6:
-                    currSolution = Solutions.Level6();
-                    break;
-                case 7:
-                    currSolution = Solutions.Level7();
-                    break;
-                case 8:
-                    currSolution = Solutions.Level8();
-                    break;
-                case 9:
-                    currSolution = Solutions.Level9();
-                    break;
-                case 10:
-                    currSolution = Solutions.Level10();
-                    break;
-                case 11:
-                    currSolution = Solutions.Level11();
-                    break;
-                case 12:
-                    currSolution = Solutions.Level12();
-                    break;
-                case 13:
-                    currSolution = Solutions.Level13();
-                    break;
-                case 14:
-                    currSolution = Solutions.Level14();
-                    break;
-                case 15:
-                    currSolution = Solutions.Level15();
-                    break;
-                default:
-                    Debug.LogWarning($"TELEMETRY FAILED TO RECONGNIZE THIS LEVEL");
-                    return;
-            }
+            // the level's own best plans - i only changed this bc its 28 lvls now
+            LevelSolution currSolution = Levels.All[currLevel - 1].solution;
+            if (currSolution == null) return;
 
             float maxSimilarity = 0.0f;
             foreach (RoadFamily currFamily in currSolution.families)

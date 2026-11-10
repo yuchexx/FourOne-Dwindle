@@ -4,11 +4,13 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// the Levels page
+// the Levels page: cards in pages, < and > to turn
 public class LevelSelectView : MonoBehaviour
 {
     public LevelCard cardTemplate;
-    [Min(1)] public int cardsPerRow = 5;
+    [Min(1)] public int cardsPerRow = 4;
+    [Tooltip("Rows on one page; more levels go on the next page")]
+    [Min(1)] public int rowsPerPage = 4;
     [Tooltip("Space between cards side by side")]
     public float cardSpacing = 24f;
     [Tooltip("Space between rows")]
@@ -16,6 +18,13 @@ public class LevelSelectView : MonoBehaviour
     [Tooltip("A card's text; {n} is the level's number")]
     public string cardText = "Level {n}";
     public string lockedText = "Locked";
+
+    [Header("Pages")]
+    public Button prevButton; // <
+    public Button nextButton; // >
+    public TMP_Text pageLabel;
+    [Tooltip("{p} is the page's number, {total} the number of pages")]
+    public string pageText = "{p}/{total}";
 
     [Header("Tutorial levels (in Play mode, changes show right away)")]
     [Tooltip("An open tutorial level's card: a deeper purple than Accent, so purple stars still show on it")]
@@ -30,10 +39,15 @@ public class LevelSelectView : MonoBehaviour
     Color cardColor;
     Vector2 labelAnchorMin, labelAnchorMax, labelPosition, labelSize;
     TextAlignmentOptions labelAlignment;
+    Vector2 cardSize, firstCard; // the template's size and spot (the first card of a page)
+    int page;
+
+    int PerPage => cardsPerRow * rowsPerPage;
+    int PageCount => Mathf.Max(1, (cards.Count + PerPage - 1) / PerPage);
 
     void OnValidate()
     {
-        if (Application.isPlaying && cards.Count > 0) Refresh();
+        if (Application.isPlaying && cards.Count > 0) { Layout(); Refresh(); }
     }
 
     // one card per level; onPick gets the level's index
@@ -49,24 +63,62 @@ public class LevelSelectView : MonoBehaviour
         labelPosition = label.anchoredPosition; labelSize = label.sizeDelta;
         labelAlignment = cardTemplate.label.alignment;
         var templateRect = (RectTransform)cardTemplate.transform;
-        Vector2 size = templateRect.sizeDelta, origin = templateRect.anchoredPosition;
+        cardSize = templateRect.sizeDelta; firstCard = templateRect.anchoredPosition;
         for (int i = 0; i < levels.Count; i++)
         {
-            int row = i / cardsPerRow, col = i % cardsPerRow;
-            int inRow = Mathf.Min(cardsPerRow, levels.Count - row * cardsPerRow);
             var card = Instantiate(cardTemplate, cardTemplate.transform.parent);
             card.name = $"Level{i + 1}Card";
-            card.gameObject.SetActive(true);
-            ((RectTransform)card.transform).anchoredPosition = new Vector2(
-                origin.x + (col - (inRow - 1) / 2f) * (size.x + cardSpacing),
-                origin.y - row * (size.y + rowSpacing));
             card.button.onClick = new Button.ButtonClickedEvent(); // drops anything set on the template in the Inspector
             int index = i; // copy for the click handler
             card.button.onClick.AddListener(() => onPick(index));
             cards.Add(card);
-            hasTutorial.Add(!string.IsNullOrEmpty(levels[i].tutorial));
+            hasTutorial.Add(!string.IsNullOrEmpty(levels[i].tutorial) || levels[i].teach); // tutorial and teach levels
         }
+        if (prevButton != null) { prevButton.onClick.RemoveListener(PrevPage); prevButton.onClick.AddListener(PrevPage); }
+        if (nextButton != null) { nextButton.onClick.RemoveListener(NextPage); nextButton.onClick.AddListener(NextPage); }
+        Layout();
         Refresh();
+    }
+
+    // each page's cards in rows from the template's spot; a short last row is centered
+    void Layout()
+    {
+        for (int i = 0; i < cards.Count; i++)
+        {
+            int start = i / PerPage * PerPage, k = i - start; // k: its place on its page
+            int onPage = Mathf.Min(PerPage, cards.Count - start);
+            int row = k / cardsPerRow, col = k % cardsPerRow;
+            int inRow = Mathf.Min(cardsPerRow, onPage - row * cardsPerRow);
+            ((RectTransform)cards[i].transform).anchoredPosition = new Vector2(
+                firstCard.x + (col - (inRow - 1) / 2f) * (cardSize.x + cardSpacing),
+                firstCard.y - row * (cardSize.y + rowSpacing));
+        }
+        ShowPage(page);
+    }
+
+    // the Levels button: open on the page with the level to play next
+    public void Open()
+    {
+        Refresh();
+        ShowPage(Session.StartLevel(cards.Count) / PerPage);
+    }
+
+    public void PrevPage() => ShowPage(page - 1);
+    public void NextPage() => ShowPage(page + 1);
+
+    // only that page's cards; < and > greyed at the ends, hidden with one page
+    public void ShowPage(int p)
+    {
+        page = Mathf.Clamp(p, 0, PageCount - 1);
+        for (int i = 0; i < cards.Count; i++) cards[i].gameObject.SetActive(i / PerPage == page);
+        bool several = PageCount > 1;
+        if (prevButton != null) { prevButton.gameObject.SetActive(several); prevButton.interactable = page > 0; }
+        if (nextButton != null) { nextButton.gameObject.SetActive(several); nextButton.interactable = page < PageCount - 1; }
+        if (pageLabel != null)
+        {
+            pageLabel.gameObject.SetActive(several);
+            pageLabel.text = pageText.Replace("{p}", (page + 1).ToString()).Replace("{total}", PageCount.ToString());
+        }
     }
 
     // locks and stars, from this session's results
