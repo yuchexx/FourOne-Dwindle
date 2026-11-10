@@ -34,9 +34,6 @@ public class TelemetryManager : MonoBehaviour
     private GameManager gameManagerScript;
 
 
-    //private string filePath;
-    //private StreamWriter fileWriter;
-
     private string sessionID;
     private float levelStartTime = 0.0f;
     private int currLevel = 0;
@@ -46,7 +43,6 @@ public class TelemetryManager : MonoBehaviour
     private List<bool> levelCompletion;
     private Dictionary<Vector3Int, List<TileType?>> tilePlacements;
 
-    // Can change manager to intercept actions rather than get them passed in at the end
 
     private void Awake()
     {
@@ -334,49 +330,4 @@ public class TelemetryManager : MonoBehaviour
         }
 
     }
-
-
-
-    // ONLY USED FOR DOWNLOADABLE BUILDS, NOT WEBGL
-    /*
-    private void Start()
-    {
-        if (!Application.isEditor || (Application.isEditor && generateFilesInEditor))
-        {
-            filePath = Path.Combine(Application.persistentDataPath, "DwindleMetrics.csv");
-
-            fileWriter = new StreamWriter(filePath, true);
-
-            // TODO: See if granularity needed in the way of
-            // checking the amount of times specific pieces are used
-            fileWriter.WriteLine("Level,TimeElapsed,PiecesUsed,StarLevel,HiScore");
-            fileWriter.Flush();
-        }
-    }
-    
-
-    public void LevelStart(int level)
-    {
-        currLevel = level;
-        levelStartTime = Time.timeSinceLevelLoad;
-    }
-
-    public void LogCurrentLevel(int piecesUsed, int starAchieved, int score)
-    {
-        if (fileWriter != null)
-        {
-            fileWriter.WriteLine($"Level{currLevel},{Time.timeSinceLevelLoad - levelStartTime},{piecesUsed},{starAchieved},{score}");
-            fileWriter.Flush();
-        }
-    }
-
-    public void CleanUp()
-    {
-        if (fileWriter != null)
-        {
-            fileWriter.Close();
-        }
-
-    }
-    */
 }
