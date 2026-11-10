@@ -5582,6 +5582,8 @@ MonoBehaviour:
   targetColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   supplyLeftText: {fileID: 1280007995}
   supplyUsedText: {fileID: 236360172}
+  hintBox: {fileID: 443627504}
+  hintGap: 12
   scoreHistory: {fileID: 213256304}
   objectPrefab: {fileID: 2627278351851024847, guid: a6145b1b8ae5ed64fb9a4b886315167c, type: 3}
   destinationPrefab: {fileID: 169439478486752816, guid: 5e6e9d85e20ef5d438afa2e6afe516a5, type: 3}

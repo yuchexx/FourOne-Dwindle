@@ -59,6 +59,10 @@ public class HudView : MonoBehaviour
     public Color targetColor = new Color32(0x7C, 0x83, 0xF7, 0xFF);
     public TMP_Text supplyLeftText;   // "6 Left"
     public TMP_Text supplyUsedText;   // "Used 3"
+    [Tooltip("Optional: the stage 1 hint's box in the supply dock; Used and Left move out of its way")]
+    public RectTransform hintBox;
+    [Tooltip("Gap kept between the hint box and Used / Left")]
+    public float hintGap = 12f;
 
     [Header("Score history (in Play mode, changes show right away)")]
     [Tooltip("The panel the rows go in (a Vertical Layout Group); its children are replaced by the rows")]
@@ -106,7 +110,35 @@ public class HudView : MonoBehaviour
     readonly HashSet<TileType> flashingSlots = new HashSet<TileType>();
     TileType? lastSelected;
 
-    void Awake() => ShowScoreLog();
+    Vector2 usedHome, leftHome; // where Used and Left sit when there's room
+
+    void Awake()
+    {
+        ShowScoreLog();
+        if (supplyUsedText != null) usedHome = supplyUsedText.rectTransform.anchoredPosition;
+        if (supplyLeftText != null) leftHome = supplyLeftText.rectTransform.anchoredPosition;
+    }
+
+    // Used and Left slide outward when the stage 1 hint box is wider than the space between them
+    void LateUpdate()
+    {
+        if (supplyUsedText == null || supplyLeftText == null) return;
+        var used = supplyUsedText.rectTransform;
+        var left = supplyLeftText.rectTransform;
+        float pushUsed = 0f, pushLeft = 0f;
+        if (hintBox != null && hintBox.gameObject.activeInHierarchy)
+        {
+            float dockHalf = ((RectTransform)used.parent).rect.width / 2f;
+            float clear = hintBox.rect.width / 2f + hintGap; // keep this far from the dock's centre
+            // Used's text starts at its box's left edge; Left's text ends at its box's right edge
+            float usedEnd = -dockHalf + usedHome.x - used.rect.width / 2f + supplyUsedText.preferredWidth;
+            float leftStart = dockHalf + leftHome.x + left.rect.width / 2f - supplyLeftText.preferredWidth;
+            pushUsed = Mathf.Max(0f, usedEnd + clear);
+            pushLeft = Mathf.Max(0f, clear - leftStart);
+        }
+        used.anchoredPosition = usedHome - new Vector2(pushUsed, 0f);
+        left.anchoredPosition = leftHome + new Vector2(pushLeft, 0f);
+    }
 
     // every tile type gets a slot with its count badge
     public void BuildSlots(IEnumerable<TileType> types, Action<TileType> onSelect,
