@@ -52,16 +52,18 @@ public class TelemetryManager : MonoBehaviour
             DontDestroyOnLoad(gameObject);
             gameManagerScript = gameManager.GetComponent<GameManager>();
             sessionID = Guid.NewGuid().ToString();
-            levelAttemptsPreCompletion = new List<int>(LEVEL_COUNT);
-            levelAttemptsPostCompletion = new List<int>(LEVEL_COUNT);
+            levelAttemptsPreCompletion = new List<int>();
+            levelAttemptsPostCompletion = new List<int>();
             levelCompletion = new List<bool>(LEVEL_COUNT);
             tilePlacements = new Dictionary<Vector3Int, List<TileType?>>();
+            /*
             for (int i = 0; i < LEVEL_COUNT; i++)
             {
                 levelAttemptsPreCompletion.Add(0);
                 levelAttemptsPostCompletion.Add(0);
                 levelCompletion.Add(false);
             }
+            */
         }
         else
         {
@@ -90,6 +92,15 @@ public class TelemetryManager : MonoBehaviour
     public void StartLevel(int level)
     {
         currLevel = level + 1;
+        if (levelCompletion.Count < currLevel)
+        {
+            for (int i = levelCompletion.Count; i < currLevel; i++)
+            {
+                levelAttemptsPreCompletion.Add(0);
+                levelAttemptsPostCompletion.Add(0);
+                levelCompletion.Add(false);
+            }
+        }
         levelStartTime = Time.realtimeSinceStartup;
     }
 
