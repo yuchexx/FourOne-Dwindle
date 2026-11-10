@@ -23,11 +23,33 @@ public class MenuView : MonoBehaviour
 
     [Header("Rules pages")]
     public GameObject[] rulesPages;
+    [SerializeField] RulesTab[] rulesTabs = System.Array.Empty<RulesTab>();
     public Button previousRulesButton;
     public Button nextRulesButton;
     public TMP_Text rulesPageIndicator;
 
+    [System.Serializable]
+    sealed class RulesTab
+    {
+        public Button button;
+        public int firstPage;
+        public int pageCount = 1;
+        public GameObject subTabs;
+        public float selectedWidth;
+        [System.NonSerialized] public float normalWidth;
+    }
+
     int currentRulesPage;
+
+    void Awake()
+    {
+        foreach (var tab in rulesTabs)
+        {
+            if (tab.selectedWidth > 0f)
+                tab.normalWidth = ((RectTransform)tab.button.transform).sizeDelta.x;
+            tab.button.onClick.AddListener(() => ShowRulesPage(tab.firstPage));
+        }
+    }
 
     // the title screen. startText: the Start button's text
     public void ShowStart(string startText = null)
@@ -81,10 +103,10 @@ public class MenuView : MonoBehaviour
 
     public void SetRulesVisible(bool visible)
     {
-        rulesPopup.SetActive(visible);
-
         if (visible)
             ShowRulesPage(0);
+
+        rulesPopup.SetActive(visible);
     }
 
     public void ShowNextRulesPage()
@@ -97,7 +119,7 @@ public class MenuView : MonoBehaviour
         ShowRulesPage(currentRulesPage - 1);
     }
 
-    void ShowRulesPage(int pageIndex)
+    public void ShowRulesPage(int pageIndex)
     {
         if (rulesPages == null || rulesPages.Length == 0)
             return;
@@ -118,6 +140,20 @@ public class MenuView : MonoBehaviour
 
         rulesPageIndicator.text =
             $"{currentRulesPage + 1} / {rulesPages.Length}";
+
+        var palette = UIPalette.Current;
+        foreach (var tab in rulesTabs)
+        {
+            bool selected = currentRulesPage >= tab.firstPage && currentRulesPage < tab.firstPage + tab.pageCount;
+            tab.button.targetGraphic.color = selected ? Color.Lerp(palette.button, palette.accent, .45f) : palette.button;
+            if (tab.selectedWidth > 0f)
+            {
+                var rect = (RectTransform)tab.button.transform;
+                rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, selected ? tab.selectedWidth : tab.normalWidth);
+            }
+            if (tab.subTabs != null)
+                tab.subTabs.SetActive(selected);
+        }
     }
 
     // hides the Leave and End screens
