@@ -92,6 +92,7 @@ public partial class GameManager : MonoBehaviour
         StopAllCoroutines();
         if (tutorial != null) tutorial.Stop();
         TelemetryManager.Instance.StartLevel(index);
+        Session.lastOpened = index; // the Levels page opens on this level's page
         levelReported = false;
         stuck = false;
         HideStuckNotice();

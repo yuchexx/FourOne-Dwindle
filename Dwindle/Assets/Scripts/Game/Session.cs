@@ -32,6 +32,9 @@ public static class Session
 
     public static Record Get(int level) => records.TryGetValue(level, out var r) ? r : default;
 
+    // the level opened most recently (-1: none yet); the Levels page opens on its page
+    public static int lastOpened = -1;
+
     // keeps the best: the most stars, and purple once it's been earned
     public static void Save(int level, int stars, bool purple)
     {
@@ -57,6 +60,7 @@ public static class Session
     static void StartOver()
     {
         records.Clear();
+        lastOpened = -1;
         unlockAll = false;
         placement = Placement.Both;
         compactSupply = false;

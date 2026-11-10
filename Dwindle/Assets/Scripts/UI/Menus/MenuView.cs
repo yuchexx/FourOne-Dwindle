@@ -61,7 +61,7 @@ public class MenuView : MonoBehaviour
         CloseOverlays();
         startScreen.SetActive(false);
         levelsScreen.SetActive(true);
-        levelSelect.Open(); // refresh, and open on the page with the level to play next
+        levelSelect.Open(); // refresh, and open on the last opened level's page
     }
 
     // the Levels page's Back button

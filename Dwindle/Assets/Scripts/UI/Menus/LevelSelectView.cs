@@ -96,11 +96,12 @@ public class LevelSelectView : MonoBehaviour
         ShowPage(page);
     }
 
-    // the Levels button: open on the page with the level to play next
+    // the Levels button: open on the last opened level's page (before any, the level to play next)
     public void Open()
     {
         Refresh();
-        ShowPage(Session.StartLevel(cards.Count) / PerPage);
+        int level = Session.lastOpened >= 0 ? Session.lastOpened : Session.StartLevel(cards.Count);
+        ShowPage(level / PerPage);
     }
 
     public void PrevPage() => ShowPage(page - 1);
