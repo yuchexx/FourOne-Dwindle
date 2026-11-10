@@ -91,7 +91,9 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 5", targetScore = 450, bestTiles = 6,
             bestPlanHint = "deliver some together." };
+        l.finishHint = "the bridge lets two roads cross."; // the 0 or 1 star tip
         l.teach = true;
+        l.starsToPass = 2; // the trick is needed to deliver everyone
         l.SetBoards((3, 3));
         l.inventory = Inv(bridge: 1, ne: 2, es: 1, sw: 1, wn: 1, v: 1);
         Obj(l, "Red", Red, 0, 3, 1, Dir.W, 0, 2, 3);
@@ -125,6 +127,7 @@ public static class Levels
             bestPlanHint = "deliver some together." };
         l.finishHint = "start one route early."; // delivering everyone needs the build ahead, so it's the 0 or 1 star tip
         l.teach = true;
+        l.starsToPass = 2; // the trick is needed to deliver everyone
         l.SetBoards((4, 3));
         l.inventory = Inv(cross: 1, es: 1, sw: 1, v: 1, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
         Obj(l, "Red", Red, 0, 0, 3, Dir.S, 0, 4, 0);
@@ -157,6 +160,7 @@ public static class Levels
             bestPlanHint = "pairs break a junction. Bring more in together." };
         l.finishHint = l.bestPlanHint; // pairs can't deliver everyone, so the tip shows at 0 or 1 star too
         l.teach = true;
+        l.starsToPass = 2; // the trick is needed to deliver everyone
         l.SetBoards((4, 3));
         l.inventory = Inv(cross: 1, es: 1, wn: 1, v: 1, tNES: 1, tESW: 2, tSWN: 1, tWNE: 1);
         Obj(l, "Red", Red, 0, 4, 0, Dir.W, 0, -1, 1);

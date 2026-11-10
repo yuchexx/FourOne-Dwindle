@@ -34,7 +34,7 @@ public partial class GameManager
         menu.endWindow.Show(EndTitle(stars, purple), earned, purple, goals,
             stars == 3 ? $"Score {Score} · target reached!" : $"Score {Score}",
             EndNote(stars, purple, isLast),
-            canUndo: history.CanUndo, canNext: stars >= 1 && !isLast);
+            canUndo: history.CanUndo, canNext: stars >= level.starsToPass && !isLast);
     }
 
     // the end window's title: one of a few per result (0-3 stars, purple), never last time's for that result. picked
@@ -69,6 +69,11 @@ public partial class GameManager
             stars == 3 ? (purple ? "You found the best plan on your own." : "Now try it without the answer.")
             : stars == 2 ? Tip(level.bestPlanHint)
             : Tip(level.finishHint); // levels where delivering everyone needs the trick
+        if (level.starsToPass > 1 && stars < level.starsToPass && !isLast) // Next stays locked past 1 star: say why
+        {
+            string unlock = $"Earn {level.starsToPass} stars to unlock the next level.";
+            note = note == null ? unlock : note + "\n" + unlock;
+        }
         if (isLast && stars > 0) note = note == null ? "All levels done!" : note + "\nAll levels done!";
         return note;
     }

@@ -44,14 +44,17 @@ public static class Session
         records[level] = r;
     }
 
-    // open when it's the first level, the one before it has a star, or Unlock all is on
-    public static bool IsUnlocked(int level) => unlockAll || level == 0 || Get(level - 1).stars >= 1;
+    // enough stars to unlock the next level (most levels 1, some 2: LevelData.starsToPass)
+    public static bool Passed(int level) => Get(level).stars >= Levels.All[level].starsToPass;
 
-    // where Start goes: the first level without a star (so Level 1 until it's done), or the last level once all have one
+    // open when it's the first level, the one before it is passed, or Unlock all is on
+    public static bool IsUnlocked(int level) => unlockAll || level == 0 || Passed(level - 1);
+
+    // where Start goes: the first level not passed (so Level 1 until it's done), or the last level once all are
     public static int StartLevel(int count)
     {
         for (int i = 0; i < count; i++)
-            if (Get(i).stars == 0) return i;
+            if (!Passed(i)) return i;
         return count - 1;
     }
 

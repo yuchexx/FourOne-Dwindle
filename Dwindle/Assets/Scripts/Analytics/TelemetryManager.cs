@@ -213,7 +213,7 @@ public class TelemetryManager : MonoBehaviour
                 }
                 else
                 {
-                    if (gameAction.stars > 0)
+                    if (gameAction.stars >= Levels.All[currLevel - 1].starsToPass) // passed = the next level unlocks
                     {
                         levelCompletion[currLevel - 1] = true;
                     }
