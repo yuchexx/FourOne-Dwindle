@@ -11059,6 +11059,7 @@ MonoBehaviour:
   levelAttemptsPreForm: https://docs.google.com/forms/d/e/1FAIpQLSfWSrd91_bDOi5Soq1hJyparZxPvLobM7WrLV3ZM9nxDfP8qA/formResponse
   levelAttemptsPostForm: https://docs.google.com/forms/d/e/1FAIpQLScCDs0U5H07NAn9Es0PmgvXtM5_9z4wHhnYVKrzcyBbRE4Qrg/formResponse
   LEVEL_COUNT: 12
+  gameManager: {fileID: 434519278}
 --- !u!1 &866671430
 GameObject:
   m_ObjectHideFlags: 0
@@ -28754,9 +28755,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '<color=#F5C454>Right-click</color> an <color=#F5C454>unused placed tile</color><br>
+  m_text: <color=#F5C454>Right-click</color> an <color=#F5C454>unused placed tile</color><br>
     to return it to the supply.<br><color=#F5C454>Unused placed tiles can be moved</color>;<br>
-    tiles lock after an object uses them.'
+    tiles lock after an object uses them.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -52448,7 +52449,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 0.8, g: 0.82, b: 0.87, a: 1}
@@ -52458,7 +52459,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '3-star completions are <color=#9A94FF>purple</color> when earned without <color=#9A94FF>Stage 3 hints</color>; otherwise, earned stars remain <color=#F5C454>yellow</color>.'
+  m_text: 3-star completions are <color=#9A94FF>purple</color> when earned without
+    <color=#9A94FF>Stage 3 hints</color>; otherwise, earned stars remain <color=#F5C454>yellow</color>.
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

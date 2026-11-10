@@ -8,6 +8,7 @@ using UnityEngine.Networking;
 using NUnit.Framework.Internal;
 using System.Runtime.CompilerServices;
 using UnityEditor.AdaptivePerformance.Editor;
+using Unity.VisualScripting;
 
 
 // Persistent metric tracker that operates all throughout a
@@ -39,8 +40,6 @@ public class TelemetryManager : MonoBehaviour
     private string sessionID;
     private float levelStartTime = 0.0f;
     private int currLevel = 0;
-    private int finalStarLevel = 0;
-    private int finalScore = 0;
     private int finalPiecesUsed = 0;
     private List<int> levelAttemptsPreCompletion; // Holds for each level until they beat it
     private List<int> levelAttemptsPostCompletion; // Holds for each level until they get 3 Stars
@@ -76,13 +75,19 @@ public class TelemetryManager : MonoBehaviour
 
 
     private void OnEnable()
+
     {
+#if !UNITY_EDITOR
         gameManagerScript.ActionDone += eventSub;
+#endif
     }
+
 
     private void OnDisable()
     {
+#if !UNITY_EDITOR
         gameManagerScript.ActionDone -= eventSub;
+#endif
     }
 
 
@@ -91,32 +96,6 @@ public class TelemetryManager : MonoBehaviour
         currLevel = level + 1;
         levelStartTime = Time.realtimeSinceStartup;
     }
-
-    public void AddPiece()
-    {
-        finalPiecesUsed++;
-    }
-
-    /*
-    public void AddPiece(Vector2Int cellNum, TileType tile)
-    {
-        //tilePlacements.Add(cellNum, tile);
-        finalPiecesUsed++;
-    }
-    */
-
-    public void RemovePiece()
-    {
-        finalPiecesUsed--;
-    }
-
-    /*
-    public void RemovePiece(Vector2Int cellNum)
-    {
-        //tilePlacements.Remove(cellNum);
-        finalPiecesUsed--;
-    }
-    */
 
 
     public void eventSub(GameAction gameAction)
@@ -127,6 +106,7 @@ public class TelemetryManager : MonoBehaviour
             int board = gameAction.board;
             Vector2Int cellNum = gameAction.square;
             tilePlacements.Remove(new Vector3Int(board, cellNum.x, cellNum.y));
+            finalPiecesUsed--;
         }
         else if (gameAction.kind == GameActionKind.PlaceTile)
         {
@@ -139,6 +119,7 @@ public class TelemetryManager : MonoBehaviour
                 tilePlacements[fullCell] = tilesHistory;
             }
             tilePlacements[fullCell].Add(gameAction.tile);
+            finalPiecesUsed++;
         }
         else if (gameAction.kind == GameActionKind.LevelEnd)
         {
@@ -192,6 +173,9 @@ public class TelemetryManager : MonoBehaviour
                 case 15:
                     currSolution = Solutions.Level15();
                     break;
+                default:
+                    Debug.LogWarning($"TELEMETRY FAILED TO RECONGNIZE THIS LEVEL");
+                    return;
             }
 
             float maxSimilarity = 0.0f;
@@ -211,6 +195,7 @@ public class TelemetryManager : MonoBehaviour
                     solutionHolder.Add(tempCoords, tempTiles);
 
                 }
+
                 // Amount that is taken away from the starting similarity of 100 to simulate
                 // deviation from the optimal solution
                 float startingSimilarity = 100.0f;
@@ -219,7 +204,6 @@ public class TelemetryManager : MonoBehaviour
 
                 foreach (var (cellPos, tiles) in tilePlacements)
                 {
-                    // TODO Match placements to optimal answer
 
                     if (solutionHolder.TryGetValue(cellPos, out List<TileType?> compareTile))
                     {
@@ -246,63 +230,58 @@ public class TelemetryManager : MonoBehaviour
                     maxSimilarity = startingSimilarity;
                 }
             }
-            // TODO Send max similarity as analytic
-        }
-    }
 
-    public void EndLevel(int score, int starLevel)
-    {
-#if !UNITY_EDITOR
-        // If level is still 0, it was not set meaning a tutorial happened, not a real level
-        if (currLevel != 0)
-        {
-            finalScore = score;
-            finalStarLevel = starLevel;
             StartCoroutine(FillOutAnalytics("LevelComplete",
                           sessionID.ToString(),
                           currLevel.ToString(),
                           (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
-                          finalPiecesUsed.ToString(), finalStarLevel.ToString(), finalScore.ToString(),
+                          finalPiecesUsed.ToString(), gameAction.stars.ToString(), gameAction.score.ToString(),
                           levelAttemptsPreCompletion[currLevel - 1].ToString(),
-                          levelAttemptsPostCompletion[currLevel - 1].ToString()));
+                          levelAttemptsPostCompletion[currLevel - 1].ToString(),
+                          maxSimilarity.ToString()));
 
-            // Fine if sent multiple times over, google sheet will replace duplicates with the one with more attempts
-            if (levelCompletion[currLevel - 1])
+            if (currLevel != 0)
             {
-                levelAttemptsPostCompletion[currLevel - 1]++;
-                StartCoroutine(FillOutAnalytics("LevelAttemptsPostCompletion",
-                          sessionID.ToString(),
-                          currLevel.ToString(),
-                          (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
-                          finalPiecesUsed.ToString(), finalStarLevel.ToString(), finalScore.ToString(),
-                          levelAttemptsPreCompletion[currLevel - 1].ToString(),
-                          levelAttemptsPostCompletion[currLevel - 1].ToString()));
-            }
-            else
-            {
-                if (starLevel > 0)
+                // Fine if sent multiple times over, google sheet will replace duplicates with the one with more attempts
+                if (levelCompletion[currLevel - 1])
                 {
-                    levelCompletion[currLevel - 1] = true;
+                    levelAttemptsPostCompletion[currLevel - 1]++;
+                    StartCoroutine(FillOutAnalytics("LevelAttemptsPostCompletion",
+                              sessionID.ToString(),
+                              currLevel.ToString(),
+                              (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
+                              finalPiecesUsed.ToString(), gameAction.stars.ToString(), gameAction.score.ToString(),
+                              levelAttemptsPreCompletion[currLevel - 1].ToString(),
+                              levelAttemptsPostCompletion[currLevel - 1].ToString(),
+                              maxSimilarity.ToString()));
                 }
-                levelAttemptsPreCompletion[currLevel - 1]++;
-                StartCoroutine(FillOutAnalytics("LevelAttemptsPreCompletion",
-                          sessionID.ToString(),
-                          currLevel.ToString(),
-                          (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
-                          finalPiecesUsed.ToString(), finalStarLevel.ToString(), finalScore.ToString(),
-                          levelAttemptsPreCompletion[currLevel - 1].ToString(),
-                          levelAttemptsPostCompletion[currLevel - 1].ToString()));
+                else
+                {
+                    if (gameAction.stars > 0)
+                    {
+                        levelCompletion[currLevel - 1] = true;
+                    }
+                    levelAttemptsPreCompletion[currLevel - 1]++;
+                    StartCoroutine(FillOutAnalytics("LevelAttemptsPreCompletion",
+                              sessionID.ToString(),
+                              currLevel.ToString(),
+                              (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
+                              finalPiecesUsed.ToString(), gameAction.stars.ToString(), gameAction.score.ToString(),
+                              levelAttemptsPreCompletion[currLevel - 1].ToString(),
+                              levelAttemptsPostCompletion[currLevel - 1].ToString(),
+                              maxSimilarity.ToString()));
+                }
             }
+
+            finalPiecesUsed = 0;
+            tilePlacements.Clear();
         }
-        finalPiecesUsed = 0;
-        tilePlacements.Clear();
-#endif
     }
 
 
     private IEnumerator FillOutAnalytics(string formType, string mySession, string finalLevel,
                                          string timeElapsed, string totalPieces, string totalStars, string totalScore,
-                                         string levelAttemptsPre, string levelAttemptsPost)
+                                         string levelAttemptsPre, string levelAttemptsPost, string similarity)
     {
         // Members must be passed in to copy values from start of coroutine so they aren't modified immediately after it's
         // called due to levelStart overwriting their values in the class right after EndLevel is called
@@ -323,6 +302,7 @@ public class TelemetryManager : MonoBehaviour
             formData.Add("entry.1155704640", totalPieces);
             formData.Add("entry.1940427468", totalStars);
             formData.Add("entry.1679653451", totalScore);
+            formData.Add("entry.1315119076", similarity);
         }
         else if (formType.Equals("LevelAttemptsPreCompletion"))
         {
