@@ -26,6 +26,10 @@ public partial class GameManager
     // first press; follows the board to another plan while steps are left to show (see FollowBoard)
     List<PlanStep> stage3Steps = new List<PlanStep>();
     int stage3Family, stage3Order;
+    // stage 3: the tiles whose placing left no best plan that can still be finished (shown as the wrong moment), whether
+    // the board could still finish one, and a placement waiting to be checked
+    readonly HashSet<Vector2Int> brokePlan = new HashSet<Vector2Int>();
+    bool onTrack = true, placedForHints;
     public bool HintAnswerDone => hints.Stage >= Hints.Stages && hints.Revealed >= stage3Steps.Count;
     // the hint button is lit: there's a solution, the level is on, and something is left to show (UseHint itself waits out a move)
     public bool HintAvailable => level != null && level.solution != null && !levelOver && !HintAnswerDone;
@@ -37,7 +41,12 @@ public partial class GameManager
         {
             var res = new List<(Vector2Int, TileType, int, StepState)>();
             if (hints.Stage < Hints.Stages) return res;
-            var states = PlanMatcher.StepStates(level, stage3Family, stage3Order, stage3Steps, CurrentState());
+            // mid-move (an arrow being picked) only the new tile and turns are judged; the rest once everything stops
+            var st = CurrentState();
+            var marked = brokePlan;
+            if (busy && placedForHints && onTrack && !PlanMatcher.Plans(level).Any(p => PlanMatcher.Reachable(level, p.family, p.order, st, lastPlaced)))
+                marked = new HashSet<Vector2Int>(brokePlan) { lastPlaced }; // this placement already leaves no way to finish, even with the right turns
+            var states = PlanMatcher.StepStates(level, stage3Family, stage3Order, stage3Steps, st, marked, moving: busy);
             for (int i = 0; i < hints.Revealed && i < stage3Steps.Count; i++)
                 res.Add((stage3Steps[i].square, stage3Steps[i].tile, i + 1, states[i]));
             return res;
@@ -49,11 +58,25 @@ public partial class GameManager
     Dir? HintArrow(MovingObject o, DoorSpec door = null)
     {
         if (hints.Stage < Hints.Stages || HintHidden) return null;
-        var square = door == null ? o.pos : door.cell;
-        if (!stage3Steps.Take(hints.Revealed).Any(s => s.square == square)) return null;
-        return PlanMatcher.ExpectedArrow(level, stage3Family, o.spec.name,
-            new ArrowRecord { square = door == null ? o.pos : (Vector2Int?)null, door = door?.label },
-            arrowsSoFar.TryGetValue(o.spec.name, out var a) ? a : null);
+        // o.pos: the junction, or for a door the square it went in from (the door's own square can be the one across its edge)
+        if (!stage3Steps.Take(hints.Revealed).Any(s => s.square == o.pos)) return null;
+        var here = new ArrowRecord { square = door == null ? o.pos : (Vector2Int?)null, door = door?.label };
+        var picked = arrowsSoFar.TryGetValue(o.spec.name, out var a) ? a : null;
+        // the way of a best plan that can still be finished from here (stage 3's own first), so following the arrow keeps
+        // the tiles light; else of one what has happened so far fits
+        var st = CurrentState();
+        Vector2Int? round = placedForHints ? lastPlaced : (Vector2Int?)null;
+        (int family, int order) current = (stage3Family, stage3Order);
+        var plans = new[] { current }.Concat(PlanMatcher.Plans(level).Where(p => p != current)).ToList();
+        foreach (bool finishable in new[] { true, false })
+            foreach (var plan in plans)
+            {
+                if (!PlanMatcher.FitsSoFar(level, plan.family, plan.order, st)) continue; // mid-move: what has happened so far
+                if (finishable && !PlanMatcher.Reachable(level, plan.family, plan.order, st, round ?? lastPlaced)) continue;
+                var way = PlanMatcher.ExpectedArrow(level, plan.family, o.spec.name, here, picked);
+                if (way != null) return way;
+            }
+        return PlanMatcher.ExpectedArrow(level, stage3Family, o.spec.name, here, picked);
     }
 
     // the hint button: the next stage, or one more ghost
@@ -130,25 +153,64 @@ public partial class GameManager
     // while it still fits, its tiles follow the board: a tile the plan also allows on a square counts as that step's
     void FollowBoard()
     {
-        if (hints.Stage < Hints.Stages || hints.Revealed >= stage3Steps.Count) return;
+        if (hints.Stage < Hints.Stages) { placedForHints = false; return; } // before stage 3 nothing is checked
+        bool placed = placedForHints;
+        placedForHints = false;
         var st = CurrentState();
-        if (PlanMatcher.Fits(level, stage3Family, stage3Order, st))
+        // back on track (e.g. after an undo): the marks go
+        if (FollowPlan(st)) { brokePlan.Clear(); onTrack = true; return; }
+        // no best plan can be finished from here: the tile just placed is what broke it, if the board was on track before.
+        // the mark stays even if that tile broke in the delivery it caused
+        if (placed && onTrack) brokePlan.Add(lastPlaced);
+        onTrack = false;
+    }
+
+    // stage 3 stays on a plan that can still be finished (see PlanMatcher.Reachable), or moves to one. false: none can
+    bool FollowPlan(PlayerState st)
+    {
+        if (PlanMatcher.Reachable(level, stage3Family, stage3Order, st))
         {
-            // still this plan: its tiles picked again for the board (a tile it also allows counts; the rest from the supply left)
+            // still this plan (even with every step shown): its tiles picked again for the board (a tile it also allows
+            // counts, e.g. a + for a corner; the rest from the supply left)
             var states = PlanMatcher.StepStates(level, stage3Family, stage3Order, stage3Steps, st);
             stage3Steps = PlanMatcher.Refit(level, stage3Family, stage3Order, stage3Steps, states, st) ?? stage3Steps;
-            return;
+            return true;
         }
-        var shown = stage3Steps.Take(hints.Revealed).ToList();
-        foreach (var plan in PlanMatcher.Plans(level))
+        if (hints.Revealed < stage3Steps.Count)
         {
-            if (plan == (stage3Family, stage3Order) || !PlanMatcher.Fits(level, plan.family, plan.order, st)) continue;
-            var steps = PlanMatcher.Continue(level, plan.family, plan.order, shown, st.tiles);
+            var shown = stage3Steps.Take(hints.Revealed).ToList();
+            foreach (var plan in PlanMatcher.Plans(level))
+            {
+                if (plan == (stage3Family, stage3Order) || !PlanMatcher.Reachable(level, plan.family, plan.order, st)) continue;
+                var steps = PlanMatcher.Continue(level, plan.family, plan.order, shown, st.tiles);
+                if (steps == null) continue;
+                stage3Steps = steps;
+                (stage3Family, stage3Order) = plan;
+                return true;
+            }
+        }
+        return Replan(st);
+    }
+
+    // the board left stage 3's plan for another best plan it can still finish whose first steps aren't the ones shown
+    // (e.g. the same roads delivered in another order): that plan's whole sequence, numbered again. every square shown
+    // before stays shown. false: there's none
+    bool Replan(PlayerState st)
+    {
+        var shownSquares = new HashSet<Vector2Int>(stage3Steps.Take(hints.Revealed).Select(s => s.square));
+        foreach (var plan in PlanMatcher.Plans(level).OrderBy(p => p.family != stage3Family)) // the same roads first
+        {
+            if (plan == (stage3Family, stage3Order) || !PlanMatcher.Reachable(level, plan.family, plan.order, st)) continue;
+            var steps = PlanMatcher.FromStart(level, plan.family, plan.order, st.tiles);
             if (steps == null) continue;
+            int last = -1;
+            for (int i = 0; i < steps.Count; i++) if (shownSquares.Contains(steps[i].square)) last = i;
             stage3Steps = steps;
             (stage3Family, stage3Order) = plan;
-            return;
+            hints.Revealed = Mathf.Min(steps.Count, Mathf.Max(hints.Revealed, last + 1));
+            return true;
         }
+        return false;
     }
 
     PlayerState CurrentState()
@@ -180,7 +242,7 @@ public partial class GameManager
         for (int x = 0; x < Cells.GetLength(0); x++)
             for (int y = 0; y < Cells.GetLength(1); y++)
                 if (Cells[x, y]?.tile != null) occupied.Add(new Vector2Int(x, y));
-        deliveriesSoFar.Add(new DeliveryRecord { objects = deliveredNow.Select(o => o.spec.name).ToArray(), at = lastPlaced, occupied = occupied });
+        deliveriesSoFar.Add(new DeliveryRecord { objects = deliveredNow.Select(o => o.spec.name).ToArray(), at = lastPlaced, occupied = occupied, happened = true });
     }
 
     // LoadLevel (and so Restart, Replay, Next, picking a level): a fresh start, hints included
@@ -192,6 +254,9 @@ public partial class GameManager
         HintBadges = new List<(string, int)>();
         HintJunctions = new List<(Vector2Int, int)>();
         stage3Steps = new List<PlanStep>();
+        brokePlan.Clear();
+        onTrack = true;
+        placedForHints = false;
         deliveriesSoFar = new List<DeliveryRecord>();
         arrowsSoFar = new Dictionary<string, List<ArrowRecord>>();
         HintsChanged?.Invoke();
