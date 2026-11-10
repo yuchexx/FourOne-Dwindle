@@ -5,6 +5,10 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
+using NUnit.Framework.Internal;
+using System.Runtime.CompilerServices;
+using UnityEditor.AdaptivePerformance.Editor;
+using Unity.VisualScripting;
 
 
 // Persistent metric tracker that operates all throughout a
@@ -22,24 +26,23 @@ public class TelemetryManager : MonoBehaviour
 
     [Header("Parameters")]
     [SerializeField]
-    private int LEVEL_COUNT = 12;
+    private int LEVEL_COUNT = 25; // Just some overshooting so new levels don't break the array
 
     public static TelemetryManager Instance { get; private set; }
 
-    //private string filePath;
-    //private StreamWriter fileWriter;
+    public GameObject gameManager;
+    private GameManager gameManagerScript;
+
 
     private string sessionID;
     private float levelStartTime = 0.0f;
     private int currLevel = 0;
-    private int finalStarLevel = 0;
-    private int finalScore = 0;
     private int finalPiecesUsed = 0;
     private List<int> levelAttemptsPreCompletion; // Holds for each level until they beat it
     private List<int> levelAttemptsPostCompletion; // Holds for each level until they get 3 Stars
     private List<bool> levelCompletion;
+    private Dictionary<Vector3Int, List<TileType?>> tilePlacements;
 
-    // Can change manager to intercept actions rather than get them passed in at the end
 
     private void Awake()
     {
@@ -47,16 +50,20 @@ public class TelemetryManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            gameManagerScript = gameManager.GetComponent<GameManager>();
             sessionID = Guid.NewGuid().ToString();
-            levelAttemptsPreCompletion = new List<int>(LEVEL_COUNT);
-            levelAttemptsPostCompletion = new List<int>(LEVEL_COUNT);
+            levelAttemptsPreCompletion = new List<int>();
+            levelAttemptsPostCompletion = new List<int>();
             levelCompletion = new List<bool>(LEVEL_COUNT);
+            tilePlacements = new Dictionary<Vector3Int, List<TileType?>>();
+            /*
             for (int i = 0; i < LEVEL_COUNT; i++)
             {
                 levelAttemptsPreCompletion.Add(0);
                 levelAttemptsPostCompletion.Add(0);
                 levelCompletion.Add(false);
             }
+            */
         }
         else
         {
@@ -64,73 +71,224 @@ public class TelemetryManager : MonoBehaviour
         }
     }
 
+
+    private void OnEnable()
+
+    {
+#if !UNITY_EDITOR
+        gameManagerScript.ActionDone += eventSub;
+#endif
+    }
+
+
+    private void OnDisable()
+    {
+#if !UNITY_EDITOR
+        gameManagerScript.ActionDone -= eventSub;
+#endif
+    }
+
+
     public void StartLevel(int level)
     {
         currLevel = level + 1;
+        if (levelCompletion.Count < currLevel)
+        {
+            for (int i = levelCompletion.Count; i < currLevel; i++)
+            {
+                levelAttemptsPreCompletion.Add(0);
+                levelAttemptsPostCompletion.Add(0);
+                levelCompletion.Add(false);
+            }
+        }
         levelStartTime = Time.realtimeSinceStartup;
     }
 
-    public void AddPiece()
-    {
-        finalPiecesUsed++;
-    }
 
-    public void RemovePiece()
+    public void eventSub(GameAction gameAction)
     {
-        finalPiecesUsed--;
-    }
-
-    public void EndLevel(int score, int starLevel)
-    {
-#if !UNITY_EDITOR
-        // If level is still 0, it was not set meaning a tutorial happened, not a real level
-        if (currLevel != 0)
+        Debug.Log($"GETTING the EVENT");
+        if (gameAction.kind == GameActionKind.Undo || gameAction.kind == GameActionKind.TakeBack)
         {
-            finalScore = score;
-            finalStarLevel = starLevel;
+            int board = gameAction.board;
+            Vector2Int cellNum = gameAction.square;
+            tilePlacements.Remove(new Vector3Int(board, cellNum.x, cellNum.y));
+            finalPiecesUsed--;
+        }
+        else if (gameAction.kind == GameActionKind.PlaceTile)
+        {
+            int board = gameAction.board;
+            Vector2Int cellNum = gameAction.square;
+            Vector3Int fullCell = new Vector3Int(board, cellNum.x, cellNum.y);
+            if (!tilePlacements.TryGetValue(fullCell, out List<TileType?> tilesHistory))
+            {
+                tilesHistory = new List<TileType?>();
+                tilePlacements[fullCell] = tilesHistory;
+            }
+            tilePlacements[fullCell].Add(gameAction.tile);
+            finalPiecesUsed++;
+        }
+        else if (gameAction.kind == GameActionKind.LevelEnd)
+        {
+            LevelSolution currSolution = null;
+            // I'm gonna rewrite this to be dynamic but I'm too tired rn
+            // so we're hardcoding
+            switch (currLevel)
+            {
+                case 1:
+                    currSolution = Solutions.Level1();
+                    break;
+                case 2:
+                    currSolution = Solutions.Level2();
+                    break;
+                case 3:
+                    currSolution = Solutions.Level3();
+                    break;
+                case 4:
+                    currSolution = Solutions.Level4();
+                    break;
+                case 5:
+                    currSolution = Solutions.Level5();
+                    break;
+                case 6:
+                    currSolution = Solutions.Level6();
+                    break;
+                case 7:
+                    currSolution = Solutions.Level7();
+                    break;
+                case 8:
+                    currSolution = Solutions.Level8();
+                    break;
+                case 9:
+                    currSolution = Solutions.Level9();
+                    break;
+                case 10:
+                    currSolution = Solutions.Level10();
+                    break;
+                case 11:
+                    currSolution = Solutions.Level11();
+                    break;
+                case 12:
+                    currSolution = Solutions.Level12();
+                    break;
+                case 13:
+                    currSolution = Solutions.Level13();
+                    break;
+                case 14:
+                    currSolution = Solutions.Level14();
+                    break;
+                case 15:
+                    currSolution = Solutions.Level15();
+                    break;
+                default:
+                    Debug.LogWarning($"TELEMETRY FAILED TO RECONGNIZE THIS LEVEL");
+                    return;
+            }
+
+            float maxSimilarity = 0.0f;
+            foreach (RoadFamily currFamily in currSolution.families)
+            {
+                Dictionary<Vector3Int, List<TileType?>> solutionHolder = new Dictionary<Vector3Int, List<TileType?>>();
+                foreach (AllowedTiles currAllowed in currFamily.squares)
+                {
+                    int tempBoard = currAllowed.at.board;
+                    Vector3Int tempCoords = new Vector3Int(tempBoard, currAllowed.at.square.x, currAllowed.at.square.y);
+                    List<TileType?> tempTiles = new List<TileType?>();
+                    foreach (TileType tileType in currAllowed.tiles)
+                    {
+                        tempTiles.Add(tileType);
+                    }
+
+                    solutionHolder.Add(tempCoords, tempTiles);
+
+                }
+
+                // Amount that is taken away from the starting similarity of 100 to simulate
+                // deviation from the optimal solution
+                float startingSimilarity = 100.0f;
+                float deviationAmount = startingSimilarity / solutionHolder.Count; // Maybe should change this to be total squares across the boards
+                float halfDeviation = deviationAmount / 2.0f;
+
+                foreach (var (cellPos, tiles) in tilePlacements)
+                {
+
+                    if (solutionHolder.TryGetValue(cellPos, out List<TileType?> compareTile))
+                    {
+                        // Cell Pos is correct but what about tile selection
+                        foreach (TileType userPlaced in tiles)
+                        {
+                            if (!compareTile.Contains(userPlaced))
+                            {
+                                startingSimilarity -= halfDeviation;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Neither are correct
+                        startingSimilarity -= deviationAmount;
+                    }
+
+                }
+
+                if (startingSimilarity > maxSimilarity)
+                {
+                    maxSimilarity = startingSimilarity;
+                }
+            }
+
             StartCoroutine(FillOutAnalytics("LevelComplete",
                           sessionID.ToString(),
                           currLevel.ToString(),
                           (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
-                          finalPiecesUsed.ToString(), finalStarLevel.ToString(), finalScore.ToString(),
+                          finalPiecesUsed.ToString(), gameAction.stars.ToString(), gameAction.score.ToString(),
                           levelAttemptsPreCompletion[currLevel - 1].ToString(),
-                          levelAttemptsPostCompletion[currLevel - 1].ToString()));
+                          levelAttemptsPostCompletion[currLevel - 1].ToString(),
+                          maxSimilarity.ToString()));
 
-            // Fine if sent multiple times over, google sheet will replace duplicates with the one with more attempts
-            if (levelCompletion[currLevel - 1])
+            if (currLevel != 0)
             {
-                levelAttemptsPostCompletion[currLevel - 1]++;
-                StartCoroutine(FillOutAnalytics("LevelAttemptsPostCompletion",
-                          sessionID.ToString(),
-                          currLevel.ToString(),
-                          (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
-                          finalPiecesUsed.ToString(), finalStarLevel.ToString(), finalScore.ToString(),
-                          levelAttemptsPreCompletion[currLevel - 1].ToString(),
-                          levelAttemptsPostCompletion[currLevel - 1].ToString()));
-            }
-            else
-            {
-                if (starLevel > 0)
+                // Fine if sent multiple times over, google sheet will replace duplicates with the one with more attempts
+                if (levelCompletion[currLevel - 1])
                 {
-                    levelCompletion[currLevel - 1] = true;
+                    levelAttemptsPostCompletion[currLevel - 1]++;
+                    StartCoroutine(FillOutAnalytics("LevelAttemptsPostCompletion",
+                              sessionID.ToString(),
+                              currLevel.ToString(),
+                              (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
+                              finalPiecesUsed.ToString(), gameAction.stars.ToString(), gameAction.score.ToString(),
+                              levelAttemptsPreCompletion[currLevel - 1].ToString(),
+                              levelAttemptsPostCompletion[currLevel - 1].ToString(),
+                              maxSimilarity.ToString()));
                 }
-                levelAttemptsPreCompletion[currLevel - 1]++;
-                StartCoroutine(FillOutAnalytics("LevelAttemptsPreCompletion",
-                          sessionID.ToString(),
-                          currLevel.ToString(),
-                          (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
-                          finalPiecesUsed.ToString(), finalStarLevel.ToString(), finalScore.ToString(),
-                          levelAttemptsPreCompletion[currLevel - 1].ToString(),
-                          levelAttemptsPostCompletion[currLevel - 1].ToString()));
+                else
+                {
+                    if (gameAction.stars > 0)
+                    {
+                        levelCompletion[currLevel - 1] = true;
+                    }
+                    levelAttemptsPreCompletion[currLevel - 1]++;
+                    StartCoroutine(FillOutAnalytics("LevelAttemptsPreCompletion",
+                              sessionID.ToString(),
+                              currLevel.ToString(),
+                              (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
+                              finalPiecesUsed.ToString(), gameAction.stars.ToString(), gameAction.score.ToString(),
+                              levelAttemptsPreCompletion[currLevel - 1].ToString(),
+                              levelAttemptsPostCompletion[currLevel - 1].ToString(),
+                              maxSimilarity.ToString()));
+                }
             }
+
+            finalPiecesUsed = 0;
+            tilePlacements.Clear();
         }
-#endif
     }
 
 
     private IEnumerator FillOutAnalytics(string formType, string mySession, string finalLevel,
                                          string timeElapsed, string totalPieces, string totalStars, string totalScore,
-                                         string levelAttemptsPre, string levelAttemptsPost)
+                                         string levelAttemptsPre, string levelAttemptsPost, string similarity)
     {
         // Members must be passed in to copy values from start of coroutine so they aren't modified immediately after it's
         // called due to levelStart overwriting their values in the class right after EndLevel is called
@@ -151,6 +309,7 @@ public class TelemetryManager : MonoBehaviour
             formData.Add("entry.1155704640", totalPieces);
             formData.Add("entry.1940427468", totalStars);
             formData.Add("entry.1679653451", totalScore);
+            formData.Add("entry.1315119076", similarity);
         }
         else if (formType.Equals("LevelAttemptsPreCompletion"))
         {
@@ -182,49 +341,4 @@ public class TelemetryManager : MonoBehaviour
         }
 
     }
-
-
-
-    // ONLY USED FOR DOWNLOADABLE BUILDS, NOT WEBGL
-    /*
-    private void Start()
-    {
-        if (!Application.isEditor || (Application.isEditor && generateFilesInEditor))
-        {
-            filePath = Path.Combine(Application.persistentDataPath, "DwindleMetrics.csv");
-
-            fileWriter = new StreamWriter(filePath, true);
-
-            // TODO: See if granularity needed in the way of
-            // checking the amount of times specific pieces are used
-            fileWriter.WriteLine("Level,TimeElapsed,PiecesUsed,StarLevel,HiScore");
-            fileWriter.Flush();
-        }
-    }
-    
-
-    public void LevelStart(int level)
-    {
-        currLevel = level;
-        levelStartTime = Time.timeSinceLevelLoad;
-    }
-
-    public void LogCurrentLevel(int piecesUsed, int starAchieved, int score)
-    {
-        if (fileWriter != null)
-        {
-            fileWriter.WriteLine($"Level{currLevel},{Time.timeSinceLevelLoad - levelStartTime},{piecesUsed},{starAchieved},{score}");
-            fileWriter.Flush();
-        }
-    }
-
-    public void CleanUp()
-    {
-        if (fileWriter != null)
-        {
-            fileWriter.Close();
-        }
-
-    }
-    */
 }

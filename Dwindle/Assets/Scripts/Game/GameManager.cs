@@ -169,7 +169,6 @@ public partial class GameManager : MonoBehaviour
         history.Record(snapshot);
         inventory[t]--;
         board.SetTile(p, t);
-        TelemetryManager.Instance.AddPiece();
         RefreshAll();
         lastPlaced = p; // for the hints: the square whose round this is
         StartCoroutine(ResolveRound());
@@ -317,7 +316,6 @@ public partial class GameManager : MonoBehaviour
         board.StopRecording(); // nothing moves on a take-back
         board.TakeBackTile(p);
         inventory[t]++;
-        TelemetryManager.Instance.RemovePiece();
         UpdateBlocked(); // a tile in an object's way may have been the one taken back
         UpdateStuck();
         RefreshAll();
@@ -352,8 +350,17 @@ public partial class GameManager : MonoBehaviour
         else StartCoroutine(ShowEndMenuAfterDelay());
         int stars = Stars();
         bool purple = SaveResult(stars); // this session's best for the level
-        Report(new GameAction { kind = GameActionKind.LevelEnd, score = Score, stars = stars, purple = purple, hintStage = hints.Stage,
-            tilesUsed = history.TilesUsed, delivered = Delivered, reason = reason }); // for analytics
+        Report(new GameAction
+        {
+            kind = GameActionKind.LevelEnd,
+            score = Score,
+            stars = stars,
+            purple = purple,
+            hintStage = hints.Stage,
+            tilesUsed = history.TilesUsed,
+            delivered = Delivered,
+            reason = reason
+        }); // for analytics
     }
 
     IEnumerator ShowEndMenuAfterDelay()
@@ -431,7 +438,6 @@ public partial class GameManager : MonoBehaviour
     {
         if (levelReported) return;
         levelReported = true;
-        TelemetryManager.Instance.EndLevel(Score, Stars());
     }
     public void OpenMenu() => ShowMenu(levelOver);
     public void Resume() => menu.HideMenu();
