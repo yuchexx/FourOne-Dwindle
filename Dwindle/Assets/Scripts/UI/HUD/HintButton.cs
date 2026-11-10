@@ -13,7 +13,7 @@ public class HintButton : MonoBehaviour
     [Tooltip("Optional: a box behind the stage 1 line, shown and hidden with it")]
     public GameObject tilesBox;
     public GameObject noPurpleLabel; // shown once the answer has been used
-    [Tooltip("Optional: the note above Hide / Show, there from stage 2")]
+    [Tooltip("Optional: the note above Hide / Show, there from stage 1")]
     public HintNote stageNote;
     [Tooltip("Asks before stage 3; its buttons call ShowAnswer and CloseConfirm")]
     public GameObject confirmPanel;
@@ -70,7 +70,7 @@ public class HintButton : MonoBehaviour
     void Refresh()
     {
         int stage = game.HintStage;
-        bool reached = stage == 2 && shownStage < 2; // stage 2 just came: its menu opens once, like a hover
+        bool reached = (stage == 1 || stage == 2) && stage > shownStage; // stage 1 or 2 just came: its menu opens once, like a hover
         shownStage = stage;
         bool hidden = game.HintHidden;
         var palette = UIPalette.Current;
@@ -85,7 +85,7 @@ public class HintButton : MonoBehaviour
         if (stageNote != null)
         {
             stageNote.Show(stage, game.board);
-            stageNote.gameObject.SetActive(stage >= 2 && !hidden);
+            stageNote.gameObject.SetActive(stage >= 1 && !hidden); // from stage 1: its header, and where the tile count is
         }
         if (hideLabel != null) hideLabel.text = hidden ? showText : hideText;
         if (hoverPanel != null)

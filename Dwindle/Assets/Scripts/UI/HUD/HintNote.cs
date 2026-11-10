@@ -3,7 +3,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// the note above Hide / Show: what stage 2 and 3 draw on the board, each line led by small copies of its marks
+// the note above Hide / Show: a header, then where stage 1's tile count is, or what stage 2 and 3 draw on the board
+// (each line led by small copies of its marks)
 public class HintNote : MonoBehaviour
 {
     [Tooltip("Optional: the labels' font (empty: TextMeshPro's default)")]
@@ -13,6 +14,12 @@ public class HintNote : MonoBehaviour
     [Min(1f)] public float frameWidth = 3f;
     public string orderText = "order", junctionText = "junctions";
     public string pressText = "Each press: next step", doneText = "placed correct";
+    [Tooltip("The note's first line; {s} is the stage, {total} the number of stages, {name} the stage's name")]
+    public string headerText = "Hint {s}/{total} · {name}";
+    public string[] stageNames = { "Tiles", "Order", "Answer" };
+    public float headerSize = 20f;
+    [Tooltip("Stage 1's line (its tile count is in the supply bar)")]
+    public string tilesText = "Below the supply dock";
 
     readonly List<Graphic> pulsing = new();
     int shownStage = -1;
@@ -39,7 +46,16 @@ public class HintNote : MonoBehaviour
         pulsing.Clear();
         UIBuilder.Clear(transform);
         var p = UIPalette.Current;
-        if (stage == 2)
+        if (stage >= 1) Header(stage, p.text);
+        if (stage == 1)
+        {
+            // like the tile count's box under the supply: the hint purple behind white text that pulses
+            var row = Row(tilesText);
+            row.GetComponentInChildren<TextMeshProUGUI>().color = p.text;
+            row.gameObject.AddComponent<Image>().color = p.hint;
+            row.GetComponent<HorizontalLayoutGroup>().padding = new RectOffset(8, 8, 2, 2);
+        }
+        else if (stage == 2)
         {
             var order = Row(orderText);
             Square(order, p.hint, true);
@@ -62,6 +78,14 @@ public class HintNote : MonoBehaviour
             c.a = k;
             g.color = c;
         }
+    }
+
+    // the first line, e.g. "Hint 2/3 · Order": brighter and bold, doesn't pulse
+    void Header(int stage, Color color)
+    {
+        string name = stage - 1 < stageNames.Length ? stageNames[stage - 1] : "";
+        string s = headerText.Replace("{s}", stage.ToString()).Replace("{total}", Hints.Stages.ToString()).Replace("{name}", name);
+        Text(transform, s, headerSize, color).fontStyle = FontStyles.Bold;
     }
 
     // a line: its icons (added after) then the label
