@@ -142,12 +142,111 @@ public class TelemetryManager : MonoBehaviour
         }
         else if (gameAction.kind == GameActionKind.LevelEnd)
         {
-            for (int i = 0; i < tilePlacements.Count; i++)
+            LevelSolution currSolution = null;
+            // I'm gonna rewrite this to be dynamic but I'm too tired rn
+            // so we're hardcoding
+            switch (currLevel)
             {
-                // TODO Match placements to optimal answer
+                case 1:
+                    currSolution = Solutions.Level1();
+                    break;
+                case 2:
+                    currSolution = Solutions.Level2();
+                    break;
+                case 3:
+                    currSolution = Solutions.Level3();
+                    break;
+                case 4:
+                    currSolution = Solutions.Level4();
+                    break;
+                case 5:
+                    currSolution = Solutions.Level5();
+                    break;
+                case 6:
+                    currSolution = Solutions.Level6();
+                    break;
+                case 7:
+                    currSolution = Solutions.Level7();
+                    break;
+                case 8:
+                    currSolution = Solutions.Level8();
+                    break;
+                case 9:
+                    currSolution = Solutions.Level9();
+                    break;
+                case 10:
+                    currSolution = Solutions.Level10();
+                    break;
+                case 11:
+                    currSolution = Solutions.Level11();
+                    break;
+                case 12:
+                    currSolution = Solutions.Level12();
+                    break;
+                case 13:
+                    currSolution = Solutions.Level13();
+                    break;
+                case 14:
+                    currSolution = Solutions.Level14();
+                    break;
+                case 15:
+                    currSolution = Solutions.Level15();
+                    break;
             }
 
-            // TODO Add weighting for hints used and proper pieces removed
+            float maxSimilarity = 0.0f;
+            foreach (RoadFamily currFamily in currSolution.families)
+            {
+                Dictionary<Vector3Int, List<TileType?>> solutionHolder = new Dictionary<Vector3Int, List<TileType?>>();
+                foreach (AllowedTiles currAllowed in currFamily.squares)
+                {
+                    int tempBoard = currAllowed.at.board;
+                    Vector3Int tempCoords = new Vector3Int(tempBoard, currAllowed.at.square.x, currAllowed.at.square.y);
+                    List<TileType?> tempTiles = new List<TileType?>();
+                    foreach (TileType tileType in currAllowed.tiles)
+                    {
+                        tempTiles.Add(tileType);
+                    }
+
+                    solutionHolder.Add(tempCoords, tempTiles);
+
+                }
+                // Amount that is taken away from the starting similarity of 100 to simulate
+                // deviation from the optimal solution
+                float startingSimilarity = 100.0f;
+                float deviationAmount = startingSimilarity / solutionHolder.Count; // Maybe should change this to be total squares across the boards
+                float halfDeviation = deviationAmount / 2.0f;
+
+                foreach (var (cellPos, tiles) in tilePlacements)
+                {
+                    // TODO Match placements to optimal answer
+
+                    if (solutionHolder.TryGetValue(cellPos, out List<TileType?> compareTile))
+                    {
+                        // Cell Pos is correct but what about tile selection
+                        foreach (TileType userPlaced in tiles)
+                        {
+                            if (!compareTile.Contains(userPlaced))
+                            {
+                                startingSimilarity -= halfDeviation;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Neither are correct
+                        startingSimilarity -= deviationAmount;
+                    }
+
+                }
+
+                if (startingSimilarity > maxSimilarity)
+                {
+                    maxSimilarity = startingSimilarity;
+                }
+            }
+            // TODO Send max similarity as analytic
         }
     }
 
