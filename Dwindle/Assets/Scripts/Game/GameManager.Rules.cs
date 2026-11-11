@@ -11,6 +11,7 @@ public partial class GameManager
     IEnumerator ResolveRound()
     {
         busy = true;
+        HintsChanged?.Invoke(); // stage 3: the tile just placed shows how it stands from the start of the move
         var deliveredNow = new List<MovingObject>();
         foreach (var o in objects)
         {

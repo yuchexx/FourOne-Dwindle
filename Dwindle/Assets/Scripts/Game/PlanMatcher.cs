@@ -28,6 +28,7 @@ public struct ArrowRecord
     public Vector2Int? square;
     public string door;
     public Dir way;
+    public Vector2Int? from; // a door's: the square it went in from (where a wrong way out is marked)
 }
 
 // one tile of a hint's plan, in the order it should go down
@@ -222,7 +223,7 @@ public static class PlanMatcher
         }));
 
     // the first arrow the object picked that its road doesn't have (as ArrowsFit reads them): the junction's square, or
-    // for a door the last square of its road it went through. null when they all fit
+    // for a door the square it went in from (else the last square of its road it went through). null when they all fit
     static Vector2Int? WrongTurn(LevelData l, Road road, List<ArrowRecord> picked, PlayerState st)
     {
         int p = 0;
@@ -233,6 +234,7 @@ public static class PlanMatcher
             {
                 if (a.square != null) return a.square;
                 var onRoad = new HashSet<Vector2Int>(road.squares.Select(q => G(l, q)));
+                if (a.from is Vector2Int f && onRoad.Contains(f)) return f; // stays put as the object walks on
                 if (st.passed.TryGetValue(road.objectName, out var path))
                     for (int i = path.Count - 1; i >= 0; i--) if (onRoad.Contains(path[i])) return path[i];
                 return null;

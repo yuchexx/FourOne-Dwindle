@@ -135,7 +135,8 @@ public partial class GameManager
     void RecordArrow(MovingObject o, string door)
     {
         if (!arrowsSoFar.TryGetValue(o.spec.name, out var list)) arrowsSoFar[o.spec.name] = list = new List<ArrowRecord>();
-        list.Add(new ArrowRecord { square = door == null ? o.pos : (Vector2Int?)null, door = door, way = o.heading });
+        list.Add(new ArrowRecord { square = door == null ? o.pos : (Vector2Int?)null, door = door, way = o.heading,
+                                   from = door == null ? (Vector2Int?)null : o.pos }); // o.pos: still the square it went in from
     }
 
     // HandleDeliveries: who arrived on this placement, on which square, with which tiles down (before any breaks)
