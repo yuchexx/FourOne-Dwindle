@@ -17,6 +17,11 @@ public class EndWindow : MonoBehaviour
     public Button nextButton;
     [Tooltip("Space between the buttons")]
     public float buttonSpacing = 24f;
+    [Header("The HUD's score corner, kept showing above this window with its history open")]
+    [Tooltip("Optional: a Canvas on the score corner (TopRight), Override Sorting off; lifted above while this is open")]
+    public Canvas keepOnTop;
+    public HudView hud; // opens the score history while this is open
+    bool raised; // only puts back what it lifted
 
     public void Show(string titleText, bool[] earned, bool purple, string[] goals, string scoreText, string noteText,
                      bool canUndo, bool canNext)
@@ -33,9 +38,19 @@ public class EndWindow : MonoBehaviour
         nextButton.gameObject.SetActive(canNext);
         panel.SetActive(true);
         LayOutButtons();
+        if (keepOnTop != null) { keepOnTop.overrideSorting = true; keepOnTop.sortingOrder = 10; }
+        if (hud != null) hud.HoldScoreHistory(true);
+        raised = true;
     }
 
-    public void Close() => panel.SetActive(false);
+    public void Close()
+    {
+        panel.SetActive(false);
+        if (!raised) return;
+        raised = false;
+        if (keepOnTop != null) keepOnTop.overrideSorting = false;
+        if (hud != null) hud.HoldScoreHistory(false);
+    }
 
     // the shown buttons side by side, centered; Home stays where it's placed
     void LayOutButtons()
