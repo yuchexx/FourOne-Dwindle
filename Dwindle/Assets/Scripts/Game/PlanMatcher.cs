@@ -469,15 +469,36 @@ public static class PlanMatcher
         return res;
     }
 
-    // with the delivery's number (the same as its badges)
+    // with the delivery's number (the same as its badges): the squares whose tile, placed last, delivers the group, where
+    // the roads don't all go the same way (they join, split or cross there: a T, + or bridge). a stretch they share,
+    // entered and left by the same sides, isn't framed; if every such square is a shared stretch, the first one is
     public static List<(Vector2Int square, int number)> Junctions(LevelData l, int family, int order)
     {
-        var deliveries = l.solution.families[family].orders[order].deliveries;
+        var fam = l.solution.families[family];
+        var deliveries = fam.orders[order].deliveries;
         var res = new List<(Vector2Int, int)>();
         for (int k = 0; k < deliveries.Length; k++)
-            if (deliveries[k].objects.Length >= 2)
-                foreach (var c in deliveries[k].completedBy)
-                    if (!res.Any(r => r.Item1 == G(l, c.at))) res.Add((G(l, c.at), k + 1));
+        {
+            var d = deliveries[k];
+            if (d.objects.Length < 2) continue;
+            var passes = d.objects.SelectMany(o => Passes(l, fam.roads.First(r => r.objectName == o))).ToList();
+            var squares = d.completedBy.Select(c => G(l, c.at)).Distinct().ToList();
+            var meets = squares.Where(s => passes.Where(p => p.square == s).Select(p => (p.entry, p.exit)).Distinct().Count() > 1).ToList();
+            if (meets.Count == 0) meets = squares.Take(1).ToList();
+            foreach (var m in meets) if (!res.Any(r => r.Item1 == m)) res.Add((m, k + 1));
+        }
+        return res;
+    }
+
+    // each square a road goes through, with the sides it comes in and goes out by (null across a door)
+    static List<(Vector2Int square, Dir? entry, Dir? exit)> Passes(LevelData l, Road road)
+    {
+        var o = l.objects.First(x => x.name == road.objectName);
+        var sq = road.squares.Select(s => G(l, s)).ToList();
+        Dir? Side(Vector2Int from, Vector2Int to) { foreach (var dir in DirUtil.All) if (from + DirUtil.Offset(dir) == to) return dir; return null; }
+        var res = new List<(Vector2Int, Dir?, Dir?)>();
+        for (int i = 0; i < sq.Count; i++)
+            res.Add((sq[i], Side(sq[i], i == 0 ? o.start : sq[i - 1]), Side(sq[i], i == sq.Count - 1 ? o.dest : sq[i + 1])));
         return res;
     }
 
