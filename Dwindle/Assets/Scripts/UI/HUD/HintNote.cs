@@ -92,7 +92,7 @@ public class HintNote : MonoBehaviour
     RectTransform Row(string label)
     {
         var row = UIBuilder.NewRow("Line", transform, 6f);
-        var text = Text(row, label, fontSize, UIPalette.Current.mutedText);
+        var text = Text(row, label, fontSize, UIPalette.Current.text);
         text.gameObject.AddComponent<LayoutElement>().minHeight = iconSize;
         pulsing.Add(text);
         return row;
