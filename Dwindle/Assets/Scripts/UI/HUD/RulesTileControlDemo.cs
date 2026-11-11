@@ -7,6 +7,9 @@ public sealed class RulesTileControlDemo : MonoBehaviour
     public TMP_FontAsset font;
 
     const float Duration = 21f;
+    const float CellSize = 90f;
+    static readonly Vector2 StartPoint = new(-45f - CellSize * RulesDemoUI.OutsideOffset, 130);
+    static readonly Vector2 GoalPoint = new(225f + CellSize * RulesDemoUI.OutsideOffset, 130);
     static readonly Vector2 SupplyPoint = new(-330, 130);
     static readonly Vector2 PlacedPoint = new(90, 40);
     static readonly Vector2 MovedPoint = new(90, 130);
@@ -34,54 +37,58 @@ public sealed class RulesTileControlDemo : MonoBehaviour
     void Awake()
     {
         var root = RulesDemoUI.Group("TileControlDemonstration", transform, Vector2.zero, new Vector2(950, 560));
-        RulesDemoUI.Box("SupplyPanel", root, new Vector2(-330, 84), new Vector2(170, 248), RulesDemoUI.Panel);
-        RulesDemoUI.Label("SupplyHeading", root, new Vector2(-330, 225), new Vector2(180, 32), "SUPPLY", 22, font);
-        RulesDemoUI.Label("BoardHeading", root, new Vector2(110, 225), new Vector2(360, 32), "BOARD", 22, font);
+        RulesDemoUI.Label("PlacementSettings", root, new Vector2(0, 242), new Vector2(950, 32),
+            "Choose Click, Drag, or Both in Settings.", 22, font);
+        phaseLabel = RulesDemoUI.Label("CurrentPhase", root, new Vector2(0, 195), new Vector2(900, 38),
+            "PLACE", 27, font);
+        phaseLabel.color = RulesDemoUI.Gold;
+        caption = RulesDemoUI.Label("PhaseExplanation", root, new Vector2(0, 158), new Vector2(940, 34),
+            "Drag a tile from the supply to place it.", 22, font);
+
+        var scene = RulesDemoUI.Group("PlacementScene", root, new Vector2(0, -110), new Vector2(950, 360));
+        RulesDemoUI.Box("SupplyPanel", scene, new Vector2(-330, 84), new Vector2(170, 248), RulesDemoUI.Panel);
+        RulesDemoUI.Label("SupplyHeading", scene, new Vector2(-330, 225), new Vector2(180, 32), "SUPPLY", 22, font);
+        RulesDemoUI.Label("BoardHeading", scene, new Vector2(110, 225), new Vector2(360, 32), "BOARD", 22, font);
 
         for (int row = 0; row < 2; row++)
         {
             for (int column = 0; column < 3; column++)
             {
-                RulesDemoUI.Box("EmptyCell", root, new Vector2(column * 90, 40 + row * 90),
+                RulesDemoUI.Box("EmptyCell", scene, new Vector2(column * 90, 40 + row * 90),
                     new Vector2(90, 90), new Color(.16f, .17f, .21f));
             }
         }
 
-        supplyTile = RulesDemoUI.Tile("SupplyStraightTile", root, SupplyPoint, TileType.StraightH, 88);
-        RulesDemoUI.Tile("SupplyCornerTile", root, new Vector2(-330, 40), TileType.CornerNE, 88);
-        firstPathTile = RulesDemoUI.Tile("FirstPathTile", root, new Vector2(0, 130), TileType.StraightH, 88);
-        lastPathTile = RulesDemoUI.Tile("LastPathTile", root, new Vector2(180, 130), TileType.StraightH, 88);
-        RulesDemoUI.Box("FirstConnection", root, new Vector2(45, 130), new Vector2(2, 14), RulesDemoUI.Path);
-        RulesDemoUI.Box("SecondConnection", root, new Vector2(135, 130), new Vector2(2, 14), RulesDemoUI.Path);
-        RulesDemoUI.Box("EntryConnection", root, new Vector2(-57, 130), new Vector2(26, 14), RulesDemoUI.Path);
-        RulesDemoUI.Box("GoalConnection", root, new Vector2(238, 130), new Vector2(28, 14), RulesDemoUI.Path);
-        returnedTile = RulesDemoUI.Tile("UnusedReturnTile", root, ReturnPoint, TileType.StraightH, 88);
-        tile = RulesDemoUI.Tile("EditableTile", root, SupplyPoint, TileType.StraightH, 88);
-        RulesDemoUI.Ring("MatchingRing", root, new Vector2(270, 130), RulesDemoUI.Red, 38);
+        RulesDemoUI.EndLine("Start line", scene, new Vector2(-45, 130), StartPoint,
+            RulesDemoUI.Red, CellSize, RulesDemoUI.ObjectRatio);
+        RulesDemoUI.EndLine("Goal line", scene, new Vector2(225, 130), GoalPoint,
+            RulesDemoUI.Red, CellSize, RulesDemoUI.RingRatio);
+        supplyTile = RulesDemoUI.Tile("SupplyStraightTile", scene, SupplyPoint, TileType.StraightH, 88);
+        RulesDemoUI.Tile("SupplyCornerTile", scene, new Vector2(-330, 40), TileType.CornerNE, 88);
+        firstPathTile = RulesDemoUI.Tile("FirstPathTile", scene, new Vector2(0, 130), TileType.StraightH, 88);
+        lastPathTile = RulesDemoUI.Tile("LastPathTile", scene, new Vector2(180, 130), TileType.StraightH, 88);
+        RulesDemoUI.Box("FirstConnection", scene, new Vector2(45, 130), new Vector2(2, 14), RulesDemoUI.Path);
+        RulesDemoUI.Box("SecondConnection", scene, new Vector2(135, 130), new Vector2(2, 14), RulesDemoUI.Path);
+        returnedTile = RulesDemoUI.Tile("UnusedReturnTile", scene, ReturnPoint, TileType.StraightH, 88);
+        tile = RulesDemoUI.Tile("EditableTile", scene, SupplyPoint, TileType.StraightH, 88);
+        RulesDemoUI.Ring("MatchingRing", scene, GoalPoint, RulesDemoUI.Red, CellSize * RulesDemoUI.RingRatio);
 
-        editableOutline = RulesDemoUI.Outline("UnusedHighlight", root, PlacedPoint,
+        editableOutline = RulesDemoUI.Outline("UnusedHighlight", scene, PlacedPoint,
             new Vector2(88, 88), RulesDemoUI.Gold, 3);
-        lockedOutline = RulesDemoUI.Outline("LockedHighlight", root, MovedPoint,
+        lockedOutline = RulesDemoUI.Outline("LockedHighlight", scene, MovedPoint,
             new Vector2(88, 88), RulesDemoUI.Muted, 3);
-        lockMark = RulesDemoUI.Lock("UsedTileLock", root, MovedPoint + new Vector2(25, -24), 23);
-        stateLabel = RulesDemoUI.Label("TileState", root, new Vector2(110, -20), new Vector2(600, 30),
+        lockMark = RulesDemoUI.Lock("UsedTileLock", scene, MovedPoint + new Vector2(25, -24), 23);
+        stateLabel = RulesDemoUI.Label("TileState", scene, new Vector2(110, -20), new Vector2(600, 30),
             "UNUSED - still editable", 20, font);
 
         BuildClickExample(root);
-        actor = RulesDemoUI.Actor("MovingObject", root, new Vector2(-70, 130), RulesDemoUI.Red, 30);
-        cursor = RulesDemoUI.Cursor("TileControlCursor", root, SupplyPoint);
-        phaseLabel = RulesDemoUI.Label("CurrentPhase", root, new Vector2(0, -185), new Vector2(900, 38),
-            "PLACE", 27, font);
-        phaseLabel.color = RulesDemoUI.Gold;
-        caption = RulesDemoUI.Label("PhaseExplanation", root, new Vector2(0, -226), new Vector2(940, 40),
-            "Drag a tile from the supply to place it.", 22, font);
-        RulesDemoUI.Label("PlacementSettings", root, new Vector2(0, -292), new Vector2(950, 40),
-            "Choose Click, Drag, or Both in Settings.", 20, font);
+        actor = RulesDemoUI.Actor("MovingObject", scene, StartPoint, RulesDemoUI.Red, CellSize * RulesDemoUI.ObjectRatio);
+        cursor = RulesDemoUI.Cursor("TileControlCursor", scene, SupplyPoint);
     }
 
     void BuildClickExample(RectTransform root)
     {
-        var example = RulesDemoUI.Group("ClickPlacementExample", root, new Vector2(0, -85), new Vector2(600, 72));
+        var example = RulesDemoUI.Group("ClickPlacementExample", root, new Vector2(0, -218), new Vector2(600, 72));
         clickTile = RulesDemoUI.Tile("ClickSupplyTile", example, new Vector2(-125, 0), TileType.StraightH, 42);
         RulesDemoUI.Box("ClickEmptyCell", example, new Vector2(125, 0), new Vector2(46, 46), new Color(.16f, .17f, .21f));
         clickPlaced = RulesDemoUI.Tile("ClickPlacedTile", example, new Vector2(125, 0), TileType.StraightH, 42);
@@ -90,7 +97,7 @@ public sealed class RulesTileControlDemo : MonoBehaviour
         RulesDemoUI.Label("ClickSequence", example, Vector2.zero, new Vector2(190, 30), "click  >  click", 18, font);
         clickCursor = RulesDemoUI.Cursor("ClickExampleCursor", example, new Vector2(-125, 0));
         clickCursor.localScale = Vector3.one * .65f;
-        RulesDemoUI.Label("ClickExplanation", root, new Vector2(0, -139), new Vector2(950, 30),
+        RulesDemoUI.Label("ClickExplanation", root, new Vector2(0, -278), new Vector2(950, 30),
             "Or click a tile, then click where to place it.", 20, font);
     }
 
@@ -126,7 +133,7 @@ public sealed class RulesTileControlDemo : MonoBehaviour
             : Travel(PlacedPoint, MovedPoint, time, 5.1f, 6.7f);
         editableOutline.anchoredPosition = tile.anchoredPosition;
         actor.gameObject.SetActive(time >= 12f && time < 16f);
-        actor.anchoredPosition = Travel(new Vector2(-70, 130), new Vector2(270, 130), time, 12.5f, 15.7f);
+        actor.anchoredPosition = Travel(StartPoint, GoalPoint, time, 12.5f, 15.7f);
 
         if (time < 4f)
         {

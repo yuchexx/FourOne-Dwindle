@@ -5,6 +5,12 @@ using UnityEngine.UI;
 // Shared drawing parts for the Rules demonstrations. They never receive gameplay input.
 public static class RulesDemoUI
 {
+    // Match BoardView's object, destination and direction-choice proportions.
+    public const float ObjectRatio = .55f;
+    public const float RingRatio = .62f;
+    public const float ChoiceRatio = .25f;
+    public const float ChoiceOffset = .39f;
+    public const float OutsideOffset = .446f;
     public static readonly Color Gold = new Color(.96f, .77f, .33f);
     public static readonly Color Red = new Color(1f, .29f, .32f);
     public static readonly Color Blue = new Color(.31f, .49f, 1f);
@@ -82,7 +88,7 @@ public static class RulesDemoUI
         var body = actor.gameObject.AddComponent<CircleGraphic>();
         body.color = color;
         body.raycastTarget = false;
-        var arrow = Group("Heading", actor, Vector2.zero, new Vector2(size * .34f, size * .42f));
+        var arrow = Group("Heading", actor, Vector2.zero, Vector2.one * size * .38f);
         arrow.gameObject.AddComponent<CanvasRenderer>();
         var triangle = arrow.gameObject.AddComponent<TriangleGraphic>();
         triangle.color = Color.white;
@@ -105,6 +111,23 @@ public static class RulesDemoUI
         ring.thickness = .22f;
         ring.raycastTarget = false;
         return ring;
+    }
+
+    public static void EndLine(string name, Transform parent, Vector2 edge, Vector2 endpoint,
+        Color color, float cellSize, float endpointRatio)
+    {
+        Vector2 direction = (endpoint - edge).normalized;
+        float length = Vector2.Distance(edge, endpoint) - cellSize * endpointRatio * .92f * .5f;
+        float dot = cellSize * .08f;
+        if (length < dot) return;
+        int count = Mathf.Max(1, Mathf.CeilToInt(length / (cellSize * .14f)));
+        var line = Group(name, parent, Vector2.zero, Vector2.zero);
+        color.a *= .75f;
+        for (int i = 0; i < count; i++)
+        {
+            float offset = count == 1 ? length / 2f : Mathf.Lerp(dot / 2f, length - dot / 2f, i / (float)(count - 1));
+            Box("Dot", line, edge + direction * offset, Vector2.one * dot, color);
+        }
     }
 
     public static RectTransform Outline(string name, Transform parent, Vector2 position, Vector2 size,
