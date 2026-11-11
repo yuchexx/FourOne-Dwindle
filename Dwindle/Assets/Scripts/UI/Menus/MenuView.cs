@@ -36,7 +36,9 @@ public class MenuView : MonoBehaviour
         public int pageCount = 1;
         public GameObject subTabs;
         public float selectedWidth;
+        public bool greenSelection;
         [System.NonSerialized] public float normalWidth;
+        [System.NonSerialized] public Vector2 normalSubTabsPosition;
     }
 
     int currentRulesPage;
@@ -47,6 +49,8 @@ public class MenuView : MonoBehaviour
         {
             if (tab.selectedWidth > 0f)
                 tab.normalWidth = ((RectTransform)tab.button.transform).sizeDelta.x;
+            if (tab.subTabs != null)
+                tab.normalSubTabsPosition = ((RectTransform)tab.subTabs.transform).anchoredPosition;
             tab.button.onClick.AddListener(() => ShowRulesPage(tab.firstPage));
         }
     }
@@ -145,14 +149,23 @@ public class MenuView : MonoBehaviour
         foreach (var tab in rulesTabs)
         {
             bool selected = currentRulesPage >= tab.firstPage && currentRulesPage < tab.firstPage + tab.pageCount;
-            tab.button.targetGraphic.color = selected ? Color.Lerp(palette.button, palette.accent, .45f) : palette.button;
+            Color selectedColor = tab.greenSelection ? RulesDemoUI.LightGreen : Color.Lerp(palette.button, palette.accent, .45f);
+            tab.button.targetGraphic.color = selected ? selectedColor : palette.button;
+            if (tab.greenSelection)
+                tab.button.GetComponentInChildren<TMP_Text>(true).color = selected ? palette.background : palette.text;
             if (tab.selectedWidth > 0f)
             {
                 var rect = (RectTransform)tab.button.transform;
                 rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, selected ? tab.selectedWidth : tab.normalWidth);
             }
             if (tab.subTabs != null)
+            {
+                // Keep all Special Routes mini-tabs at the same height.
+                var subTabsRect = (RectTransform)tab.subTabs.transform;
+                subTabsRect.anchoredPosition = tab.normalSubTabsPosition
+                    + new Vector2(0, -12f);
                 tab.subTabs.SetActive(selected);
+            }
         }
     }
 
