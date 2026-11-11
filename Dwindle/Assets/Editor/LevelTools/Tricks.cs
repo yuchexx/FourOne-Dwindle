@@ -47,6 +47,12 @@ static class Tricks
         name = "Shared tiles", uses = (l, p) => SharesTiles(p), forbid = (s, l) => s.noSharing = true,
     };
 
+    // three or more arriving together (the way out of a pairs trap); without it, groups of two at most
+    public static readonly LevelTrick BigGroup = new LevelTrick
+    {
+        name = "Big group", uses = (l, p) => p.events.Any(e => e.Count >= 3), forbid = (s, l) => s.filter = x => x.events.All(e => e.Count <= 2),
+    };
+
     // the solutions' trick list, in its order
     public static readonly LevelTrick[] InSolutions = { Together, Detour, BuildAhead, EarnedPlus, Bridge };
 

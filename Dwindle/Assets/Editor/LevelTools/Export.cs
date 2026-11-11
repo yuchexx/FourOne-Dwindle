@@ -26,9 +26,12 @@ static class Export
         bool bridgeToFinish = bridge && ToFinish(Tricks.Bridge);
         bool aheadToFinish = p.buildsAhead && ToFinish(Tricks.BuildAhead);
         bool earnedToFinish = p.earnedCrossUsed && ToFinish(Tricks.EarnedPlus);
+        // pairs trap: pairs can't deliver everyone (the tip at 0 or 1 star), or they can but below the target (the tip at 2)
+        bool pairsToFinish = p.pairTrap && ToFinish(Tricks.BigGroup);
+        bool pairsForScore = p.pairTrap && !pairsToFinish && ForTarget(Tricks.BigGroup);
 
         string finish =
-            p.pairTrap && togetherToFinish ? Tips.Pairs
+            pairsToFinish ? Tips.Pairs
             : bridgeToFinish && detourToFinish ? Tips.BridgeAndDetour
             : detourToFinish ? Tips.DetourToFinish
             : bridgeToFinish ? Tips.Bridge
@@ -38,7 +41,7 @@ static class Export
             : null;
 
         string best =
-            p.pairTrap && !togetherToFinish ? Tips.Pairs
+            pairsForScore ? Tips.Pairs
             : p.detour && !detourToFinish && ForTarget(Tricks.Detour) ? Tips.DetourForScore
             : two && !aheadToFinish && ForTarget(Tricks.DoubleBuildAhead) ? Tips.TwoRoutes
             : p.buildsAhead && !aheadToFinish && ForTarget(Tricks.BuildAhead) ? Tips.OneRoute

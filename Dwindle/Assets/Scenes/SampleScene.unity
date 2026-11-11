@@ -17807,7 +17807,7 @@ MonoBehaviour:
   showParts: 1
   headingTemplate: {fileID: 1623308338}
   headingSpace: 40
-  continuedText: 
+  continuedText: Challenge
   tutorialCardColor: {r: 0.2509804, g: 0.23137255, b: 0.5411765, a: 1}
   frameWidth: 3
   frameColor: {r: 0.2509804, g: 0.23137255, b: 0.5411765, a: 1}
