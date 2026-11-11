@@ -19,6 +19,7 @@ public struct DeliveryRecord
     public string[] objects;
     public Vector2Int at;                // the square placed that delivered them
     public HashSet<Vector2Int> occupied; // the squares with a tile at that moment (before the delivery broke any)
+    public bool happened;                // played in the game (its breaks are known), not just foreseen by the hints
 }
 
 // an arrow the player picked: at a junction (square) or coming out of a door (door's letter)
@@ -40,6 +41,53 @@ public struct PlanStep
     public bool completes;  // placing it should deliver that delivery's objects
 }
 
+// objects walking their roads in a best plan as far as the tiles go: how the hints (and their tests) picture moving.
+// each object still on its way starts where the squares it has gone through leave it; its moves go into st.passed
+public class RoadWalker
+{
+    readonly PlayerState st;
+    readonly Dictionary<string, List<Vector2Int>> roads;
+    readonly Dictionary<string, int> reached = new Dictionary<string, int>(); // how many of its road's squares it has gone through
+
+    public RoadWalker(LevelData l, int family, PlayerState st)
+    {
+        this.st = st;
+        roads = l.solution.families[family].roads.ToDictionary(r => r.objectName, r => r.squares.Select(q => l.boards[q.board].origin + q.square).ToList());
+        var delivered = new HashSet<string>(st.deliveries.SelectMany(d => d.objects));
+        foreach (var kv in roads.Where(kv => !delivered.Contains(kv.Key)))
+        {
+            int p = 0;
+            if (st.passed.TryGetValue(kv.Key, out var path))
+                foreach (var sq in path) if (p < kv.Value.Count && kv.Value[p] == sq) p++;
+            reached[kv.Key] = p;
+        }
+    }
+
+    public IReadOnlyList<Vector2Int> Road(string objectName) => roads[objectName];
+    public List<string> OnTheWay => reached.Keys.ToList();
+
+    // one object on as far as its road has tiles (onEnter: each square it goes into, and its place on the road); true
+    // once it reaches its ring
+    public bool Move(string objectName, System.Action<Vector2Int, int> onEnter = null)
+    {
+        var road = roads[objectName];
+        int p = reached[objectName];
+        if (!st.passed.TryGetValue(objectName, out var path)) st.passed[objectName] = path = new List<Vector2Int>();
+        for (; p < road.Count && st.tiles.ContainsKey(road[p]); p++)
+        {
+            path.Add(road[p]);
+            onEnter?.Invoke(road[p], p);
+        }
+        reached[objectName] = p;
+        if (p < road.Count) return false;
+        reached.Remove(objectName);
+        return true;
+    }
+
+    // everyone on the way moves on; the ones that reach their rings (together, if more than one)
+    public List<string> MoveAll() => OnTheWay.Where(n => Move(n)).ToList();
+}
+
 // which best plans (a family and one of its delivery orders) the player's board still fits, and what's left to do
 // on one. a plan fits when every tile on the board is one it allows there, every arrow picked is its arrow, and the
 // deliveries so far are the start of its order, each completed on one of its squares after its "before" tiles
@@ -48,6 +96,17 @@ public static class PlanMatcher
     static Vector2Int G(LevelData l, Square s) => l.boards[s.board].origin + s.square;
 
     public static bool Fits(LevelData l, int family, int order, PlayerState st)
+    {
+        if (!FitsSoFar(l, family, order, st)) return false;
+        var deliveries = l.solution.families[family].orders[order].deliveries;
+        for (int k = st.deliveries.Count; k < deliveries.Length; k++)
+            if (MeetingMissed(l, deliveries[k], st) || GroupLost(l, deliveries[k], st)) return false;
+        return true;
+    }
+
+    // what has happened so far is this plan's: its tiles, its arrows, its first deliveries (no check on the deliveries to
+    // come, which mid-move can look missed while objects move one at a time)
+    public static bool FitsSoFar(LevelData l, int family, int order, PlayerState st)
     {
         var fam = l.solution.families[family];
         var deliveries = fam.orders[order].deliveries;
@@ -62,10 +121,61 @@ public static class PlanMatcher
             var road = fam.roads.FirstOrDefault(r => r.objectName == kv.Key);
             if (road == null || !ArrowsFit(l, road, kv.Value)) return false;
         }
-        for (int k = st.deliveries.Count; k < deliveries.Length; k++)
-            if (MeetingMissed(l, deliveries[k], st)) return false;
         return true;
     }
+
+    // stage 3: can this plan still be finished its way from the board? plays its remaining steps (NextSteps, in its
+    // order) with the objects moving along its roads as far as the tiles go, and checks every delivery happens as the
+    // plan's (the same objects together, on one of its squares, after its "before" tiles)
+    // placed: mid-move, the square whose round is being played (objects not done moving finish it first, and whoever
+    // arrives in it is delivered on that square); null when everything has stopped
+    public static bool Reachable(LevelData l, int family, int order, PlayerState st, Vector2Int? placed = null)
+    {
+        if (!(placed == null ? Fits(l, family, order, st) : FitsSoFar(l, family, order, st))) return false;
+        var fam = l.solution.families[family];
+        int total = fam.orders[order].deliveries.Length;
+        if (st.deliveries.Count == total) return true;
+        var sim = new PlayerState
+        {
+            tiles = new Dictionary<Vector2Int, TileType>(st.tiles),
+            deliveries = new List<DeliveryRecord>(st.deliveries),
+            arrows = st.arrows,
+            supply = new Dictionary<TileType, int>(st.supply),
+            passed = st.passed.ToDictionary(kv => kv.Key, kv => new List<Vector2Int>(kv.Value)),
+        };
+        var walker = new RoadWalker(l, family, sim);
+        // the round being played finishes (mid-move), or nothing moves (everything has stopped)
+        var now = walker.MoveAll();
+        if (now.Count > 0)
+        {
+            if (placed == null) return false; // everything has stopped: nobody should still be able to arrive
+            sim.deliveries.Add(new DeliveryRecord { objects = now.ToArray(), at = placed.Value, occupied = new HashSet<Vector2Int>(sim.tiles.Keys) });
+            if (now.Count >= 2) sim.supply[TileType.Cross] = sim.supply.GetValueOrDefault(TileType.Cross) + 1; // delivering together earns a +
+        }
+        if (!Fits(l, family, order, sim)) return false;
+        if (sim.deliveries.Count == total) return true;
+        var next = NextSteps(l, family, order, sim); // the rest, from where this round leaves things
+        if (next == null) return false;
+        // this plan's number of tiles: the tiles used so far (broken ones too) and the ones still to place can't go past
+        // it (e.g. a delivery's break hit a road still needed, so a tile would go down twice)
+        int used = l.inventory.Values.Sum() + sim.deliveries.Count(d => d.objects.Length >= 2) - sim.supply.Values.Sum();
+        int best = fam.squares.Length; // this plan's own count (one tile per square; best plans can differ, e.g. one places the given +)
+        if (used + next.Count > best) return false;
+        foreach (var s in next)
+        {
+            sim.tiles[s.square] = s.tile;
+            var arrived = walker.MoveAll();
+            if (arrived.Count > 0)
+                sim.deliveries.Add(new DeliveryRecord { objects = arrived.ToArray(), at = s.square, occupied = new HashSet<Vector2Int>(sim.tiles.Keys) });
+            if (!Fits(l, family, order, sim)) return false;
+        }
+        return sim.deliveries.Count == total;
+    }
+
+    // a group still to come can't arrive together any more: every square that could deliver it already has a tile, so
+    // its next tile lets one member through alone (e.g. Level 1's + placed first)
+    static bool GroupLost(LevelData l, Delivery d, PlayerState st) =>
+        d.objects.Length >= 2 && d.completedBy.All(c => st.tiles.ContainsKey(G(l, c.at)));
 
     // a delivery still to come can't happen any more: the tile that delivers a group lies on every member's road, so
     // each member waits before it. once a member has gone through every square that could deliver them, it got
@@ -85,7 +195,9 @@ public static class PlanMatcher
         if (planned.objects.Length != d.objects.Length || planned.objects.Except(d.objects).Any()) return false;
         var completion = planned.completedBy.FirstOrDefault(c => G(l, c.at) == d.at);
         if (completion == null) return false;
-        return completion.before.All(b => d.occupied.Contains(G(l, b)));
+        // the "before" tiles keep the delivery's breaks from hitting a road still needed. once it has happened its breaks
+        // are known: what's left is judged as it stands (Reachable), so a delivery that got lucky still counts
+        return d.happened || completion.before.All(b => d.occupied.Contains(G(l, b)));
     }
 
     // the arrows picked so far follow the road's: a Turn the game never asked (no junction there) is skipped
@@ -99,6 +211,35 @@ public static class PlanMatcher
             p++;
         }
         return true;
+    }
+
+    // the turns picked so far are every object's road's turns in some best plan
+    static bool TurnsFitSomePlan(LevelData l, PlayerState st) =>
+        Plans(l).Any(p => st.arrows.All(kv =>
+        {
+            var road = l.solution.families[p.family].roads.FirstOrDefault(r => r.objectName == kv.Key);
+            return road != null && ArrowsFit(l, road, kv.Value);
+        }));
+
+    // the first arrow the object picked that its road doesn't have (as ArrowsFit reads them): the junction's square, or
+    // for a door the last square of its road it went through. null when they all fit
+    static Vector2Int? WrongTurn(LevelData l, Road road, List<ArrowRecord> picked, PlayerState st)
+    {
+        int p = 0;
+        foreach (var a in picked)
+        {
+            while (p < road.choices.Length && !SamePlace(l, road.choices[p], a)) p++;
+            if (p == road.choices.Length || road.choices[p].way != a.way)
+            {
+                if (a.square != null) return a.square;
+                var onRoad = new HashSet<Vector2Int>(road.squares.Select(q => G(l, q)));
+                if (st.passed.TryGetValue(road.objectName, out var path))
+                    for (int i = path.Count - 1; i >= 0; i--) if (onRoad.Contains(path[i])) return path[i];
+                return null;
+            }
+            p++;
+        }
+        return null;
     }
 
     static bool SamePlace(LevelData l, Choice c, ArrowRecord a) =>
@@ -166,26 +307,59 @@ public static class PlanMatcher
         return k;
     }
 
-    // stage 3: how each step stands. Done: its exact tile is on its square at the right moment, or its delivery has
-    // already happened the plan's way (its tile may have broken since). Early: its exact tile is there at the wrong
-    // moment (it made a delivery the plan didn't have, or let one of its delivery's objects through ahead of the
-    // rest). ToDo: the square is empty or has another tile
-    public static StepState[] StepStates(LevelData l, int family, int order, List<PlanStep> steps, PlayerState st)
+    // stage 3: how each step stands.
+    // Early (the wrong moment): it's in brokePlan (placing it left no way to finish; shown even if its tile broke), or
+    //   its tile is down but it made a delivery no plan has, an object turned off its road there, or it's a group's last
+    //   tile and the group can't meet any more
+    // Done: its delivery happened the plan's way (unless its square is empty and an object on its way still needs it),
+    //   or its exact tile is down
+    // ToDo: the square is empty or has another tile
+    // moving: objects are mid-move (an arrow being picked): a turn is only wrong if no best plan has it (stage 3 may move
+    //   to that plan once everything stops), and groups aren't judged yet (they move one at a time)
+    public static StepState[] StepStates(LevelData l, int family, int order, List<PlanStep> steps, PlayerState st,
+        HashSet<Vector2Int> brokePlan = null, bool moving = false)
     {
+        var fam = l.solution.families[family];
+        var deliveries = fam.orders[order].deliveries;
         int ok = MatchingDeliveries(l, family, order, st.deliveries);
-        var offPlan = new HashSet<Vector2Int>(st.deliveries.Skip(ok).Select(d => d.at));
-        var deliveries = l.solution.families[family].orders[order].deliveries;
+
+        // squares where a tile that's down came at the wrong moment
+        var wrong = new HashSet<Vector2Int>(st.deliveries.Skip(ok).Select(d => d.at)); // deliveries no plan has
+        if (!moving || !TurnsFitSomePlan(l, st))
+            foreach (var kv in st.arrows)
+                if (fam.roads.FirstOrDefault(r => r.objectName == kv.Key) is Road road && WrongTurn(l, road, kv.Value, st) is Vector2Int w)
+                    wrong.Add(w);
+        if (!moving)
+            foreach (var s in steps)
+                if (s.completes && s.delivery >= ok && s.delivery < deliveries.Length && deliveries[s.delivery].objects.Length >= 2 &&
+                    (GroupLost(l, deliveries[s.delivery], st) || MeetingMissed(l, deliveries[s.delivery], st)))
+                    wrong.Add(s.square);
+
+        var needed = StillNeeded(l, fam, st);
         var res = new StepState[steps.Count];
         for (int i = 0; i < steps.Count; i++)
         {
             var s = steps[i];
-            if (s.delivery >= 0 && s.delivery < ok) { res[i] = StepState.Done; continue; }
-            if (!st.tiles.TryGetValue(s.square, out var t) || t != s.tile) { res[i] = StepState.ToDo; continue; }
-            bool early = offPlan.Contains(s.square) || s.completes && s.delivery >= 0 && s.delivery < deliveries.Length &&
-                         deliveries[s.delivery].objects.Any(o => Passed(st, o, s.square));
-            res[i] = early ? StepState.Early : StepState.Done;
+            bool down = st.tiles.TryGetValue(s.square, out var t);
+            if (brokePlan != null && brokePlan.Contains(s.square)) res[i] = StepState.Early;
+            else if (s.delivery >= 0 && s.delivery < ok && (down || !needed.Contains(s.square))) res[i] = StepState.Done;
+            else if (!down || t != s.tile) res[i] = StepState.ToDo;
+            else res[i] = wrong.Contains(s.square) ? StepState.Early : StepState.Done;
         }
         return res;
+    }
+
+    // the squares objects still on their way have yet to go through
+    static HashSet<Vector2Int> StillNeeded(LevelData l, RoadFamily fam, PlayerState st)
+    {
+        var delivered = new HashSet<string>(st.deliveries.SelectMany(d => d.objects));
+        var needed = new HashSet<Vector2Int>();
+        foreach (var road in fam.roads.Where(r => !delivered.Contains(r.objectName)))
+        {
+            var gone = st.passed.TryGetValue(road.objectName, out var p) ? new List<Vector2Int>(p) : new List<Vector2Int>();
+            foreach (var q in road.squares) { var c = G(l, q); if (!gone.Remove(c)) needed.Add(c); }
+        }
+        return needed;
     }
 
     // the same steps (squares, order, numbers) with their tiles picked again for this board: a step not done yet whose

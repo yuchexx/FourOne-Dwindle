@@ -170,8 +170,9 @@ public partial class GameManager : MonoBehaviour
         history.Record(snapshot);
         inventory[t]--;
         board.SetTile(p, t);
-        RefreshAll();
         lastPlaced = p; // for the hints: the square whose round this is
+        placedForHints = true; // stage 3 checks this placement (see FollowBoard)
+        RefreshAll();
         StartCoroutine(ResolveRound());
         Report(snapshot.action); // for the tutorial
     }
@@ -276,8 +277,9 @@ public partial class GameManager : MonoBehaviour
         history.Record(snapshot);
         board.TakeBackTile(from);
         board.SetTile(to, t);
-        RefreshAll();
         lastPlaced = to; // for the hints
+        placedForHints = true;
+        RefreshAll();
         StartCoroutine(ResolveRound());
         Report(OnSquare(GameActionKind.TakeBack, from, t)); // for the tutorial and analytics: a take-back, then a placement
         Report(snapshot.action);

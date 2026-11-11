@@ -82,8 +82,10 @@ public partial class GameManager
             }
             else
             {
+                HintsChanged?.Invoke(); // stage 3: the junction just placed shows how it stands while the arrow is picked
                 yield return board.AskDirection(o, ways, HintArrow(o)); // sets o.heading from the arrow the player clicks
                 ReportChoice(o); // for the tutorial
+                HintsChanged?.Invoke(); // a wrong way shows at once
             }
             o.view.Face(o.heading);
 
@@ -114,8 +116,10 @@ public partial class GameManager
         if (into.Count == 1) o.heading = into[0];
         else
         {
+            HintsChanged?.Invoke(); // stage 3: the board as it stands while the way out is picked
             yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into, HintArrow(o, door));
             ReportChoice(o, door.label); // for the tutorial and the hints
+            HintsChanged?.Invoke(); // a wrong way shows at once
         }
 
         // stand on the far side of the door's edge, facing the square it'll enter next
