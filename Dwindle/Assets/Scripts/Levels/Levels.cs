@@ -10,13 +10,14 @@ public static class Levels
     static readonly Color Blue = new(0.30f, 0.50f, 1.00f);
     static readonly Color Orange = new(1.00f, 0.60f, 0.15f);
 
-    // parts: learn 1-12 (teach + practice), challenge 13-32, finale 33-40, each in order of difficulty
+    // parts: learn 1-12 (teach + practice), challenge 13-36, finale 37-44, each in order of difficulty
     public static readonly List<LevelData> All = new()
     {
         Level1(), Level2(), Level3(), Level4(), Level5(), Level6(), Level7(), Level8(), Level9(), Level10(),
         Level11(), Level12(), Level13(), Level14(), Level15(), Level16(), Level17(), Level18(), Level19(), Level20(),
         Level21(), Level22(), Level23(), Level24(), Level25(), Level26(), Level27(), Level28(), Level29(), Level30(),
         Level31(), Level32(), Level33(), Level34(), Level35(), Level36(), Level37(), Level38(), Level39(), Level40(),
+        Level41(), Level42(), Level43(), Level44(),
     };
 
     // The first level, with the Basics tutorial (Tutorials.Basics). Red goes straight up and Blue straight left, and
@@ -96,7 +97,7 @@ public static class Levels
     static LevelData Level4()
     {
         var l = new LevelData { title = "Level 4", targetScore = 200, bestTiles = 8,
-            bestPlanHint = Tips.FewerTiles };
+            finishHint = "Try the edges. The supply is mostly corners.", bestPlanHint = Tips.FewerTiles };
         l.SetBoards((3, 3));
         l.inventory = Inv(es: 3, wn: 3, h: 1, v: 1);
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 2, 3);
@@ -432,11 +433,36 @@ public static class Levels
         return l;
     }
 
-    // Blue's ring is on its own board, but its road goes out through door B and back. Door A is a decoy.
-    // Score 500 with 6 tiles (target).
+    // Four together on one 4x3 board: the target only comes with all four arriving on one delivery; any other way scores 625 at best.
+    // Solution:
+    //   1. (3,0) + -> Red picks W at (3,0)
+    //   2. (2,0) T E-S-W -> Red picks W at (2,0)
+    //   3. (1,1) I-v
+    //   4. (1,2) T S-W-N
+    //   5. (3,1) L E-S -> Blue picks W at (3,0); Blue picks W at (2,0)
+    //   6. (0,2) T W-N-E -> Orange picks E at (0,2); Orange picks S at (1,2)
+    //   7. (0,0) I-h
+    //   8. (1,0) T W-N-E -> Red picks N at (1,0); Red picks N at (1,2); Blue picks N at (1,0); Blue picks W at (1,2); Blue picks W at (0,2); Green picks E at (1,0); Green picks S at (2,0); Orange picks E at (1,0); Orange picks E at (2,0); Orange picks E at (3,0); Red and Blue and Green and Orange arrive together, +1 + tile
+    // Score 750 with 8 tiles (target).
     static LevelData Level21()
     {
-        var l = new LevelData { title = "Level 21", targetScore = 500, bestTiles = 6,
+        var l = new LevelData { title = "Level 21", targetScore = 750, bestTiles = 8,
+            finishHint = Tips.Pairs, bestPlanHint = Tips.TogetherForScore };
+        l.SetBoards((4, 3));
+        l.inventory = Inv(cross: 1, es: 1, h: 1, v: 2, tESW: 1, tSWN: 1, tWNE: 2);
+        Obj(l, "Red", Red, 0, 3, -1, Dir.N, 0, 1, 3);
+        Obj(l, "Blue", Blue, 0, 4, 1, Dir.W, 0, -1, 2);
+        Obj(l, "Green", Green, 0, -1, 0, Dir.E, 0, 2, -1);
+        Obj(l, "Orange", Orange, 0, 0, 3, Dir.S, 0, 4, 0);
+        l.solution = Solutions.Level21();
+        return l;
+    }
+
+    // Blue's ring is on its own board, but its road goes out through door B and back. Door A is a decoy.
+    // Score 500 with 6 tiles (target).
+    static LevelData Level22()
+    {
+        var l = new LevelData { title = "Level 22", targetScore = 500, bestTiles = 6,
             finishHint = Tips.DetourToFinish, bestPlanHint = Tips.TogetherForScore };
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(ne: 1, es: 1, sw: 1, h: 2, tESW: 1, tSWN: 1);
@@ -446,15 +472,15 @@ public static class Levels
         Door(l, "B", 1, 0, 1, Dir.S);
         Obj(l, "Red", Red, 1, 1, -1, Dir.N, 1, -1, 1);
         Obj(l, "Blue", Blue, 0, 3, 0, Dir.W, 0, 1, -1);
-        l.solution = Solutions.Level21();
+        l.solution = Solutions.Level22();
         return l;
     }
 
     // The bridge: Red and Green cross over each other on it and arrive together, and the + you earn is the straight Blue is missing.
     // Score 550 with 8 tiles (target).
-    static LevelData Level22()
+    static LevelData Level23()
     {
-        var l = new LevelData { title = "Level 22", targetScore = 550, bestTiles = 8,
+        var l = new LevelData { title = "Level 23", targetScore = 550, bestTiles = 8,
             finishHint = Tips.Bridge, bestPlanHint = Tips.FewerTiles };
         // delivering everyone needs the + that delivering together earns, so the hint shows at 0 or 1 star instead
         l.SetBoards((3, 3));
@@ -462,7 +488,7 @@ public static class Levels
         Obj(l, "Red", Red, 0, 2, 3, Dir.S, 0, 2, -1);
         Obj(l, "Blue", Blue, 0, 1, 3, Dir.S, 0, 0, -1);
         Obj(l, "Green", Green, 0, 3, 0, Dir.W, 0, 1, -1);
-        l.solution = Solutions.Level22();
+        l.solution = Solutions.Level23();
         return l;
     }
 
@@ -475,9 +501,9 @@ public static class Levels
     //   5. b2(1,1) L E-S
     //   6. b2(1,0) T N-E-S -> Red picks S at b2(1,0); Red goes through door A, comes out facing W; Blue picks N at b2(1,0); Red and Blue arrive together, +1 + tile
     // Score 550 with 6 tiles (target).
-    static LevelData Level23()
+    static LevelData Level24()
     {
-        var l = new LevelData { title = "Level 23", targetScore = 550, bestTiles = 6,
+        var l = new LevelData { title = "Level 24", targetScore = 550, bestTiles = 6,
             finishHint = Tips.DetourToFinish, bestPlanHint = Tips.TogetherForScore };
         l.SetBoards((2, 2), (2, 2));
         l.inventory = Inv(ne: 1, es: 2, sw: 1, h: 1, v: 1, tNES: 1);
@@ -487,7 +513,7 @@ public static class Levels
         Door(l, "B", 0, 1, 1, Dir.S);
         Obj(l, "Red", Red, 0, 0, 2, Dir.S, 0, -1, 0);
         Obj(l, "Blue", Blue, 0, 1, -1, Dir.N, 1, 2, 1);
-        l.solution = Solutions.Level23();
+        l.solution = Solutions.Level24();
         return l;
     }
 
@@ -501,9 +527,9 @@ public static class Levels
     //   6. b1(0,2) I-h
     //   7. b1(1,2) T W-N-E -> Red picks E at b1(1,2); Red goes through door A, comes out facing N; Red picks E at b2(2,2); Red goes through door B, comes out facing S; Blue picks W at b1(1,2); Red and Blue arrive together, +1 + tile
     // Score 550 with 7 tiles (target).
-    static LevelData Level24()
+    static LevelData Level25()
     {
-        var l = new LevelData { title = "Level 24", targetScore = 550, bestTiles = 7,
+        var l = new LevelData { title = "Level 25", targetScore = 550, bestTiles = 7,
             finishHint = Tips.DetourToFinish, bestPlanHint = Tips.TogetherForScore };
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(ne: 2, es: 1, sw: 1, h: 1, v: 1, tESW: 1, tWNE: 1);
@@ -513,15 +539,15 @@ public static class Levels
         Door(l, "B", 1, 2, 2, Dir.E);
         Obj(l, "Red", Red, 0, 1, 3, Dir.S, 0, 2, -1);
         Obj(l, "Blue", Blue, 1, 3, 1, Dir.W, 0, -1, 2);
-        l.solution = Solutions.Level24();
+        l.solution = Solutions.Level25();
         return l;
     }
 
     // The starts are spread out and two pairs look best on paper (900), but each pair's delivery breaks a junction someone still needs. All four have to arrive together on the last T.
     // Score 825 with 10 tiles (target).
-    static LevelData Level25()
+    static LevelData Level26()
     {
-        var l = new LevelData { title = "Level 25", targetScore = 825, bestTiles = 10,
+        var l = new LevelData { title = "Level 26", targetScore = 825, bestTiles = 10,
             finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.FewerTiles };
         l.SetBoards((4, 4));
         l.inventory = Inv(cross: 1, ne: 1, sw: 1, wn: 1, h: 1, v: 3, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
@@ -529,15 +555,15 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, -1, 0, Dir.E, 0, 3, 4);
         Obj(l, "Green", Green, 0, 4, 0, Dir.W, 0, -1, 2);
         Obj(l, "Orange", Orange, 0, 4, 3, Dir.W, 0, -1, 3);
-        l.solution = Solutions.Level25();
+        l.solution = Solutions.Level26();
         return l;
     }
 
     // Two pairs: the first pair's + becomes the corner Green is missing. No single extra tile would let all four arrive together, so the pairs plan is the way. The + in the supply is a wildcard.
     // Score 825 with 10 tiles (target).
-    static LevelData Level26()
+    static LevelData Level27()
     {
-        var l = new LevelData { title = "Level 26", targetScore = 825, bestTiles = 10,
+        var l = new LevelData { title = "Level 27", targetScore = 825, bestTiles = 10,
             finishHint = Tips.EarnedPlus, bestPlanHint = Tips.FewerTiles };
         // delivering everyone needs the + that delivering together earns, so the hint shows at 0 or 1 star instead
         l.SetBoards((4, 4));
@@ -547,7 +573,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, 1, 4, Dir.S, 0, 4, 1);
         Obj(l, "Green", Green, 0, 4, 2, Dir.W, 0, 2, -1);
         Obj(l, "Orange", Orange, 0, 4, 3, Dir.W, 0, 3, -1);
-        l.solution = Solutions.Level26();
+        l.solution = Solutions.Level27();
         return l;
     }
 
@@ -562,9 +588,9 @@ public static class Levels
     //   7. b2(1,2) I-h -> Blue picks S at b2(0,2)
     //   8. b2(0,0) L N-E -> Red picks W at b2(0,2); Red goes through door B; Blue picks S at b2(1,0); Red and Blue arrive together, +1 + tile
     // Score 500 with 8 tiles (target).
-    static LevelData Level27()
+    static LevelData Level28()
     {
-        var l = new LevelData { title = "Level 27", targetScore = 500, bestTiles = 8,
+        var l = new LevelData { title = "Level 28", targetScore = 500, bestTiles = 8,
             finishHint = Tips.DetourToFinish, bestPlanHint = Tips.TogetherForScore };
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(ne: 2, sw: 1, wn: 1, h: 1, v: 2, tESW: 1, tSWN: 1);
@@ -574,15 +600,15 @@ public static class Levels
         Door(l, "B", 1, 0, 2, Dir.W);
         Obj(l, "Red", Red, 0, 1, -1, Dir.N, 0, 3, 2);
         Obj(l, "Blue", Blue, 1, 2, 3, Dir.S, 1, 1, -1);
-        l.solution = Solutions.Level27();
+        l.solution = Solutions.Level28();
         return l;
     }
 
     // A 4x3 board: Blue and Orange arrive together first, but Red and Green both still have to cross their tiles. Build Red's road and Green's road ahead so both pass first. Fixing only one isn't enough.
     // Score 900 with 9 tiles (target).
-    static LevelData Level28()
+    static LevelData Level29()
     {
-        var l = new LevelData { title = "Level 28", targetScore = 900, bestTiles = 9,
+        var l = new LevelData { title = "Level 29", targetScore = 900, bestTiles = 9,
             finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.TwoRoutes };
         l.SetBoards((4, 3));
         l.inventory = Inv(cross: 1, sw: 1, wn: 1, h: 4, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
@@ -590,7 +616,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, -1, 1, Dir.E, 0, 1, 3);
         Obj(l, "Green", Green, 0, 3, 3, Dir.S, 0, 2, -1);
         Obj(l, "Orange", Orange, 0, 1, -1, Dir.N, 0, 2, 3);
-        l.solution = Solutions.Level28();
+        l.solution = Solutions.Level29();
         return l;
     }
 
@@ -604,9 +630,9 @@ public static class Levels
     //   6. b2(2,2) T N-E-S -> Red picks E at b2(2,2); Blue picks N at b2(2,2); Red and Blue arrive together, +1 + tile
     //   7. b2(2,1) L N-E -> Green arrives
     // Score 700 with 7 tiles (target).
-    static LevelData Level29()
+    static LevelData Level30()
     {
-        var l = new LevelData { title = "Level 29", targetScore = 700, bestTiles = 7,
+        var l = new LevelData { title = "Level 30", targetScore = 700, bestTiles = 7,
             finishHint = Tips.OneRoute, bestPlanHint = Tips.FewerTiles };
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(ne: 1, sw: 2, h: 1, v: 2, tNES: 1, tWNE: 1);
@@ -617,15 +643,15 @@ public static class Levels
         Obj(l, "Red", Red, 0, 1, 3, Dir.S, 1, 3, 2);
         Obj(l, "Blue", Blue, 0, -1, 0, Dir.E, 1, 2, 3);
         Obj(l, "Green", Green, 0, 2, -1, Dir.N, 1, 3, 1);
-        l.solution = Solutions.Level29();
+        l.solution = Solutions.Level30();
         return l;
     }
 
     // A bigger pairs trap: all four arrive together on the top-right T. The + in the supply is a lure; the best plan doesn't place it.
     // Score 825 with 12 tiles (target).
-    static LevelData Level30()
+    static LevelData Level31()
     {
-        var l = new LevelData { title = "Level 30", targetScore = 825, bestTiles = 12,
+        var l = new LevelData { title = "Level 31", targetScore = 825, bestTiles = 12,
             bestPlanHint = Tips.TogetherForScore };
         l.SetBoards((5, 4));
         l.inventory = Inv(cross: 1, ne: 1, wn: 1, h: 3, v: 1, tNES: 1, tESW: 3, tSWN: 2, tWNE: 1);
@@ -633,15 +659,15 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, 5, 2, Dir.W, 0, 4, -1);
         Obj(l, "Green", Green, 0, 1, -1, Dir.N, 0, 3, 4);
         Obj(l, "Orange", Orange, 0, 0, 4, Dir.S, 0, 3, -1);
-        l.solution = Solutions.Level30();
+        l.solution = Solutions.Level31();
         return l;
     }
 
     // Blue's and Green's roads are built ahead before Red and Orange arrive on the given +, and the + they earn is the piece Blue needs.
     // Score 750 with 10 tiles (target).
-    static LevelData Level31()
+    static LevelData Level32()
     {
-        var l = new LevelData { title = "Level 31", targetScore = 750, bestTiles = 10,
+        var l = new LevelData { title = "Level 32", targetScore = 750, bestTiles = 10,
             finishHint = Tips.EarnedPlus, bestPlanHint = Tips.TwoRoutes };
         l.SetBoards((4, 4));
         l.inventory = Inv(cross: 1, es: 1, sw: 1, h: 1, v: 2, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
@@ -649,7 +675,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, 4, 1, Dir.W, 0, -1, 3);
         Obj(l, "Green", Green, 0, 3, 4, Dir.S, 0, -1, 1);
         Obj(l, "Orange", Orange, 0, 0, -1, Dir.N, 0, 4, 0);
-        l.solution = Solutions.Level31();
+        l.solution = Solutions.Level32();
         return l;
     }
 
@@ -665,9 +691,9 @@ public static class Levels
     //   8. b2(2,2) I-v
     //   9. b1(1,1) L S-W -> Green goes through door B, comes out facing N; Green arrives
     // Score 650 with 9 tiles (target).
-    static LevelData Level32()
+    static LevelData Level33()
     {
-        var l = new LevelData { title = "Level 32", targetScore = 650, bestTiles = 9,
+        var l = new LevelData { title = "Level 33", targetScore = 650, bestTiles = 9,
             bestPlanHint = Tips.TogetherForScore };
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(bridge: 1, ne: 1, sw: 2, wn: 1, h: 1, v: 2, tESW: 1, tWNE: 1);
@@ -678,33 +704,96 @@ public static class Levels
         Obj(l, "Red", Red, 1, -1, 0, Dir.E, 0, 3, 0);
         Obj(l, "Blue", Blue, 0, -1, 0, Dir.E, 0, 1, -1);
         Obj(l, "Green", Green, 0, -1, 1, Dir.E, 1, 2, 3);
-        l.solution = Solutions.Level32();
+        l.solution = Solutions.Level33();
+        return l;
+    }
+
+    // Four together on two 3x3 boards: the four meet across the doors and arrive on one delivery; in smaller groups the best is 900.
+    // Solution:
+    //   1. b2(0,0) T E-S-W -> Red picks E at b2(0,0); Orange picks E at b2(0,0)
+    //   2. b2(1,0) T W-N-E -> Red picks N at b2(1,0); Orange picks N at b2(1,0)
+    //   3. b2(1,1) L S-W
+    //   4. b2(0,1) T W-N-E -> Red picks W at b2(0,1); Red goes through door A; Orange picks W at b2(0,1); Orange goes through door A
+    //   5. b1(1,0) L S-W
+    //   6. b2(2,0) T E-S-W
+    //   7. b1(0,2) I-v
+    //   8. b1(0,1) T S-W-N -> Green picks S at b1(0,1)
+    //   9. b2(0,2) L S-W
+    //   10. b1(0,0) + -> Red picks E at b1(0,0); Blue picks W at b1(0,0); Blue goes through door A; Blue picks E at b2(0,1); Blue picks E at b2(1,0); Blue picks S at b2(2,0); Green picks W at b1(0,0); Green goes through door A; Green picks N at b2(0,1); Orange picks N at b1(0,0); Orange picks W at b1(0,1); Red and Blue and Green and Orange arrive together, +1 + tile
+    // Score 950 with 10 tiles (target).
+    static LevelData Level34()
+    {
+        var l = new LevelData { title = "Level 34", targetScore = 950, bestTiles = 10,
+            bestPlanHint = Tips.TogetherForScore };
+        l.SetBoards((3, 3), (3, 3));
+        l.inventory = Inv(cross: 1, sw: 3, v: 2, tESW: 2, tSWN: 1, tWNE: 2);
+        Door(l, "A", 1, 0, 1, Dir.W);
+        Door(l, "A", 0, 0, 0, Dir.W);
+        Door(l, "B", 0, 1, 0, Dir.N);
+        Door(l, "B", 1, 2, 2, Dir.N);
+        Obj(l, "Red", Red, 1, 0, -1, Dir.N, 0, 1, -1);
+        Obj(l, "Blue", Blue, 0, 0, -1, Dir.N, 1, 2, -1);
+        Obj(l, "Green", Green, 0, 0, 3, Dir.S, 1, -1, 2);
+        Obj(l, "Orange", Orange, 1, -1, 0, Dir.E, 0, -1, 1);
+        l.solution = Solutions.Level34();
         return l;
     }
 
     // Pairs trap and build ahead: Red goes first, Blue's road is built ahead, then Blue, Green and Orange arrive together.
     // Score 850 with 12 tiles (target).
-    static LevelData Level33()
+    static LevelData Level35()
     {
-        var l = new LevelData { title = "Level 33", targetScore = 850, bestTiles = 12,
+        var l = new LevelData { title = "Level 35", targetScore = 850, bestTiles = 12,
             bestPlanHint = Tips.Pairs };
-        l.section = "Finale"; // the Levels page starts a part here
         l.SetBoards((5, 4));
         l.inventory = Inv(cross: 1, ne: 1, wn: 2, h: 3, v: 1, tNES: 1, tESW: 3, tSWN: 1, tWNE: 2);
         Obj(l, "Red", Red, 0, 1, 4, Dir.S, 0, -1, 3);
         Obj(l, "Blue", Blue, 0, 2, -1, Dir.N, 0, 3, 4);
         Obj(l, "Green", Green, 0, 5, 2, Dir.W, 0, 2, 4);
         Obj(l, "Orange", Orange, 0, -1, 1, Dir.E, 0, 5, 0);
-        l.solution = Solutions.Level33();
+        l.solution = Solutions.Level35();
+        return l;
+    }
+
+    // Four together on two 3x3 boards, a longer meeting: again one delivery for all four, 900 otherwise.
+    // Solution:
+    //   1. b1(1,2) T N-E-S -> Red picks S at b1(1,2)
+    //   2. b1(1,1) T S-W-N -> Red picks S at b1(1,1)
+    //   3. b2(1,1) T N-E-S
+    //   4. b2(1,2) + -> Orange picks S at b2(1,2); Orange picks E at b2(1,1); Orange goes through door B
+    //   5. b2(2,2) L W-N
+    //   6. b2(0,2) L N-E -> Blue picks S at b2(1,2); Blue picks E at b2(1,1); Blue goes through door B
+    //   7. b1(0,0) L E-S
+    //   8. b1(0,1) I-h -> Green picks S at b1(1,1)
+    //   9. b2(1,0) I-v
+    //   10. b1(2,2) I-h
+    //   11. b1(1,0) T S-W-N -> Red picks S at b1(1,0); Red goes through door B, comes out facing W; Red picks N at b2(1,1); Red picks E at b2(1,2); Blue picks W at b1(1,0); Green picks S at b1(1,0); Green goes through door B, comes out facing W; Green picks S at b2(1,1); Orange picks N at b1(1,0); Orange picks N at b1(1,1); Orange picks E at b1(1,2); Red and Blue and Green and Orange arrive together, +1 + tile
+    // Score 950 with 11 tiles (target).
+    static LevelData Level36()
+    {
+        var l = new LevelData { title = "Level 36", targetScore = 950, bestTiles = 11,
+            bestPlanHint = Tips.TogetherForScore };
+        l.SetBoards((3, 3), (3, 3));
+        l.inventory = Inv(cross: 1, ne: 1, es: 2, wn: 1, h: 2, v: 1, tNES: 2, tSWN: 2);
+        Door(l, "A", 1, 0, 1, Dir.W);
+        Door(l, "A", 0, 2, 1, Dir.E);
+        Door(l, "B", 0, 1, 0, Dir.S);
+        Door(l, "B", 1, 2, 1, Dir.W);
+        Obj(l, "Red", Red, 0, 1, 3, Dir.S, 1, 2, 3);
+        Obj(l, "Blue", Blue, 1, 0, 3, Dir.S, 0, 0, -1);
+        Obj(l, "Green", Green, 0, -1, 1, Dir.E, 1, 1, -1);
+        Obj(l, "Orange", Orange, 1, 1, 3, Dir.S, 0, 3, 2);
+        l.solution = Solutions.Level36();
         return l;
     }
 
     // The bridge again, on two boards: Blue goes north and Green goes west through the same square without meeting. Red's ring is on its own board, but its road goes out through a door and back.
     // Score 675 with 9 tiles (target).
-    static LevelData Level34()
+    static LevelData Level37()
     {
-        var l = new LevelData { title = "Level 34", targetScore = 675, bestTiles = 9,
+        var l = new LevelData { title = "Level 37", targetScore = 675, bestTiles = 9,
             finishHint = Tips.BridgeAndDetour, bestPlanHint = Tips.TogetherForScore };
+        l.section = "Finale"; // the Levels page starts a part here
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(bridge: 1, ne: 2, es: 2, wn: 2, h: 1, v: 1, tNES: 1, tESW: 1);
         Door(l, "A", 0, 2, 0, Dir.S);
@@ -714,15 +803,15 @@ public static class Levels
         Obj(l, "Red", Red, 0, 1, 3, Dir.S, 0, 3, 0);
         Obj(l, "Blue", Blue, 1, 1, -1, Dir.N, 1, 0, 3);
         Obj(l, "Green", Green, 1, 3, 0, Dir.W, 1, 0, -1);
-        l.solution = Solutions.Level34();
+        l.solution = Solutions.Level37();
         return l;
     }
 
     // Four small boards, a pairs trap: pairs look best on paper but break junctions someone still needs. Build Blue's road first (through doors A and C), then Red, Green and Orange arrive together, and Blue finishes.
     // Score 975 with 9 tiles (target).
-    static LevelData Level35()
+    static LevelData Level38()
     {
-        var l = new LevelData { title = "Level 35", targetScore = 975, bestTiles = 9,
+        var l = new LevelData { title = "Level 38", targetScore = 975, bestTiles = 9,
             finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.Pairs };
         l.SetBoards((2, 2), (2, 2), (2, 2), (2, 2));
         l.inventory = Inv(cross: 1, ne: 3, wn: 1, v: 3, tNES: 1, tESW: 1, tWNE: 1);
@@ -736,15 +825,15 @@ public static class Levels
         Obj(l, "Blue", Blue, 3, 0, 2, Dir.S, 1, 2, 0);
         Obj(l, "Green", Green, 0, 2, 0, Dir.W, 2, 2, 0);
         Obj(l, "Orange", Orange, 2, 1, 2, Dir.S, 0, 1, 2);
-        l.solution = Solutions.Level35();
+        l.solution = Solutions.Level38();
         return l;
     }
 
     // Opens the finale on two 5x4 boards, a pairs trap: all four arrive together on the given +, and a detour reaches the target (775 without). Door B is a decoy.
     // Score 1025 with 13 tiles (target).
-    static LevelData Level36()
+    static LevelData Level39()
     {
-        var l = new LevelData { title = "Level 36", targetScore = 1025, bestTiles = 13,
+        var l = new LevelData { title = "Level 39", targetScore = 1025, bestTiles = 13,
             finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.Pairs };
         l.SetBoards((5, 4), (5, 4));
         l.inventory = Inv(cross: 1, ne: 2, es: 1, sw: 3, wn: 1, v: 1, tNES: 1, tESW: 2, tSWN: 1, tWNE: 2);
@@ -758,15 +847,49 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, -1, 1, Dir.E, 0, 3, 4);
         Obj(l, "Green", Green, 0, 2, 4, Dir.S, 1, 2, -1);
         Obj(l, "Orange", Orange, 1, 3, -1, Dir.N, 0, -1, 0);
-        l.solution = Solutions.Level36();
+        l.solution = Solutions.Level39();
+        return l;
+    }
+
+    // Four together on four 2x2 boards: everyone travels through the doors to meet and arrive on one delivery; 900 otherwise.
+    // Solution:
+    //   1. b1(1,0) + -> Red picks N at b1(1,0); Blue picks N at b1(1,0)
+    //   2. b1(1,1) L S-W
+    //   3. b3(0,1) L S-W
+    //   4. b1(0,0) T N-E-S
+    //   5. b2(1,1) L W-N
+    //   6. b2(0,1) T N-E-S
+    //   7. b4(0,1) I-h
+    //   8. b4(1,1) I-h -> Green goes through door C, comes out facing E; Green picks N at b1(1,0)
+    //   9. b2(0,0) T S-W-N -> Orange picks N at b2(0,0); Orange picks E at b2(0,1); Orange goes through door A; Orange picks N at b1(0,0)
+    //   10. b3(0,0) L W-N
+    //   11. b1(0,1) T N-E-S -> Red picks N at b1(0,1); Red goes through door B, comes out facing N; Blue picks S at b1(0,1); Blue picks S at b1(0,0); Blue goes through door A; Blue picks N at b2(0,1); Green picks S at b1(0,1); Green picks S at b1(0,0); Green goes through door A; Green picks S at b2(0,1); Green picks S at b2(0,0); Orange picks N at b1(0,1); Orange goes through door B, comes out facing S; Red and Blue and Green and Orange arrive together, +1 + tile
+    // Score 950 with 11 tiles (target).
+    static LevelData Level40()
+    {
+        var l = new LevelData { title = "Level 40", targetScore = 950, bestTiles = 11,
+            finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.TogetherForScore };
+        l.SetBoards((2, 2), (2, 2), (2, 2), (2, 2));
+        l.inventory = Inv(cross: 1, sw: 3, wn: 2, h: 2, tNES: 3, tSWN: 1);
+        Door(l, "A", 1, 1, 1, Dir.N);
+        Door(l, "A", 0, 0, 0, Dir.S);
+        Door(l, "B", 2, 0, 1, Dir.S);
+        Door(l, "B", 0, 0, 1, Dir.N);
+        Door(l, "C", 0, 0, 0, Dir.E);
+        Door(l, "C", 3, 1, 1, Dir.E);
+        Obj(l, "Red", Red, 0, 1, -1, Dir.N, 2, -1, 1);
+        Obj(l, "Blue", Blue, 0, 2, 0, Dir.W, 1, 0, 2);
+        Obj(l, "Green", Green, 3, -1, 1, Dir.E, 1, 0, -1);
+        Obj(l, "Orange", Orange, 1, -1, 0, Dir.E, 2, -1, 0);
+        l.solution = Solutions.Level40();
         return l;
     }
 
     // An advanced detour on two 4x3 boards: everyone crosses boards, and Blue and Green share one long road out through the doors and back, which saves a tile. Without the detour the best is 1075, short of the 3rd star. Door D is a decoy.
     // Score 1175 with 12 tiles (target).
-    static LevelData Level37()
+    static LevelData Level41()
     {
-        var l = new LevelData { title = "Level 37", targetScore = 1175, bestTiles = 12,
+        var l = new LevelData { title = "Level 41", targetScore = 1175, bestTiles = 12,
             bestPlanHint = Tips.DetourForScore };
         l.SetBoards((4, 3), (4, 3));
         l.inventory = Inv(cross: 1, ne: 1, es: 2, sw: 1, wn: 1, h: 1, v: 3, tNES: 2, tESW: 1, tSWN: 1, tWNE: 1);
@@ -782,15 +905,15 @@ public static class Levels
         Obj(l, "Blue", Blue, 1, 0, 3, Dir.S, 1, 1, -1);
         Obj(l, "Green", Green, 1, -1, 2, Dir.E, 0, 2, -1);
         Obj(l, "Orange", Orange, 1, 4, 1, Dir.W, 1, 1, 3);
-        l.solution = Solutions.Level37();
+        l.solution = Solutions.Level41();
         return l;
     }
 
     // Two 4x4 boards: Blue and Orange arrive together first, but Red and Green both still have to cross their tiles. Build both roads ahead (Red's goes through three doors), and the + the pair earns is the corner Red needs at the end. Green's ring is on its own board, so its road goes out through a door and back.
     // Score 1025 with 11 tiles (target).
-    static LevelData Level38()
+    static LevelData Level42()
     {
-        var l = new LevelData { title = "Level 38", targetScore = 1025, bestTiles = 11,
+        var l = new LevelData { title = "Level 42", targetScore = 1025, bestTiles = 11,
             finishHint = Tips.DetourToFinish, bestPlanHint = Tips.TwoRoutes };
         l.SetBoards((4, 4), (4, 4));
         l.inventory = Inv(es: 1, sw: 1, wn: 2, h: 1, v: 1, tESW: 3, tSWN: 1, tWNE: 2);
@@ -804,15 +927,15 @@ public static class Levels
         Obj(l, "Blue", Blue, 1, -1, 3, Dir.E, 0, 2, 4);
         Obj(l, "Green", Green, 1, 2, 4, Dir.S, 1, -1, 1);
         Obj(l, "Orange", Orange, 1, 0, 4, Dir.S, 0, 3, -1);
-        l.solution = Solutions.Level38();
+        l.solution = Solutions.Level42();
         return l;
     }
 
     // The finale on two 5x5 boards: the bridge, a detour Red and Orange can't do without, a road to build ahead, and an earned + at the junction where Red and Orange meet. Door B is a decoy.
     // Score 975 with 14 tiles (target).
-    static LevelData Level39()
+    static LevelData Level43()
     {
-        var l = new LevelData { title = "Level 39", targetScore = 975, bestTiles = 14,
+        var l = new LevelData { title = "Level 43", targetScore = 975, bestTiles = 14,
             finishHint = Tips.DetourToFinish, bestPlanHint = Tips.OneRoute };
         l.SetBoards((5, 5), (5, 5));
         l.inventory = Inv(cross: 1, bridge: 1, ne: 1, es: 1, sw: 1, wn: 2, h: 1, v: 3, tNES: 2, tESW: 1, tWNE: 1);
@@ -828,15 +951,15 @@ public static class Levels
         Obj(l, "Blue", Blue, 0, 5, 2, Dir.W, 0, 4, 5);
         Obj(l, "Green", Green, 1, 3, 5, Dir.S, 0, 1, -1);
         Obj(l, "Orange", Orange, 1, 2, 5, Dir.S, 1, -1, 1);
-        l.solution = Solutions.Level39();
+        l.solution = Solutions.Level43();
         return l;
     }
 
     // Four 3x3 boards, every door inside a board: two pairs, a detour, a route to build ahead, and the + the first pair earns is the corner Red needs. Door E is a decoy.
     // Score 1025 with 15 tiles (target).
-    static LevelData Level40()
+    static LevelData Level44()
     {
-        var l = new LevelData { title = "Level 40", targetScore = 1025, bestTiles = 15,
+        var l = new LevelData { title = "Level 44", targetScore = 1025, bestTiles = 15,
             finishHint = Tips.DetourToFinish, bestPlanHint = Tips.OneRoute };
         l.SetBoards((3, 3), (3, 3), (3, 3), (3, 3));
         l.inventory = Inv(ne: 3, sw: 1, h: 2, v: 4, tNES: 3, tESW: 1, tSWN: 2);
@@ -854,7 +977,7 @@ public static class Levels
         Obj(l, "Blue", Blue, 3, 1, 3, Dir.S, 0, -1, 1);
         Obj(l, "Green", Green, 2, 0, 3, Dir.S, 2, 2, -1);
         Obj(l, "Orange", Orange, 2, 3, 2, Dir.W, 2, 1, -1);
-        l.solution = Solutions.Level40();
+        l.solution = Solutions.Level44();
         return l;
     }
 
