@@ -12,6 +12,7 @@ public static class RulesDemoUI
     public const float ChoiceOffset = .39f;
     public const float OutsideOffset = .446f;
     public static readonly Color Gold = new Color(.96f, .77f, .33f);
+    public static readonly Color LightGreen = new Color(.68f, .88f, .47f);
     public static readonly Color Red = new Color(1f, .29f, .32f);
     public static readonly Color Blue = new Color(.31f, .49f, 1f);
     public static readonly Color Path = new Color(.16f, .18f, .23f);
@@ -149,20 +150,18 @@ public static class RulesDemoUI
         var arrow = Group("Pointer", root, new Vector2(5, -10), new Vector2(19, 29));
         arrow.gameObject.AddComponent<CanvasRenderer>();
         arrow.localEulerAngles = new Vector3(0, 0, 28);
-        var graphic = arrow.gameObject.AddComponent<TriangleGraphic>();
+        var graphic = arrow.gameObject.AddComponent<RulesCursorGraphic>();
         graphic.color = Color.white;
         graphic.raycastTarget = false;
         var press = Ring("Press", root, Vector2.zero, Gold, 38);
         press.gameObject.SetActive(false);
-        var right = Box("RightButton", root, new Vector2(12, -18), new Vector2(6, 13), Gold);
-        right.gameObject.SetActive(false);
         return root;
     }
 
     public static void Press(RectTransform cursor, bool pressed, bool right = false)
     {
         cursor.Find("Press").gameObject.SetActive(pressed);
-        cursor.Find("RightButton").gameObject.SetActive(pressed && right);
+        cursor.Find("Pointer").GetComponent<RulesCursorGraphic>().RightPressed = pressed && right;
     }
 
     public static RectTransform Lock(string name, Transform parent, Vector2 position, float size = 24f)
@@ -173,4 +172,39 @@ public static class RulesDemoUI
         return root;
     }
 
+}
+
+[RequireComponent(typeof(CanvasRenderer))]
+public sealed class RulesCursorGraphic : MaskableGraphic
+{
+    bool rightPressed;
+
+    public bool RightPressed
+    {
+        get => rightPressed;
+        set
+        {
+            if (rightPressed == value) return;
+            rightPressed = value;
+            SetVerticesDirty();
+        }
+    }
+
+    protected override void OnPopulateMesh(VertexHelper mesh)
+    {
+        mesh.Clear();
+        Rect bounds = rectTransform.rect;
+        Vector2 tip = new Vector2(bounds.center.x, bounds.yMax);
+        Vector2 middle = new Vector2(bounds.center.x, bounds.yMin);
+        mesh.AddVert(tip, color, Vector2.zero);
+        mesh.AddVert(new Vector2(bounds.xMin, bounds.yMin), color, Vector2.zero);
+        mesh.AddVert(middle, color, Vector2.zero);
+        mesh.AddTriangle(0, 1, 2);
+        Color rightColor = rightPressed ? RulesDemoUI.Gold : color;
+        rightColor.a = color.a;
+        mesh.AddVert(tip, rightColor, Vector2.zero);
+        mesh.AddVert(middle, rightColor, Vector2.zero);
+        mesh.AddVert(new Vector2(bounds.xMax, bounds.yMin), rightColor, Vector2.zero);
+        mesh.AddTriangle(3, 4, 5);
+    }
 }

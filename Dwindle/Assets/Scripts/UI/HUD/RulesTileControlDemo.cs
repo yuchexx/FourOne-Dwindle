@@ -6,9 +6,8 @@ public sealed class RulesTileControlDemo : MonoBehaviour
 {
     public TMP_FontAsset font;
 
-    const float Duration = 21f;
+    const float Duration = 22f;
     const float CellSize = 90f;
-    static readonly Color PhaseColor = new Color(.68f, .88f, .47f);
     static readonly Vector2 StartPoint = new(-45f - CellSize * RulesDemoUI.OutsideOffset, 130);
     static readonly Vector2 GoalPoint = new(225f + CellSize * RulesDemoUI.OutsideOffset, 130);
     static readonly Vector2 SupplyPoint = new(-330, 130);
@@ -23,6 +22,7 @@ public sealed class RulesTileControlDemo : MonoBehaviour
     RectTransform lastPathTile;
     RectTransform cursor;
     RectTransform actor;
+    CircleGraphic matchingRing;
     RectTransform editableOutline;
     RectTransform lockedOutline;
     RectTransform lockMark;
@@ -34,15 +34,16 @@ public sealed class RulesTileControlDemo : MonoBehaviour
     void Awake()
     {
         var root = RulesDemoUI.Group("TileControlDemonstration", transform, Vector2.zero, new Vector2(950, 560));
-        RulesDemoUI.Label("PlacementSettings", root, new Vector2(0, 295), new Vector2(950, 32),
+        RulesDemoUI.Label("PlacementSettings", root, new Vector2(0, 264), new Vector2(950, 32),
             "Choose <b>Click</b>, <b>Drag</b>, or <b>Both</b> in <b>Settings</b>.", 22, font);
-        phaseLabel = RulesDemoUI.Label("CurrentPhase", root, new Vector2(0, 239), new Vector2(900, 38),
+        phaseLabel = RulesDemoUI.Label("CurrentPhase", root, new Vector2(0, 175), new Vector2(900, 38),
             "PLACE", 27, font);
-        phaseLabel.color = PhaseColor;
-        caption = RulesDemoUI.Label("PhaseExplanation", root, new Vector2(0, 199), new Vector2(940, 34),
+        phaseLabel.color = RulesDemoUI.LightGreen;
+        caption = RulesDemoUI.Label("PhaseExplanation", root, new Vector2(0, -260), new Vector2(940, 60),
             "Drag a tile from the supply to place it.", 22, font);
 
-        var scene = RulesDemoUI.Group("PlacementScene", root, new Vector2(0, -85), new Vector2(950, 360));
+        var scene = RulesDemoUI.Group("PlacementScene", root, new Vector2(20, -160), new Vector2(950, 360));
+        scene.localScale = Vector3.one * 1.15f;
         RulesDemoUI.Box("SupplyPanel", scene, new Vector2(-330, 84), new Vector2(170, 248), RulesDemoUI.Panel);
         RulesDemoUI.Label("SupplyHeading", scene, new Vector2(-330, 225), new Vector2(180, 32), "SUPPLY", 22, font);
         RulesDemoUI.Label("BoardHeading", scene, new Vector2(110, 225), new Vector2(360, 32), "BOARD", 22, font);
@@ -68,7 +69,7 @@ public sealed class RulesTileControlDemo : MonoBehaviour
         RulesDemoUI.Box("SecondConnection", scene, new Vector2(135, 130), new Vector2(2, 14), RulesDemoUI.Path);
         returnedTile = RulesDemoUI.Tile("UnusedReturnTile", scene, ReturnPoint, TileType.StraightH, 88);
         tile = RulesDemoUI.Tile("EditableTile", scene, SupplyPoint, TileType.StraightH, 88);
-        RulesDemoUI.Ring("MatchingRing", scene, GoalPoint, RulesDemoUI.Red, CellSize * RulesDemoUI.RingRatio);
+        matchingRing = RulesDemoUI.Ring("MatchingRing", scene, GoalPoint, RulesDemoUI.Red, CellSize * RulesDemoUI.RingRatio);
 
         editableOutline = RulesDemoUI.Outline("UnusedHighlight", scene, PlacedPoint,
             new Vector2(88, 88), RulesDemoUI.Gold, 3);
@@ -95,27 +96,31 @@ public sealed class RulesTileControlDemo : MonoBehaviour
 
     void Render(float time)
     {
-        phaseLabel.color = PhaseColor;
-        bool used = time >= 14.2f;
-        supplyTile.gameObject.SetActive(time < 1f || time >= 10.5f);
+        bool returning = time >= 15f;
+        actor.anchoredPosition = Travel(StartPoint, GoalPoint, time, 6.3f, 9.3f);
+        actor.gameObject.SetActive(time < 9.7f);
+        bool used = time >= 6.3f && actor.anchoredPosition.x >= MovedPoint.x;
+        bool delivered = time >= 9.7f;
+        matchingRing.thickness = delivered ? 1f : .22f;
+        matchingRing.SetVerticesDirty();
+        supplyTile.gameObject.SetActive(time < 1f || time >= 19f);
         tile.gameObject.SetActive(time >= 1f);
-        returnedTile.gameObject.SetActive(time < 10.5f);
-        returnedTile.anchoredPosition = Travel(ReturnPoint, SupplyPoint, time, 9.5f, 10.5f);
-        editableOutline.gameObject.SetActive(time >= 2.9f && time < 8f);
+        returnedTile.gameObject.SetActive(time < 19f);
+        returnedTile.anchoredPosition = Travel(ReturnPoint, SupplyPoint, time, 18f, 19f);
+        editableOutline.gameObject.SetActive(time >= 2.9f && !used || returning && time < 18f);
         lockedOutline.gameObject.SetActive(used);
-        lockMark.gameObject.SetActive(used);
+        lockMark.gameObject.SetActive(delivered);
         RulesDemoUI.SetUsed(tile, used);
-        RulesDemoUI.SetUsed(firstPathTile, time >= 13.1f);
-        RulesDemoUI.SetUsed(lastPathTile, time >= 15.2f);
-        stateLabel.text = used ? "USED - locked in place" : "UNUSED - still editable";
-        stateLabel.color = used ? RulesDemoUI.Muted : RulesDemoUI.Gold;
+        RulesDemoUI.SetUsed(firstPathTile, time >= 6.3f && actor.anchoredPosition.x >= 0f);
+        RulesDemoUI.SetUsed(lastPathTile, time >= 6.3f && actor.anchoredPosition.x >= 180f);
+        stateLabel.text = returning ? "UNUSED - can be returned" : used ? "USED - locked in place" : "UNUSED - still editable";
+        stateLabel.color = used && !returning ? RulesDemoUI.Muted : RulesDemoUI.LightGreen;
 
         tile.anchoredPosition = time < 4f
             ? Travel(SupplyPoint, PlacedPoint, time, 1f, 2.9f)
-            : Travel(PlacedPoint, MovedPoint, time, 5.1f, 6.7f);
-        editableOutline.anchoredPosition = tile.anchoredPosition;
-        actor.gameObject.SetActive(time >= 12f && time < 16f);
-        actor.anchoredPosition = Travel(StartPoint, GoalPoint, time, 12.5f, 15.7f);
+            : Travel(PlacedPoint, MovedPoint, time, 5.1f, 6.3f);
+        editableOutline.anchoredPosition = returning ? returnedTile.anchoredPosition : tile.anchoredPosition;
+        cursor.gameObject.SetActive(time < 6.3f || time >= 9.7f);
 
         if (time < 4f)
         {
@@ -126,31 +131,29 @@ public sealed class RulesTileControlDemo : MonoBehaviour
                 : tile.anchoredPosition;
             RulesDemoUI.Press(cursor, time >= 1f && time < 2.9f);
         }
-        else if (time < 8f)
+        else if (time < 9.7f)
         {
             phaseLabel.text = "MOVE";
-            caption.text = "Unused tiles can still be moved.";
+            caption.text = time < 6.3f ? "Unused tiles can still be moved." : "The object follows the completed path.";
             cursor.anchoredPosition = tile.anchoredPosition;
-            RulesDemoUI.Press(cursor, time >= 5.1f && time < 6.7f);
+            RulesDemoUI.Press(cursor, time >= 5.1f && time < 6.3f);
         }
-        else if (time < 12f)
-        {
-            phaseLabel.text = "TAKE BACK";
-            phaseLabel.color = RulesDemoUI.Gold;
-            caption.text = "Right-click an unused tile to return it to the supply.";
-            cursor.anchoredPosition = Travel(MovedPoint, ReturnPoint, time, 8f, 8.8f);
-            RulesDemoUI.Press(cursor, time >= 9f && time < 9.5f, true);
-        }
-        else
+        else if (time < 15f)
         {
             phaseLabel.text = "LOCKED";
             caption.text = "Used tiles can no longer be moved or returned.";
-            cursor.anchoredPosition = time < 16.2f
-                ? Travel(ReturnPoint, MovedPoint, time, 15.5f, 16.2f)
-                : Travel(MovedPoint, PlacedPoint, time, 17f, 18.2f);
-            RulesDemoUI.Press(cursor, time >= 17f && time < 18.2f);
+            cursor.anchoredPosition = time < 11f
+                ? Travel(ReturnPoint, MovedPoint, time, 9.7f, 10.4f)
+                : Travel(MovedPoint, PlacedPoint, time, 11f, 12.3f);
+            RulesDemoUI.Press(cursor, time >= 11f && time < 12.3f);
         }
-
+        else
+        {
+            phaseLabel.text = "TAKE BACK";
+            caption.text = "<color=#F5C454><b>Right-click</b></color> an unused tile to return it to the supply.";
+            cursor.anchoredPosition = Travel(PlacedPoint, ReturnPoint, time, 15f, 16.2f);
+            RulesDemoUI.Press(cursor, time >= 16.5f && time < 18f, true);
+        }
     }
 
     static Vector2 Travel(Vector2 from, Vector2 to, float time, float start, float end)

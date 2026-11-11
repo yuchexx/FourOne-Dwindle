@@ -15,11 +15,11 @@ public class RulesBasicsDemo : MonoBehaviour
 
     void Awake()
     {
-        RulesDemoUI.Label("Tutorial", transform, new Vector2(0, 295), new Vector2(940, 32),
-            "<b>New here? Try Level 1 for a guided tutorial.</b>", 23, font);
-        RulesDemoUI.Label("DwindleRule", transform, new Vector2(0, 246), new Vector2(940, 32),
-            "Each delivery removes a traveled tile.", 22, font);
-        var board = RulesDemoUI.Group("DwindleBoard", transform, new Vector2(0, -13), new Vector2(760, 420));
+        RulesDemoUI.Label("Tutorial", transform, new Vector2(0, 262), new Vector2(940, 32),
+            "<b>New here? Try <color=#8EBEFF>Level 1</color> for a guided tutorial.</b>", 23, font);
+        RulesDemoUI.Label("DwindleRule", transform, new Vector2(0, 214), new Vector2(940, 32),
+            "Each delivery <b>randomly</b> removes a traveled tile.", 22, font);
+        var board = RulesDemoUI.Group("DwindleBoard", transform, new Vector2(0, -37), new Vector2(760, 420));
         RulesDemoUI.Box("BoardBackground", board, Vector2.zero, new Vector2(760, 420), RulesDemoUI.Panel);
         RulesDemoUI.EndLine("Red start line", board, new Vector2(-225, 62), new Vector2(-Endpoint, 62),
             RulesDemoUI.Red, CellSize, RulesDemoUI.ObjectRatio);
@@ -51,8 +51,8 @@ public class RulesBasicsDemo : MonoBehaviour
         red = RulesDemoUI.Actor("RedObject", board, new Vector2(-Endpoint, 62), RulesDemoUI.Red, CellSize * RulesDemoUI.ObjectRatio);
         blue = RulesDemoUI.Actor("BlueObject", board, new Vector2(BlueStart, -118), RulesDemoUI.Blue, CellSize * RulesDemoUI.ObjectRatio, Dir.W);
         cursor = RulesDemoUI.Cursor("PlacementCursor", board, Vector2.zero);
-        stage = RulesDemoUI.Label("AnimationStatus", transform, new Vector2(0, -274), new Vector2(940, 60),
-            "Complete the path.", 21, font);
+        stage = RulesDemoUI.Label("AnimationStatus", transform, new Vector2(0, -292), new Vector2(940, 58),
+            "", 28, font);
         stage.color = RulesDemoUI.Gold;
     }
 
@@ -64,7 +64,7 @@ public class RulesBasicsDemo : MonoBehaviour
 
     void Update()
     {
-        Render(Mathf.Repeat(Time.unscaledTime - startedAt, 16f));
+        Render(Mathf.Repeat(Time.unscaledTime - startedAt, 18.5f));
     }
 
     void Render(float t)
@@ -82,21 +82,20 @@ public class RulesBasicsDemo : MonoBehaviour
             route[i].gameObject.SetActive(i != 1 || t >= 2.9f);
             RulesDemoUI.SetUsed(route[i], t >= 3.2f && redX >= -180 + 90 * i);
         }
-        route[2].gameObject.SetActive(t < 7.7f);
+        route[2].gameObject.SetActive(t < 8.8f);
         red.anchoredPosition = new Vector2(redX, 62);
         red.gameObject.SetActive(t < 6.6f);
         redRing.thickness = t >= 6.6f ? 1f : .22f;
         redRing.SetVerticesDirty();
-        gap.gameObject.SetActive(t >= 7.7f);
-        entry.gameObject.SetActive(t >= 8.8f);
-        blue.anchoredPosition = t < 10f
-            ? Vector2.Lerp(new Vector2(BlueStart, -118), new Vector2(0, -118), Mathf.InverseLerp(9f, 10f, t))
-            : Vector2.Lerp(new Vector2(0, -118), new Vector2(0, -28), Mathf.InverseLerp(10f, 11.2f, t));
-        RulesDemoUI.Face(blue, t < 10f ? Dir.W : Dir.N);
-        stage.text = t < 3.2f ? "Complete the path." :
-            t < 6.6f ? "The object uses the path." :
-            t < 7.7f ? "Delivered!" : t < 9f ? "One traveled tile is removed." :
-            t < 12.5f ? "The remaining object now needs a new route." :
+        gap.gameObject.SetActive(t >= 8.8f);
+        entry.gameObject.SetActive(t >= 9.8f);
+        blue.anchoredPosition = t < 11.2f
+            ? Vector2.Lerp(new Vector2(BlueStart, -118), new Vector2(0, -118), Mathf.InverseLerp(10.2f, 11.2f, t))
+            : Vector2.Lerp(new Vector2(0, -118), new Vector2(0, -28), Mathf.InverseLerp(11.2f, 12.4f, t));
+        RulesDemoUI.Face(blue, t < 11.2f ? Dir.W : Dir.N);
+        stage.gameObject.SetActive(t >= 6.6f);
+        stage.text = t < 8.8f ? "<b>Delivered!</b>" :
+            t < 14.5f ? "A traveled tile is <b>randomly removed!</b>" :
             "<b>Plan ahead for the paths you still need!</b>";
     }
 }

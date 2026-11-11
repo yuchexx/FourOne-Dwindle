@@ -36,6 +36,7 @@ public class MenuView : MonoBehaviour
         public int pageCount = 1;
         public GameObject subTabs;
         public float selectedWidth;
+        public bool greenSelection;
         [System.NonSerialized] public float normalWidth;
     }
 
@@ -145,7 +146,10 @@ public class MenuView : MonoBehaviour
         foreach (var tab in rulesTabs)
         {
             bool selected = currentRulesPage >= tab.firstPage && currentRulesPage < tab.firstPage + tab.pageCount;
-            tab.button.targetGraphic.color = selected ? Color.Lerp(palette.button, palette.accent, .45f) : palette.button;
+            Color selectedColor = tab.greenSelection ? RulesDemoUI.LightGreen : Color.Lerp(palette.button, palette.accent, .45f);
+            tab.button.targetGraphic.color = selected ? selectedColor : palette.button;
+            if (tab.greenSelection)
+                tab.button.GetComponentInChildren<TMP_Text>(true).color = selected ? palette.background : palette.text;
             if (tab.selectedWidth > 0f)
             {
                 var rect = (RectTransform)tab.button.transform;
