@@ -49,9 +49,12 @@ public sealed class RulesRoutesDemo : MonoBehaviour
         string caption = kind == RouteKind.Junction ? "Choose a direction."
             : kind == RouteKind.Bridge ? "Cross straight through without connecting paths."
             : "Teleport through a matching door,<br>then choose a direction.";
+        // Center the text block between the mini-tabs (bottom: 246) and each board panel.
+        float boardTop = kind == RouteKind.Junction ? 160f : kind == RouteKind.Bridge ? 166f : 141f;
+        float captionY = (246f + boardTop) * .5f;
         RulesDemoUI.Label("Route caption", transform,
-            new Vector2(0, 212),
-            new Vector2(930, 60), caption, 24, font, TextAlignmentOptions.Top);
+            new Vector2(0, captionY),
+            new Vector2(930, 60), caption, 24, font, TextAlignmentOptions.Center);
     }
 
     void OnEnable()

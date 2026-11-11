@@ -38,6 +38,7 @@ public class MenuView : MonoBehaviour
         public float selectedWidth;
         public bool greenSelection;
         [System.NonSerialized] public float normalWidth;
+        [System.NonSerialized] public Vector2 normalSubTabsPosition;
     }
 
     int currentRulesPage;
@@ -48,6 +49,8 @@ public class MenuView : MonoBehaviour
         {
             if (tab.selectedWidth > 0f)
                 tab.normalWidth = ((RectTransform)tab.button.transform).sizeDelta.x;
+            if (tab.subTabs != null)
+                tab.normalSubTabsPosition = ((RectTransform)tab.subTabs.transform).anchoredPosition;
             tab.button.onClick.AddListener(() => ShowRulesPage(tab.firstPage));
         }
     }
@@ -156,7 +159,13 @@ public class MenuView : MonoBehaviour
                 rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, selected ? tab.selectedWidth : tab.normalWidth);
             }
             if (tab.subTabs != null)
+            {
+                // Keep all Special Routes mini-tabs at the same height.
+                var subTabsRect = (RectTransform)tab.subTabs.transform;
+                subTabsRect.anchoredPosition = tab.normalSubTabsPosition
+                    + new Vector2(0, -12f);
                 tab.subTabs.SetActive(selected);
+            }
         }
     }
 
