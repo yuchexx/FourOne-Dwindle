@@ -15,33 +15,17 @@ static class Export
     // the tricks already); with no trick at all, routing. a level needing several picks the first in this order
     public static (string finish, string best) Hints(Props p, LevelData l)
     {
-        Plan Without(Func<Plan, bool> filter = null, Action<Solver2> setup = null)
-        {
-            var solver = new Solver2(l) { filter = filter };
-            setup?.Invoke(solver);
-            return solver.Best();
-        }
-        bool ToFinish(Func<Plan, bool> filter = null, Action<Solver2> setup = null) => Without(filter, setup) == null;
-        bool ForTarget(Func<Plan, bool> filter = null, Action<Solver2> setup = null)
-        {
-            var w = Without(filter, setup);
-            return w != null && w.score < p.score;
-        }
-        bool NoBridge()
-        {
-            var keep = l.inventory;
-            l.inventory = new Dictionary<TileType, int>(keep) { [TileType.Bridge] = 0 };
-            try { return ToFinish(); } finally { l.inventory = keep; }
-        }
+        bool ToFinish(LevelTrick t) => Tricks.NeededToFinish(l, t);
+        bool ForTarget(LevelTrick t) => Tricks.OnlyForScore(l, t, p.score);
 
         bool together = p.groups.Any(g => g > 1);
-        bool bridge = p.best.tiles.Values.Contains(TileType.Bridge);
+        bool bridge = Tricks.Bridge.uses(l, p.best);
         bool two = p.buildsAhead && Gen.Abcd(l, p.best);
-        bool togetherToFinish = together && ToFinish(setup: s => s.allowCombos = false);
-        bool detourToFinish = p.detour && ToFinish(setup: s => s.noDetours = true);
-        bool bridgeToFinish = bridge && NoBridge();
-        bool aheadToFinish = p.buildsAhead && ToFinish(x => !x.BuildsAhead);
-        bool earnedToFinish = p.earnedCrossUsed && ToFinish(x => !LevelMaker.UsesEarnedPlus(l, x));
+        bool togetherToFinish = together && ToFinish(Tricks.Together);
+        bool detourToFinish = p.detour && ToFinish(Tricks.Detour);
+        bool bridgeToFinish = bridge && ToFinish(Tricks.Bridge);
+        bool aheadToFinish = p.buildsAhead && ToFinish(Tricks.BuildAhead);
+        bool earnedToFinish = p.earnedCrossUsed && ToFinish(Tricks.EarnedPlus);
 
         string finish =
             p.pairTrap && togetherToFinish ? Tips.Pairs
@@ -55,11 +39,11 @@ static class Export
 
         string best =
             p.pairTrap && !togetherToFinish ? Tips.Pairs
-            : p.detour && !detourToFinish && ForTarget(setup: s => s.noDetours = true) ? Tips.DetourForScore
-            : two && !aheadToFinish && ForTarget(x => !Gen.Abcd(l, x)) ? Tips.TwoRoutes
-            : p.buildsAhead && !aheadToFinish && ForTarget(x => !x.BuildsAhead) ? Tips.OneRoute
-            : p.earnedCrossUsed && !earnedToFinish && ForTarget(x => !LevelMaker.UsesEarnedPlus(l, x)) ? Tips.EarnedPlus
-            : together && !togetherToFinish && ForTarget(setup: s => s.allowCombos = false) ? Tips.TogetherForScore
+            : p.detour && !detourToFinish && ForTarget(Tricks.Detour) ? Tips.DetourForScore
+            : two && !aheadToFinish && ForTarget(Tricks.DoubleBuildAhead) ? Tips.TwoRoutes
+            : p.buildsAhead && !aheadToFinish && ForTarget(Tricks.BuildAhead) ? Tips.OneRoute
+            : p.earnedCrossUsed && !earnedToFinish && ForTarget(Tricks.EarnedPlus) ? Tips.EarnedPlus
+            : together && !togetherToFinish && ForTarget(Tricks.Together) ? Tips.TogetherForScore
             : finish != null ? Tips.FewerTiles
             : together || p.buildsAhead || p.detour || bridge || p.earnedCrossUsed ? Tips.FewerTiles
             : Tips.Routing;

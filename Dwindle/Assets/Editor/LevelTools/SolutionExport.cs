@@ -53,36 +53,17 @@ static class SolutionExport
     static string L(LevelData l, Vector2Int c) { var (b, x, y) = Loc(l, c); return $"{b}, {x}, {y}"; }
     static string Tuple(LevelData l, Vector2Int c) => $"({L(l, c)})";
 
-    // tricks: what the best plans use, and whether the level needs it
-    static bool Detour(LevelData l, Plan p) => Enumerable.Range(0, l.objects.Count).Any(i => l.objects[i].startBoard == l.objects[i].destBoard && p.routes[i].doors > 0);
-    // placing the bridge at all, as LevelMaker.BridgeNeeded counts it (on some levels it's laid as a straight, so an I is free elsewhere)
-    static bool Bridge(Plan p) => p.tiles.Values.Contains(TileType.Bridge);
-
-    static TrickNeed Need(List<Plan> plans, Func<Plan, bool> uses, Func<bool> finishesWithout)
-    {
-        int n = plans.Count(uses);
-        if (n == 0) return TrickNeed.NotUsed;
-        if (n < plans.Count) return TrickNeed.Optional;
-        return finishesWithout() ? TrickNeed.RequiredForTarget : TrickNeed.RequiredToFinish;
-    }
-
-    static List<(string name, TrickNeed need)> Tricks(LevelData l, List<Plan> plans, Func<Plan, bool> buildsAhead)
-    {
-        bool Finishes(Solver2 s) => s.Best() != null;
-        return new List<(string, TrickNeed)>
+    // tricks (see Tricks.cs): used by every best plan, some, or none, and if every, whether the level can be finished
+    // without it. build ahead counts only the squares that really have to come first (Before)
+    static List<(string name, TrickNeed need)> TrickNeeds(LevelData l, List<Plan> plans, Func<Plan, bool> buildsAhead) =>
+        Tricks.InSolutions.Select(t =>
         {
-            ("Delivered together", Need(plans, p => p.events.Any(e => e.Count >= 2), () => Finishes(new Solver2(l) { allowCombos = false }))),
-            ("Detour", Need(plans, p => Detour(l, p), () => Finishes(new Solver2(l) { noDetours = true }))),
-            ("Build ahead", Need(plans, buildsAhead, () => Finishes(new Solver2(l) { filter = x => !x.BuildsAhead }))),
-            ("Earned +", Need(plans, p => LevelMaker.UsesEarnedPlus(l, p), () => Finishes(new Solver2(l) { filter = x => !LevelMaker.UsesEarnedPlus(l, x) }))),
-            ("Bridge", Need(plans, Bridge, () =>
-            {
-                var keep = l.inventory;
-                l.inventory = new Dictionary<TileType, int>(keep) { [TileType.Bridge] = 0 };
-                try { return Finishes(new Solver2(l)); } finally { l.inventory = keep; }
-            })),
-        };
-    }
+            Func<Plan, bool> uses = t == Tricks.BuildAhead ? buildsAhead : p => t.uses(l, p);
+            int n = plans.Count(uses);
+            var need = n == 0 ? TrickNeed.NotUsed : n < plans.Count ? TrickNeed.Optional
+                : Tricks.NeededToFinish(l, t) ? TrickNeed.RequiredToFinish : TrickNeed.RequiredForTarget;
+            return (t.name, need);
+        }).ToList();
 
     // the generated file
     public static string Code(LevelData l, int number)
@@ -91,7 +72,7 @@ static class SolutionExport
         var befores = new Dictionary<(Plan, int), List<Vector2Int>>();
         List<Vector2Int> BeforeOf(Plan p, int k) => befores.TryGetValue((p, k), out var b) ? b : befores[(p, k)] = Before(l, p, k);
         var families = plans.GroupBy(Roads).ToList();
-        var tricks = Tricks(l, plans, p => Enumerable.Range(0, p.events.Count).Any(k => BeforeOf(p, k).Count > 0));
+        var tricks = TrickNeeds(l, plans, p => Enumerable.Range(0, p.events.Count).Any(k => BeforeOf(p, k).Count > 0));
         string Names(IEnumerable<int> objs) => "new[] { " + string.Join(", ", objs.OrderBy(j => j).Select(j => $"\"{l.objects[j].name}\"")) + " }";
 
         var sb = new StringBuilder();

@@ -25,7 +25,8 @@ class Solver2
 {
     public const int Delivery = 100, ComboPer = 50, DoorPer = 50, Unused = 75;
     public const int WaysSlack = 2; // "ways to finish" counts layouts whose routes are at most this much longer than the shortest (not wasteful ones)
-    readonly LevelData L; readonly int slack, maxRoutes;
+    LevelData L; readonly int slack, maxRoutes;
+    public Dictionary<TileType, int> supply; // when set: search as if the level had this supply (on a copy, so the level isn't touched)
     public bool requireSafe = true;   // false: unsafe deliveries are allowed, at -75 for each tile they break
     public bool lucky;                // with requireSafe and penalize false: a plan counts if SOME sequence of breaks works (undo re-rolls them)
     public bool allowRevisits = true; // a route may cross a square a second time, entering from another side (a + or a bridge)
@@ -52,6 +53,29 @@ class Solver2
     public static volatile bool Abort; // set from another thread to stop every running solve (the level maker's Cancel and time limit)
 
     public Solver2(LevelData l, int slack = 4, int maxRoutes = 20000) { L = l; this.slack = slack; this.maxRoutes = maxRoutes; }
+
+    // the level's supply with one tile type changed: set to a count, or changed by `add`
+    public static Dictionary<TileType, int> Supply(LevelData l, TileType t, int? set = null, int add = 0)
+    {
+        var s = new Dictionary<TileType, int>(l.inventory);
+        s[t] = set ?? s.GetValueOrDefault(t) + add;
+        return s;
+    }
+
+    void UseSupply()
+    {
+        if (supply == null) return;
+        L = LB.Copy(L);
+        L.inventory = supply;
+        supply = null;
+    }
+
+    // another search for the same plans: the options that decide which plans count (not the limits or the lists)
+    Solver2 SamePlans() => new Solver2(L, slack, maxRoutes)
+    {
+        requireSafe = requireSafe, penalize = penalize, allowCombos = allowCombos, noDetours = noDetours, oneEvent = oneEvent,
+        allowRevisits = allowRevisits, maxVisits = maxVisits, maxRouteCells = maxRouteCells, filter = filter, noSharing = noSharing,
+    };
 
     // every finishing layout and its best score (in .collect): routes up to WaysSlack longer than the shortest,
     // or as long as the best plan's longest detour if that's more, so the best plan is always among them
@@ -164,6 +188,7 @@ class Solver2
 
     public Plan Best()
     {
+        UseSupply();
         var objs = L.objects; int n = objs.Count;
         var routes = objs.Select(o => Routes(o, Fewest(o))).ToList();
         if (routes.Any(r => r.Count == 0)) return null;
@@ -178,10 +203,15 @@ class Solver2
         // start from the quick test's best plan when it really works, so the full search can skip what can't beat it
         if ((requireSafe || lucky) && !quick && !Exhaustive)
         {
-            var q = new Solver2(L, slack, maxRoutes) { requireSafe = requireSafe, penalize = penalize, allowCombos = allowCombos, noDetours = noDetours, oneEvent = oneEvent, allowRevisits = allowRevisits, maxVisits = maxVisits, maxRouteCells = maxRouteCells, filter = filter, noSharing = noSharing, quick = true }.Best();
+            var quickOne = SamePlans(); quickOne.quick = true;
+            var q = quickOne.Best();
             if (q != null && new Replay2(L).Run(q, any: lucky).ok) best = q;
-            // and if nothing works even when breaks are ignored, nothing works with them (this is the slow case otherwise)
-            else if (new Solver2(L, slack, maxRoutes) { requireSafe = false, penalize = false, allowCombos = allowCombos, noDetours = noDetours, oneEvent = oneEvent, allowRevisits = allowRevisits, maxVisits = maxVisits, maxRouteCells = maxRouteCells, filter = filter, noSharing = noSharing }.Best() == null) return null;
+            else
+            {
+                // and if nothing works even when breaks are ignored, nothing works with them (this is the slow case otherwise)
+                var paper = SamePlans(); paper.requireSafe = false; paper.penalize = false;
+                if (paper.Best() == null) return null;
+            }
         }
         var chosen = new Route[n];
         var byCell = new Dictionary<Vector2Int, List<Step>>();

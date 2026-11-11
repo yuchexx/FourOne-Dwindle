@@ -8,6 +8,12 @@ static class LB
     public static readonly (string name, Color color)[] Palette =
         { ("Red", Red), ("Blue", Blue), ("Green", Green), ("Orange", Orange), ("Cyan", Cyan) };
 
+    // a copy of the level whose own settings (supply, title, tips...) can change without touching the original. its
+    // boards, objects and doors are shared, so those stay as they are
+    public static LevelData Copy(LevelData l) => (LevelData)CloneLevel.Invoke(l, null);
+    static readonly System.Reflection.MethodInfo CloneLevel =
+        typeof(object).GetMethod("MemberwiseClone", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
     public static LevelData New(string title, params (int, int)[] boards)
     {
         var l = new LevelData { title = title };
