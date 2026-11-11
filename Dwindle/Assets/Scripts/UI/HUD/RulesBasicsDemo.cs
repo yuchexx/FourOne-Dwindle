@@ -15,15 +15,12 @@ public class RulesBasicsDemo : MonoBehaviour
 
     void Awake()
     {
-        RulesDemoUI.Label("Tutorial", transform, new Vector2(0, 244), new Vector2(940, 32),
+        RulesDemoUI.Label("Tutorial", transform, new Vector2(0, 295), new Vector2(940, 32),
             "<b>New here? Try Level 1 for a guided tutorial.</b>", 23, font);
-        var heading = RulesDemoUI.Label("DwindleHeading", transform, new Vector2(0, 198), new Vector2(900, 34),
-            "<b>DWINDLE</b>", 26, font);
-        heading.color = RulesDemoUI.Gold;
-        RulesDemoUI.Label("DwindleRule", transform, new Vector2(0, 151), new Vector2(940, 58),
-            "Each delivery removes a traveled tile.<br>Plan ahead for the paths you still need.", 22, font);
-        var board = RulesDemoUI.Group("DwindleBoard", transform, new Vector2(0, -86), new Vector2(760, 374));
-        RulesDemoUI.Box("BoardBackground", board, Vector2.zero, new Vector2(760, 374), RulesDemoUI.Panel);
+        RulesDemoUI.Label("DwindleRule", transform, new Vector2(0, 246), new Vector2(940, 32),
+            "Each delivery removes a traveled tile.", 22, font);
+        var board = RulesDemoUI.Group("DwindleBoard", transform, new Vector2(0, -13), new Vector2(760, 420));
+        RulesDemoUI.Box("BoardBackground", board, Vector2.zero, new Vector2(760, 420), RulesDemoUI.Panel);
         RulesDemoUI.EndLine("Red start line", board, new Vector2(-225, 62), new Vector2(-Endpoint, 62),
             RulesDemoUI.Red, CellSize, RulesDemoUI.ObjectRatio);
         RulesDemoUI.EndLine("Red goal line", board, new Vector2(225, 62), new Vector2(Endpoint, 62),
@@ -54,7 +51,7 @@ public class RulesBasicsDemo : MonoBehaviour
         red = RulesDemoUI.Actor("RedObject", board, new Vector2(-Endpoint, 62), RulesDemoUI.Red, CellSize * RulesDemoUI.ObjectRatio);
         blue = RulesDemoUI.Actor("BlueObject", board, new Vector2(BlueStart, -118), RulesDemoUI.Blue, CellSize * RulesDemoUI.ObjectRatio, Dir.W);
         cursor = RulesDemoUI.Cursor("PlacementCursor", board, Vector2.zero);
-        stage = RulesDemoUI.Label("AnimationStatus", transform, new Vector2(0, -301), new Vector2(900, 32),
+        stage = RulesDemoUI.Label("AnimationStatus", transform, new Vector2(0, -274), new Vector2(940, 60),
             "Complete the path.", 21, font);
         stage.color = RulesDemoUI.Gold;
     }
@@ -67,7 +64,7 @@ public class RulesBasicsDemo : MonoBehaviour
 
     void Update()
     {
-        Render(Mathf.Repeat(Time.unscaledTime - startedAt, 15f));
+        Render(Mathf.Repeat(Time.unscaledTime - startedAt, 16f));
     }
 
     void Render(float t)
@@ -99,6 +96,7 @@ public class RulesBasicsDemo : MonoBehaviour
         stage.text = t < 3.2f ? "Complete the path." :
             t < 6.6f ? "The object uses the path." :
             t < 7.7f ? "Delivered!" : t < 9f ? "One traveled tile is removed." :
-            "The remaining object now needs a new route.";
+            t < 12.5f ? "The remaining object now needs a new route." :
+            "<b>Plan ahead for the paths you still need!</b>";
     }
 }

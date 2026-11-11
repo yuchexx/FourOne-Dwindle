@@ -118,14 +118,16 @@ public static class RulesDemoUI
     {
         Vector2 direction = (endpoint - edge).normalized;
         float length = Vector2.Distance(edge, endpoint) - cellSize * endpointRatio * .92f * .5f;
-        float dot = cellSize * .08f;
+        float dot = cellSize * .05f;
+        float gap = cellSize * .06f;
         if (length < dot) return;
-        int count = Mathf.Max(1, Mathf.CeilToInt(length / (cellSize * .14f)));
+        int count = Mathf.Max(1, Mathf.FloorToInt((length + gap) / (dot + gap)));
+        float first = (length - (count * dot + (count - 1) * gap)) * .5f + dot * .5f;
         var line = Group(name, parent, Vector2.zero, Vector2.zero);
         color.a *= .75f;
         for (int i = 0; i < count; i++)
         {
-            float offset = count == 1 ? length / 2f : Mathf.Lerp(dot / 2f, length - dot / 2f, i / (float)(count - 1));
+            float offset = first + i * (dot + gap);
             Box("Dot", line, edge + direction * offset, Vector2.one * dot, color);
         }
     }

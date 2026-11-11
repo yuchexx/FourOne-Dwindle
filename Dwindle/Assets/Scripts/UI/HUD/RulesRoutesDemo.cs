@@ -49,11 +49,9 @@ public sealed class RulesRoutesDemo : MonoBehaviour
         string caption = kind == RouteKind.Junction ? "Choose a direction."
             : kind == RouteKind.Bridge ? "Cross straight through without connecting paths."
             : "Teleport through a matching door,<br>then choose a direction.";
-        RulesDemoUI.Label("Route caption", transform, new Vector2(0, kind == RouteKind.Junction ? -270 : -278),
+        RulesDemoUI.Label("Route caption", transform,
+            new Vector2(0, kind == RouteKind.Doors ? 182 : kind == RouteKind.Junction ? -270 : -278),
             new Vector2(930, kind == RouteKind.Doors ? 60 : 40), caption, kind == RouteKind.Junction ? 28 : 24, font);
-        if (kind == RouteKind.Doors)
-            RulesDemoUI.Label("Door tutorial", transform, new Vector2(0, 182), new Vector2(930, 32),
-                "<b>Try Level 11.</b>", 23, font);
     }
 
     void OnEnable()

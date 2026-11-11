@@ -8,6 +8,7 @@ public sealed class RulesTileControlDemo : MonoBehaviour
 
     const float Duration = 21f;
     const float CellSize = 90f;
+    static readonly Color PhaseColor = new Color(.68f, .88f, .47f);
     static readonly Vector2 StartPoint = new(-45f - CellSize * RulesDemoUI.OutsideOffset, 130);
     static readonly Vector2 GoalPoint = new(225f + CellSize * RulesDemoUI.OutsideOffset, 130);
     static readonly Vector2 SupplyPoint = new(-330, 130);
@@ -28,24 +29,20 @@ public sealed class RulesTileControlDemo : MonoBehaviour
     TMP_Text phaseLabel;
     TMP_Text caption;
     TMP_Text stateLabel;
-    RectTransform clickCursor;
-    RectTransform clickTile;
-    RectTransform clickSelection;
-    RectTransform clickPlaced;
     float startedAt;
 
     void Awake()
     {
         var root = RulesDemoUI.Group("TileControlDemonstration", transform, Vector2.zero, new Vector2(950, 560));
-        RulesDemoUI.Label("PlacementSettings", root, new Vector2(0, 242), new Vector2(950, 32),
-            "Choose Click, Drag, or Both in Settings.", 22, font);
-        phaseLabel = RulesDemoUI.Label("CurrentPhase", root, new Vector2(0, 195), new Vector2(900, 38),
+        RulesDemoUI.Label("PlacementSettings", root, new Vector2(0, 295), new Vector2(950, 32),
+            "Choose <b>Click</b>, <b>Drag</b>, or <b>Both</b> in <b>Settings</b>.", 22, font);
+        phaseLabel = RulesDemoUI.Label("CurrentPhase", root, new Vector2(0, 239), new Vector2(900, 38),
             "PLACE", 27, font);
-        phaseLabel.color = RulesDemoUI.Gold;
-        caption = RulesDemoUI.Label("PhaseExplanation", root, new Vector2(0, 158), new Vector2(940, 34),
+        phaseLabel.color = PhaseColor;
+        caption = RulesDemoUI.Label("PhaseExplanation", root, new Vector2(0, 199), new Vector2(940, 34),
             "Drag a tile from the supply to place it.", 22, font);
 
-        var scene = RulesDemoUI.Group("PlacementScene", root, new Vector2(0, -110), new Vector2(950, 360));
+        var scene = RulesDemoUI.Group("PlacementScene", root, new Vector2(0, -85), new Vector2(950, 360));
         RulesDemoUI.Box("SupplyPanel", scene, new Vector2(-330, 84), new Vector2(170, 248), RulesDemoUI.Panel);
         RulesDemoUI.Label("SupplyHeading", scene, new Vector2(-330, 225), new Vector2(180, 32), "SUPPLY", 22, font);
         RulesDemoUI.Label("BoardHeading", scene, new Vector2(110, 225), new Vector2(360, 32), "BOARD", 22, font);
@@ -81,24 +78,8 @@ public sealed class RulesTileControlDemo : MonoBehaviour
         stateLabel = RulesDemoUI.Label("TileState", scene, new Vector2(110, -20), new Vector2(600, 30),
             "UNUSED - still editable", 20, font);
 
-        BuildClickExample(root);
         actor = RulesDemoUI.Actor("MovingObject", scene, StartPoint, RulesDemoUI.Red, CellSize * RulesDemoUI.ObjectRatio);
         cursor = RulesDemoUI.Cursor("TileControlCursor", scene, SupplyPoint);
-    }
-
-    void BuildClickExample(RectTransform root)
-    {
-        var example = RulesDemoUI.Group("ClickPlacementExample", root, new Vector2(0, -218), new Vector2(600, 72));
-        clickTile = RulesDemoUI.Tile("ClickSupplyTile", example, new Vector2(-125, 0), TileType.StraightH, 42);
-        RulesDemoUI.Box("ClickEmptyCell", example, new Vector2(125, 0), new Vector2(46, 46), new Color(.16f, .17f, .21f));
-        clickPlaced = RulesDemoUI.Tile("ClickPlacedTile", example, new Vector2(125, 0), TileType.StraightH, 42);
-        clickSelection = RulesDemoUI.Outline("ClickSelectedTile", example, new Vector2(-125, 0),
-            new Vector2(46, 46), RulesDemoUI.Gold, 2);
-        RulesDemoUI.Label("ClickSequence", example, Vector2.zero, new Vector2(190, 30), "click  >  click", 18, font);
-        clickCursor = RulesDemoUI.Cursor("ClickExampleCursor", example, new Vector2(-125, 0));
-        clickCursor.localScale = Vector3.one * .65f;
-        RulesDemoUI.Label("ClickExplanation", root, new Vector2(0, -278), new Vector2(950, 30),
-            "Or click a tile, then click where to place it.", 20, font);
     }
 
     void OnEnable()
@@ -114,6 +95,7 @@ public sealed class RulesTileControlDemo : MonoBehaviour
 
     void Render(float time)
     {
+        phaseLabel.color = PhaseColor;
         bool used = time >= 14.2f;
         supplyTile.gameObject.SetActive(time < 1f || time >= 10.5f);
         tile.gameObject.SetActive(time >= 1f);
@@ -154,6 +136,7 @@ public sealed class RulesTileControlDemo : MonoBehaviour
         else if (time < 12f)
         {
             phaseLabel.text = "TAKE BACK";
+            phaseLabel.color = RulesDemoUI.Gold;
             caption.text = "Right-click an unused tile to return it to the supply.";
             cursor.anchoredPosition = Travel(MovedPoint, ReturnPoint, time, 8f, 8.8f);
             RulesDemoUI.Press(cursor, time >= 9f && time < 9.5f, true);
@@ -168,17 +151,6 @@ public sealed class RulesTileControlDemo : MonoBehaviour
             RulesDemoUI.Press(cursor, time >= 17f && time < 18.2f);
         }
 
-        RenderClickExample(time);
-    }
-
-    void RenderClickExample(float time)
-    {
-        float phase = Mathf.Repeat(time, 6f);
-        clickCursor.anchoredPosition = Travel(new Vector2(-125, 0), new Vector2(125, 0), phase, 1.4f, 3f);
-        clickSelection.gameObject.SetActive(phase >= .7f && phase < 3.5f);
-        clickTile.gameObject.SetActive(phase < 3.5f);
-        clickPlaced.gameObject.SetActive(phase >= 3.5f);
-        RulesDemoUI.Press(clickCursor, (phase >= .7f && phase < 1.1f) || (phase >= 3.2f && phase < 3.5f));
     }
 
     static Vector2 Travel(Vector2 from, Vector2 to, float time, float start, float end)
