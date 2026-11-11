@@ -66,55 +66,15 @@ public static class Levels
         return l;
     }
 
-    // Routing teach on 3x3: two objects, just enough corners and straights and no T or + tiles, so each road has to leave the other the pieces it needs.
-    // Solution:
-    //   1. (2,0) L W-N
-    //   2. (2,1) L S-W
-    //   3. (1,1) L N-E
-    //   4. (1,2) L E-S
-    //   5. (2,2) L W-N
-    //   6. (1,0) L E-S -> Red arrives
-    //   7. (0,2) I-v
-    //   8. (0,1) I-v
-    //   9. (0,0) L W-N -> Blue arrives
-    // Score 200 with 9 tiles (target).
-    static LevelData Level3()
-    {
-        var l = new LevelData { title = "Level 3", targetScore = 200, bestTiles = 9,
-            bestPlanHint = Tips.Routing };
-        l.teach = true;
-        l.starsToPass = 3; // a teach level is passed when it's solved properly
-        l.SetBoards((3, 3));
-        l.inventory = Inv(ne: 1, es: 2, sw: 1, wn: 3, v: 2);
-        Obj(l, "Red", Red, 0, 1, -1, Dir.N, 0, 2, 3);
-        Obj(l, "Blue", Blue, 0, 0, 3, Dir.S, 0, -1, 0);
-        l.solution = Solutions.Level3();
-        return l;
-    }
-
-    // Routing with few tiles: mostly corners, roads around the edge, the middle unusable.
-    // Score 200 with 8 tiles (target).
-    static LevelData Level4()
-    {
-        var l = new LevelData { title = "Level 4", targetScore = 200, bestTiles = 8,
-            finishHint = "Try the edges. The supply is mostly corners.", bestPlanHint = Tips.FewerTiles };
-        l.SetBoards((3, 3));
-        l.inventory = Inv(es: 3, wn: 3, h: 1, v: 1);
-        Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 2, 3);
-        Obj(l, "Blue", Blue, 0, 3, 1, Dir.W, 0, 1, -1);
-        l.solution = Solutions.Level4();
-        return l;
-    }
-
     // Bridge teach on 2x2: Red and Blue cross over each other on the bridge and arrive together.
     // Solution:
     //   1. (0,0) L E-S
     //   2. (1,1) L E-S
     //   3. (1,0) bridge -> Red and Blue arrive together, +1 + tile
     // Score 450 with 3 tiles (target).
-    static LevelData Level5()
+    static LevelData Level3()
     {
-        var l = new LevelData { title = "Level 5", targetScore = 450, bestTiles = 3,
+        var l = new LevelData { title = "Level 3", targetScore = 450, bestTiles = 3,
             finishHint = Tips.Bridge, bestPlanHint = Tips.TogetherForScore };
         l.teach = true;
         l.starsToPass = 3; // a teach level is passed when it's solved properly
@@ -122,7 +82,7 @@ public static class Levels
         l.inventory = Inv(bridge: 1, es: 2, sw: 1);
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, 2, 0);
         Obj(l, "Blue", Blue, 0, 1, -1, Dir.N, 0, 2, 1);
-        l.solution = Solutions.Level5();
+        l.solution = Solutions.Level3();
         return l;
     }
 
@@ -135,60 +95,100 @@ public static class Levels
     //   5. (1,1) T S-W-N -> Red picks N at (1,1); Red picks N at (1,2); Blue picks N at (1,1); Blue picks E at (1,2); Red and Blue arrive together, +1 + tile
     //   6. (2,1) L N-E -> Green arrives
     // Score 550 with 6 tiles (target).
-    static LevelData Level6()
+    static LevelData Level4()
     {
-        var l = new LevelData { title = "Level 6", targetScore = 550, bestTiles = 6,
+        var l = new LevelData { title = "Level 4", targetScore = 550, bestTiles = 6,
             finishHint = Tips.Bridge, bestPlanHint = Tips.TogetherForScore };
         l.SetBoards((3, 3));
         l.inventory = Inv(bridge: 1, ne: 1, wn: 1, h: 1, v: 1, tNES: 1, tSWN: 1);
         Obj(l, "Red", Red, 0, 1, -1, Dir.N, 0, 1, 3);
         Obj(l, "Blue", Blue, 0, -1, 1, Dir.E, 0, 3, 2);
         Obj(l, "Green", Green, 0, 2, 3, Dir.S, 0, 3, 1);
+        l.solution = Solutions.Level4();
+        return l;
+    }
+
+    // Laid out for the Doors tutorial (Tutorials.Doors), the doors lesson: two 2x1 boards, each with door A on the edge between its
+    // two squares. Red walks right into the left board's door, comes out of the right board's door, faces right
+    // (facing left leads off the board) and walks on to its ring. The door is a wall, so the left board's right square
+    // and the right board's left square are never used.
+    // Score 150 with 2 tiles (target): 1 x 100 + used a door 1 x 50, no tiles left over. every delivery scores exactly
+    // this, so there's no 2-star case and no best plan hint
+    static LevelData Level5()
+    {
+        var l = new LevelData { title = "Level 5", targetScore = 150, bestTiles = 2 };
+        l.tutorial = "Doors";
+        l.teach = true;
+        l.starsToPass = 3; // a teach level is passed when it's solved properly
+        l.SetBoards((2, 1), (2, 1));
+        l.inventory = Inv(h: 2);
+        Door(l, "A", 0, 0, 0, Dir.E); // between the left board's two squares
+        Door(l, "A", 1, 0, 0, Dir.E); // between the right board's two squares
+        Obj(l, "Red", Red, 0, -1, 0, Dir.E, 1, 2, 0);
+        l.solution = Solutions.Level5();
+        return l;
+    }
+
+    // Detour practice on two 2x2 boards: Blue's ring is on its own board and a direct road there looks shorter, but the level can only be finished by Blue going out through door A and back through door B. Then Red and Blue arrive together.
+    // Solution:
+    //   1. b1(1,1) I-v -> Red goes through door B
+    //   2. b2(1,1) T W-N-E
+    //   3. b2(1,0) L E-S -> Blue goes through door A, comes out facing E
+    //   4. b1(1,0) L W-N -> Blue goes through door B
+    //   5. b2(0,1) L N-E -> Red picks E at b2(1,1); Blue picks N at b2(1,1); Red and Blue arrive together, +1 + tile
+    // Score 550 with 5 tiles (target).
+    static LevelData Level6()
+    {
+        var l = new LevelData { title = "Level 6", targetScore = 550, bestTiles = 5,
+            finishHint = Tips.DetourToFinish, bestPlanHint = Tips.FewerTiles };
+        l.SetBoards((2, 2), (2, 2));
+        l.inventory = Inv(ne: 2, es: 1, wn: 1, v: 1, tWNE: 1);
+        Door(l, "A", 0, 0, 0, Dir.E);
+        Door(l, "A", 1, 1, 0, Dir.S);
+        Door(l, "B", 0, 1, 1, Dir.S);
+        Door(l, "B", 1, 0, 1, Dir.N);
+        Obj(l, "Red", Red, 0, 1, 2, Dir.S, 1, 2, 1);
+        Obj(l, "Blue", Blue, 1, 2, 0, Dir.W, 1, 1, 2);
         l.solution = Solutions.Level6();
         return l;
     }
 
-    // Build ahead teach: Red's road through the left column is started before Green's delivery breaks a tile there, then Red and Blue arrive together. Delivering everyone works without the build ahead; the target doesn't, so it takes 3 stars to pass.
+    // Routing teach on 3x3: two objects, just enough corners and straights and no T or + tiles, so each road has to leave the other the pieces it needs.
     // Solution:
-    //   1. (2,0) L S-W
-    //   2. (1,0) T E-S-W -> Red picks W at (1,0); Green picks W at (1,0)
-    //   3. (0,0) T W-N-E -> Red picks N at (0,0); Green picks W at (0,0); Green arrives
-    //   4. (0,2) T S-W-N -> Blue picks S at (0,2)
-    //   5. (0,1) T S-W-N -> Red picks N at (0,1); Red picks W at (0,2); Blue picks W at (0,1); Red and Blue arrive together, +1 + tile
-    // Score 550 with 5 tiles (target).
+    //   1. (2,0) L W-N
+    //   2. (2,1) L S-W
+    //   3. (1,1) L N-E
+    //   4. (1,2) L E-S
+    //   5. (2,2) L W-N
+    //   6. (1,0) L E-S -> Red arrives
+    //   7. (0,2) I-v
+    //   8. (0,1) I-v
+    //   9. (0,0) L W-N -> Blue arrives
+    // Score 200 with 9 tiles (target).
     static LevelData Level7()
     {
-        var l = new LevelData { title = "Level 7", targetScore = 550, bestTiles = 5,
-            finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.OneRoute };
+        var l = new LevelData { title = "Level 7", targetScore = 200, bestTiles = 9,
+            bestPlanHint = Tips.Routing };
         l.teach = true;
         l.starsToPass = 3; // a teach level is passed when it's solved properly
         l.SetBoards((3, 3));
-        l.inventory = Inv(sw: 2, tESW: 1, tSWN: 2, tWNE: 1);
-        Obj(l, "Red", Red, 0, 2, -1, Dir.N, 0, -1, 2);
-        Obj(l, "Blue", Blue, 0, 0, 3, Dir.S, 0, -1, 1);
-        Obj(l, "Green", Green, 0, 1, -1, Dir.N, 0, -1, 0);
+        l.inventory = Inv(ne: 1, es: 2, sw: 1, wn: 3, v: 2);
+        Obj(l, "Red", Red, 0, 1, -1, Dir.N, 0, 2, 3);
+        Obj(l, "Blue", Blue, 0, 0, 3, Dir.S, 0, -1, 0);
         l.solution = Solutions.Level7();
         return l;
     }
 
-    // Build ahead practice: Blue's road is built ahead through the middle before Green arrives, then Red and Blue arrive together.
-    // Solution:
-    //   1. (2,0) I-v
-    //   2. (1,1) T N-E-S
-    //   3. (2,1) T E-S-W -> Blue picks W at (2,1); Blue picks N at (1,1)
-    //   4. (1,0) I-v -> Green picks E at (1,1); Green picks E at (2,1); Green arrives
-    //   5. (1,2) T S-W-N -> Red picks W at (1,2); Blue picks W at (1,2)
-    //   6. (0,2) T W-N-E -> Red picks W at (0,2); Blue picks N at (0,2); Red and Blue arrive together, +1 + tile
-    // Score 550 with 6 tiles (target).
+    // Routing with few tiles: mostly corners, roads around the edge, the middle unusable.
+    // Score 200 with 8 tiles (target).
     static LevelData Level8()
     {
-        var l = new LevelData { title = "Level 8", targetScore = 550, bestTiles = 6,
-            finishHint = Tips.OneRoute, bestPlanHint = Tips.FewerTiles };
+        var l = new LevelData { title = "Level 8", targetScore = 200, bestTiles = 8,
+            finishHint = "Try the edges. The supply is mostly corners.", bestPlanHint = Tips.FewerTiles };
         l.SetBoards((3, 3));
-        l.inventory = Inv(sw: 1, v: 2, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
-        Obj(l, "Red", Red, 0, 1, 3, Dir.S, 0, -1, 2);
-        Obj(l, "Blue", Blue, 0, 2, -1, Dir.N, 0, 0, 3);
-        Obj(l, "Green", Green, 0, 1, -1, Dir.N, 0, 3, 1);
+        l.inventory = Inv(es: 3, wn: 3, h: 1, v: 1);
+        Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 2, 3);
+        Obj(l, "Blue", Blue, 0, 3, 1, Dir.W, 0, 1, -1);
         l.solution = Solutions.Level8();
         return l;
     }
@@ -243,47 +243,47 @@ public static class Levels
         return l;
     }
 
-    // Laid out for the Doors tutorial (Tutorials.Doors), the doors lesson: two 2x1 boards, each with door A on the edge between its
-    // two squares. Red walks right into the left board's door, comes out of the right board's door, faces right
-    // (facing left leads off the board) and walks on to its ring. The door is a wall, so the left board's right square
-    // and the right board's left square are never used.
-    // Score 150 with 2 tiles (target): 1 x 100 + used a door 1 x 50, no tiles left over. every delivery scores exactly
-    // this, so there's no 2-star case and no best plan hint
+    // Build ahead teach: Red's road through the left column is started before Green's delivery breaks a tile there, then Red and Blue arrive together. Delivering everyone works without the build ahead; the target doesn't, so it takes 3 stars to pass.
+    // Solution:
+    //   1. (2,0) L S-W
+    //   2. (1,0) T E-S-W -> Red picks W at (1,0); Green picks W at (1,0)
+    //   3. (0,0) T W-N-E -> Red picks N at (0,0); Green picks W at (0,0); Green arrives
+    //   4. (0,2) T S-W-N -> Blue picks S at (0,2)
+    //   5. (0,1) T S-W-N -> Red picks N at (0,1); Red picks W at (0,2); Blue picks W at (0,1); Red and Blue arrive together, +1 + tile
+    // Score 550 with 5 tiles (target).
     static LevelData Level11()
     {
-        var l = new LevelData { title = "Level 11", targetScore = 150, bestTiles = 2 };
-        l.tutorial = "Doors";
+        var l = new LevelData { title = "Level 11", targetScore = 550, bestTiles = 5,
+            finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.OneRoute };
         l.teach = true;
         l.starsToPass = 3; // a teach level is passed when it's solved properly
-        l.SetBoards((2, 1), (2, 1));
-        l.inventory = Inv(h: 2);
-        Door(l, "A", 0, 0, 0, Dir.E); // between the left board's two squares
-        Door(l, "A", 1, 0, 0, Dir.E); // between the right board's two squares
-        Obj(l, "Red", Red, 0, -1, 0, Dir.E, 1, 2, 0);
+        l.SetBoards((3, 3));
+        l.inventory = Inv(sw: 2, tESW: 1, tSWN: 2, tWNE: 1);
+        Obj(l, "Red", Red, 0, 2, -1, Dir.N, 0, -1, 2);
+        Obj(l, "Blue", Blue, 0, 0, 3, Dir.S, 0, -1, 1);
+        Obj(l, "Green", Green, 0, 1, -1, Dir.N, 0, -1, 0);
         l.solution = Solutions.Level11();
         return l;
     }
 
-    // Detour practice on two 2x2 boards: Blue's ring is on its own board and a direct road there looks shorter, but the level can only be finished by Blue going out through door A and back through door B. Then Red and Blue arrive together.
+    // Build ahead practice: Blue's road is built ahead through the middle before Green arrives, then Red and Blue arrive together.
     // Solution:
-    //   1. b1(1,1) I-v -> Red goes through door B
-    //   2. b2(1,1) T W-N-E
-    //   3. b2(1,0) L E-S -> Blue goes through door A, comes out facing E
-    //   4. b1(1,0) L W-N -> Blue goes through door B
-    //   5. b2(0,1) L N-E -> Red picks E at b2(1,1); Blue picks N at b2(1,1); Red and Blue arrive together, +1 + tile
-    // Score 550 with 5 tiles (target).
+    //   1. (2,0) I-v
+    //   2. (1,1) T N-E-S
+    //   3. (2,1) T E-S-W -> Blue picks W at (2,1); Blue picks N at (1,1)
+    //   4. (1,0) I-v -> Green picks E at (1,1); Green picks E at (2,1); Green arrives
+    //   5. (1,2) T S-W-N -> Red picks W at (1,2); Blue picks W at (1,2)
+    //   6. (0,2) T W-N-E -> Red picks W at (0,2); Blue picks N at (0,2); Red and Blue arrive together, +1 + tile
+    // Score 550 with 6 tiles (target).
     static LevelData Level12()
     {
-        var l = new LevelData { title = "Level 12", targetScore = 550, bestTiles = 5,
-            finishHint = Tips.DetourToFinish, bestPlanHint = Tips.FewerTiles };
-        l.SetBoards((2, 2), (2, 2));
-        l.inventory = Inv(ne: 2, es: 1, wn: 1, v: 1, tWNE: 1);
-        Door(l, "A", 0, 0, 0, Dir.E);
-        Door(l, "A", 1, 1, 0, Dir.S);
-        Door(l, "B", 0, 1, 1, Dir.S);
-        Door(l, "B", 1, 0, 1, Dir.N);
-        Obj(l, "Red", Red, 0, 1, 2, Dir.S, 1, 2, 1);
-        Obj(l, "Blue", Blue, 1, 2, 0, Dir.W, 1, 1, 2);
+        var l = new LevelData { title = "Level 12", targetScore = 550, bestTiles = 6,
+            finishHint = Tips.OneRoute, bestPlanHint = Tips.FewerTiles };
+        l.SetBoards((3, 3));
+        l.inventory = Inv(sw: 1, v: 2, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
+        Obj(l, "Red", Red, 0, 1, 3, Dir.S, 0, -1, 2);
+        Obj(l, "Blue", Blue, 0, 2, -1, Dir.N, 0, 0, 3);
+        Obj(l, "Green", Green, 0, 1, -1, Dir.N, 0, 3, 1);
         l.solution = Solutions.Level12();
         return l;
     }
