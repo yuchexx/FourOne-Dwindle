@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,8 +20,14 @@ public class SettingsView : MonoBehaviour
     public LevelSelectView levelSelect; // its locks change with Unlock all
 
     [System.Serializable]
-    public class Tab { public Button button; public GameObject page; }
-    [Header("Tabs: each button shows its page (the chosen one in Accent); opens on the first")]
+    public class Tab
+    {
+        public Button button;
+        public GameObject page;
+        public TMP_Text label;   // optional: Text when chosen, MutedText otherwise (the button itself is then left alone)
+        public GameObject marker; // optional: the bar beside the chosen tab
+    }
+    [Header("Tabs: each button shows its page; opens on the first. without a label the chosen button is filled Accent, the others see-through")]
     public Tab[] tabs = new Tab[0];
 
     void Start()
@@ -77,8 +84,11 @@ public class SettingsView : MonoBehaviour
         for (int k = 0; k < tabs.Length; k++)
         {
             if (tabs[k].page != null) tabs[k].page.SetActive(k == i);
-            if (tabs[k].button != null && tabs[k].button.targetGraphic != null)
-                tabs[k].button.targetGraphic.color = k == i ? UIPalette.Current.accent : UIPalette.Current.button;
+            var p = UIPalette.Current;
+            if (tabs[k].marker != null) tabs[k].marker.SetActive(k == i);
+            if (tabs[k].label != null) tabs[k].label.color = k == i ? p.text : p.mutedText;
+            else if (tabs[k].button != null && tabs[k].button.targetGraphic != null)
+                tabs[k].button.targetGraphic.color = k == i ? p.accent : Color.clear; // the others see-through (still clickable)
         }
     }
 
