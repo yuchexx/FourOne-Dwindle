@@ -34,15 +34,16 @@ public sealed class RulesTileControlDemo : MonoBehaviour
     void Awake()
     {
         var root = RulesDemoUI.Group("TileControlDemonstration", transform, Vector2.zero, new Vector2(950, 560));
-        RulesDemoUI.Label("PlacementSettings", root, new Vector2(0, 264), new Vector2(950, 32),
+        RulesDemoUI.Label("PlacementSettings", root, new Vector2(0, 268), new Vector2(950, 32),
             "Choose <b>Click</b>, <b>Drag</b>, or <b>Both</b> in <b>Settings</b>.", 22, font);
-        phaseLabel = RulesDemoUI.Label("CurrentPhase", root, new Vector2(0, 175), new Vector2(900, 38),
-            "PLACE", 27, font);
+        phaseLabel = RulesDemoUI.Label("CurrentPhase", root, new Vector2(0, 226), new Vector2(900, 38),
+            "<noparse><Place></noparse>", 27, font);
         phaseLabel.color = RulesDemoUI.LightGreen;
-        caption = RulesDemoUI.Label("PhaseExplanation", root, new Vector2(0, -260), new Vector2(940, 60),
-            "Drag a tile from the supply to place it.", 22, font);
+        phaseLabel.fontStyle = FontStyles.Bold;
+        caption = RulesDemoUI.Label("PhaseExplanation", root, new Vector2(0, -214), new Vector2(940, 60),
+            "<color=#F5C454><b>Drag</b></color> a tile from the supply to place it.", 22, font);
 
-        var scene = RulesDemoUI.Group("PlacementScene", root, new Vector2(20, -160), new Vector2(950, 360));
+        var scene = RulesDemoUI.Group("PlacementScene", root, new Vector2(70, -114), new Vector2(950, 360));
         scene.localScale = Vector3.one * 1.15f;
         RulesDemoUI.Box("SupplyPanel", scene, new Vector2(-330, 84), new Vector2(170, 248), RulesDemoUI.Panel);
         RulesDemoUI.Label("SupplyHeading", scene, new Vector2(-330, 225), new Vector2(180, 32), "SUPPLY", 22, font);
@@ -124,8 +125,8 @@ public sealed class RulesTileControlDemo : MonoBehaviour
 
         if (time < 4f)
         {
-            phaseLabel.text = "PLACE";
-            caption.text = "Drag a tile from the supply to place it.";
+            phaseLabel.text = "<noparse><Place></noparse>";
+            caption.text = "<color=#F5C454><b>Drag</b></color> a tile from the supply to place it.";
             cursor.anchoredPosition = time < 1f
                 ? Travel(SupplyPoint + new Vector2(-45, 35), SupplyPoint, time, 0f, .8f)
                 : tile.anchoredPosition;
@@ -133,15 +134,15 @@ public sealed class RulesTileControlDemo : MonoBehaviour
         }
         else if (time < 9.7f)
         {
-            phaseLabel.text = "MOVE";
-            caption.text = time < 6.3f ? "Unused tiles can still be moved." : "The object follows the completed path.";
+            phaseLabel.text = "<noparse><Move></noparse>";
+            caption.text = time < 6.3f ? "<color=#F5C454><b>Unused</b></color> tiles can still be <color=#F5C454><b>moved</b></color>." : "The object follows the completed path.";
             cursor.anchoredPosition = tile.anchoredPosition;
             RulesDemoUI.Press(cursor, time >= 5.1f && time < 6.3f);
         }
         else if (time < 15f)
         {
-            phaseLabel.text = "LOCKED";
-            caption.text = "Used tiles can no longer be moved or returned.";
+            phaseLabel.text = "<noparse><Locked></noparse>";
+            caption.text = "<color=#F5C454><b>Used tiles</b></color> can <color=#F5C454><b>no longer</b></color> be <color=#F5C454><b>moved</b></color> or <color=#F5C454><b>returned</b></color>.";
             cursor.anchoredPosition = time < 11f
                 ? Travel(ReturnPoint, MovedPoint, time, 9.7f, 10.4f)
                 : Travel(MovedPoint, PlacedPoint, time, 11f, 12.3f);
@@ -149,8 +150,8 @@ public sealed class RulesTileControlDemo : MonoBehaviour
         }
         else
         {
-            phaseLabel.text = "TAKE BACK";
-            caption.text = "<color=#F5C454><b>Right-click</b></color> an unused tile to return it to the supply.";
+            phaseLabel.text = "<noparse><Take Back></noparse>";
+            caption.text = "<color=#F5C454><b>Right-click</b></color> an <color=#F5C454><b>unused</b></color> tile to return it to the supply.";
             cursor.anchoredPosition = Travel(PlacedPoint, ReturnPoint, time, 15f, 16.2f);
             RulesDemoUI.Press(cursor, time >= 16.5f && time < 18f, true);
         }

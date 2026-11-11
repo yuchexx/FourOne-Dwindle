@@ -30,7 +30,7 @@ public sealed class RulesRoutesDemo : MonoBehaviour
     void Awake()
     {
         var root = RulesDemoUI.Group("Route demonstration", transform,
-            new Vector2(0, kind == RouteKind.Doors ? -45 : -25), new Vector2(900, 432));
+            new Vector2(0, -50), new Vector2(900, 432));
         if (kind != RouteKind.Doors)
             RulesDemoUI.Box("Background", root, Vector2.zero,
                 kind == RouteKind.Junction ? new Vector2(430, 420) : new Vector2(480, 432), RulesDemoUI.Panel);
@@ -50,8 +50,8 @@ public sealed class RulesRoutesDemo : MonoBehaviour
             : kind == RouteKind.Bridge ? "Cross straight through without connecting paths."
             : "Teleport through a matching door,<br>then choose a direction.";
         RulesDemoUI.Label("Route caption", transform,
-            new Vector2(0, kind == RouteKind.Doors ? 182 : kind == RouteKind.Junction ? -270 : -278),
-            new Vector2(930, kind == RouteKind.Doors ? 60 : 40), caption, kind == RouteKind.Junction ? 28 : 24, font);
+            new Vector2(0, 212),
+            new Vector2(930, 60), caption, 24, font, TextAlignmentOptions.Top);
     }
 
     void OnEnable()

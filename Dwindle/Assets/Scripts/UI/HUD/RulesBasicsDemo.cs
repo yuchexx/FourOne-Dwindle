@@ -15,11 +15,11 @@ public class RulesBasicsDemo : MonoBehaviour
 
     void Awake()
     {
-        RulesDemoUI.Label("Tutorial", transform, new Vector2(0, 262), new Vector2(940, 32),
+        RulesDemoUI.Label("Tutorial", transform, new Vector2(0, 268), new Vector2(940, 32),
             "<b>New here? Try <color=#8EBEFF>Level 1</color> for a guided tutorial.</b>", 23, font);
-        RulesDemoUI.Label("DwindleRule", transform, new Vector2(0, 214), new Vector2(940, 32),
+        RulesDemoUI.Label("DwindleRule", transform, new Vector2(0, 222), new Vector2(940, 32),
             "Each delivery <b>randomly</b> removes a traveled tile.", 22, font);
-        var board = RulesDemoUI.Group("DwindleBoard", transform, new Vector2(0, -37), new Vector2(760, 420));
+        var board = RulesDemoUI.Group("DwindleBoard", transform, new Vector2(0, -20), new Vector2(760, 420));
         RulesDemoUI.Box("BoardBackground", board, Vector2.zero, new Vector2(760, 420), RulesDemoUI.Panel);
         RulesDemoUI.EndLine("Red start line", board, new Vector2(-225, 62), new Vector2(-Endpoint, 62),
             RulesDemoUI.Red, CellSize, RulesDemoUI.ObjectRatio);
@@ -51,7 +51,7 @@ public class RulesBasicsDemo : MonoBehaviour
         red = RulesDemoUI.Actor("RedObject", board, new Vector2(-Endpoint, 62), RulesDemoUI.Red, CellSize * RulesDemoUI.ObjectRatio);
         blue = RulesDemoUI.Actor("BlueObject", board, new Vector2(BlueStart, -118), RulesDemoUI.Blue, CellSize * RulesDemoUI.ObjectRatio, Dir.W);
         cursor = RulesDemoUI.Cursor("PlacementCursor", board, Vector2.zero);
-        stage = RulesDemoUI.Label("AnimationStatus", transform, new Vector2(0, -292), new Vector2(940, 58),
+        stage = RulesDemoUI.Label("AnimationStatus", transform, new Vector2(0, -268), new Vector2(940, 58),
             "", 28, font);
         stage.color = RulesDemoUI.Gold;
     }
