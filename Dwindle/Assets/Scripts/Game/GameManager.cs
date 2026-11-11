@@ -416,6 +416,13 @@ public partial class GameManager : MonoBehaviour
         menu.ShowStart(next == 0 && Session.Get(0).stars == 0 ? "Start" : $"Continue: Level {next + 1}");
     }
 
+    // the Leave and End screens' Levels button: leaves like Main Menu, then the Levels page (on this level's page)
+    public void GoToLevels()
+    {
+        ShowStartScreen();
+        menu.ShowLevels();
+    }
+
     // Start: Level 1 until it's done, then the first level without a star this session
     public void StartGame() => LoadLevel(Session.StartLevel(Levels.All.Count));
     public void Restart()
