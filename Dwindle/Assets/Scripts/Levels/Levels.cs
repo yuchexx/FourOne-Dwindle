@@ -27,7 +27,7 @@ public static class Levels
     static LevelData Level1()
     {
         var l = new LevelData { title = "Level 1", targetScore = 550, bestTiles = 4,
-            bestPlanHint = "deliver some together." };
+            finishHint = Tips.EarnedPlus, bestPlanHint = Tips.FewerTiles };
         l.section = "Learn"; // the Levels page starts a part here
         l.tutorial = "Basics";
         l.teach = true;
@@ -45,7 +45,7 @@ public static class Levels
     static LevelData Level2()
     {
         var l = new LevelData { title = "Level 2", targetScore = 475, bestTiles = 7,
-            bestPlanHint = "deliver some together." };
+            finishHint = Tips.EarnedPlus, bestPlanHint = Tips.FewerTiles };
         l.SetBoards((3, 3));
         l.inventory = Inv(ne: 2, es: 1, h: 1, v: 1, tNES: 1, tWNE: 1);
         Obj(l, "Red", Red, 0, 2, 3, Dir.S, 0, 3, 1);
@@ -61,7 +61,7 @@ public static class Levels
     static LevelData Level3()
     {
         var l = new LevelData { title = "Level 3", targetScore = 300, bestTiles = 11,
-            bestPlanHint = "use fewer tiles." };
+            bestPlanHint = Tips.Routing };
         l.teach = true;
         l.SetBoards((4, 3));
         l.inventory = Inv(ne: 2, es: 2, sw: 1, wn: 2, h: 3, v: 1);
@@ -77,7 +77,7 @@ public static class Levels
     static LevelData Level4()
     {
         var l = new LevelData { title = "Level 4", targetScore = 200, bestTiles = 8,
-            bestPlanHint = "use fewer tiles." };
+            bestPlanHint = Tips.FewerTiles };
         l.SetBoards((3, 3));
         l.inventory = Inv(es: 3, wn: 3, h: 1, v: 1);
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 2, 3);
@@ -91,8 +91,7 @@ public static class Levels
     static LevelData Level5()
     {
         var l = new LevelData { title = "Level 5", targetScore = 450, bestTiles = 6,
-            bestPlanHint = "deliver some together." };
-        l.finishHint = "the bridge lets two roads cross."; // the 0 or 1 star tip
+            finishHint = Tips.Bridge, bestPlanHint = Tips.TogetherForScore };
         l.teach = true;
         l.starsToPass = 2; // the trick is needed to deliver everyone
         l.SetBoards((3, 3));
@@ -108,9 +107,8 @@ public static class Levels
     static LevelData Level6()
     {
         var l = new LevelData { title = "Level 6", targetScore = 550, bestTiles = 8,
-            bestPlanHint = "deliver some together." };
+            finishHint = Tips.Bridge, bestPlanHint = Tips.FewerTiles };
         // delivering everyone needs the + that delivering together earns, so the hint shows at 0 or 1 star instead
-        l.finishHint = l.bestPlanHint; l.bestPlanHint = null;
         l.SetBoards((3, 3));
         l.inventory = Inv(bridge: 1, es: 2, sw: 1, wn: 2, v: 3);
         Obj(l, "Red", Red, 0, 2, 3, Dir.S, 0, 2, -1);
@@ -125,8 +123,7 @@ public static class Levels
     static LevelData Level7()
     {
         var l = new LevelData { title = "Level 7", targetScore = 550, bestTiles = 7,
-            bestPlanHint = "deliver some together." };
-        l.finishHint = "start one route early."; // delivering everyone needs the build ahead, so it's the 0 or 1 star tip
+            finishHint = Tips.OneRoute, bestPlanHint = Tips.FewerTiles };
         l.teach = true;
         l.starsToPass = 2; // the trick is needed to deliver everyone
         l.SetBoards((4, 3));
@@ -143,7 +140,7 @@ public static class Levels
     static LevelData Level8()
     {
         var l = new LevelData { title = "Level 8", targetScore = 550, bestTiles = 8,
-            bestPlanHint = "start one route early." };
+            bestPlanHint = Tips.OneRoute };
         l.SetBoards((4, 3));
         l.inventory = Inv(cross: 1, wn: 1, h: 1, v: 2, tNES: 1, tESW: 2, tWNE: 1);
         Obj(l, "Red", Red, 0, 3, 3, Dir.S, 0, 4, 0);
@@ -158,8 +155,7 @@ public static class Levels
     static LevelData Level9()
     {
         var l = new LevelData { title = "Level 9", targetScore = 825, bestTiles = 7,
-            bestPlanHint = "pairs break a junction. Bring more in together." };
-        l.finishHint = l.bestPlanHint; // pairs can't deliver everyone, so the tip shows at 0 or 1 star too
+            finishHint = Tips.Pairs, bestPlanHint = Tips.FewerTiles };
         l.teach = true;
         l.starsToPass = 2; // the trick is needed to deliver everyone
         l.SetBoards((4, 3));
@@ -177,7 +173,7 @@ public static class Levels
     static LevelData Level10()
     {
         var l = new LevelData { title = "Level 10", targetScore = 825, bestTiles = 10,
-            bestPlanHint = "pairs break a junction. Bring more in together." };
+            finishHint = Tips.Pairs, bestPlanHint = Tips.FewerTiles };
         l.SetBoards((4, 4));
         l.inventory = Inv(cross: 1, ne: 1, sw: 1, wn: 1, h: 1, v: 3, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
         Obj(l, "Red", Red, 0, 2, 4, Dir.S, 0, 3, -1);
@@ -213,7 +209,7 @@ public static class Levels
     static LevelData Level12()
     {
         var l = new LevelData { title = "Level 12", targetScore = 500, bestTiles = 6,
-            bestPlanHint = "deliver some together." };
+            finishHint = Tips.DetourToFinish, bestPlanHint = Tips.TogetherForScore };
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(ne: 1, es: 1, sw: 1, h: 2, tESW: 1, tSWN: 1);
         Door(l, "A", 1, 2, 2, Dir.N);
@@ -231,7 +227,7 @@ public static class Levels
     static LevelData Level13()
     {
         var l = new LevelData { title = "Level 13", targetScore = 825, bestTiles = 10,
-            bestPlanHint = "deliver some together." };
+            finishHint = Tips.Bridge, bestPlanHint = Tips.TogetherForScore };
         l.section = "Challenge"; // the Levels page starts a part here
         l.SetBoards((4, 3));
         l.inventory = Inv(bridge: 1, sw: 1, wn: 1, h: 3, v: 1, tNES: 2, tSWN: 2);
@@ -248,7 +244,7 @@ public static class Levels
     static LevelData Level14()
     {
         var l = new LevelData { title = "Level 14", targetScore = 550, bestTiles = 8,
-            bestPlanHint = "deliver some together." };
+            finishHint = Tips.EarnedPlus, bestPlanHint = Tips.FewerTiles };
         l.SetBoards((4, 3));
         l.inventory = Inv(sw: 1, h: 2, v: 1, tNES: 1, tESW: 1, tSWN: 2, tWNE: 1);
         Obj(l, "Red", Red, 0, -1, 2, Dir.E, 0, 2, 3);
@@ -263,7 +259,7 @@ public static class Levels
     static LevelData Level15()
     {
         var l = new LevelData { title = "Level 15", targetScore = 900, bestTiles = 9,
-            bestPlanHint = "start two routes early." };
+            finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.TwoRoutes };
         l.SetBoards((4, 3));
         l.inventory = Inv(cross: 1, sw: 1, wn: 1, h: 4, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 4, 0);
@@ -279,7 +275,7 @@ public static class Levels
     static LevelData Level16()
     {
         var l = new LevelData { title = "Level 16", targetScore = 825, bestTiles = 9,
-            bestPlanHint = "start two routes early." };
+            bestPlanHint = Tips.TwoRoutes };
         l.SetBoards((4, 4));
         l.inventory = Inv(cross: 1, es: 1, sw: 1, h: 1, v: 2, tNES: 2, tESW: 1, tWNE: 1);
         Obj(l, "Red", Red, 0, 1, -1, Dir.N, 0, 4, 0);
@@ -295,9 +291,8 @@ public static class Levels
     static LevelData Level17()
     {
         var l = new LevelData { title = "Level 17", targetScore = 825, bestTiles = 10,
-            bestPlanHint = "deliver some together." };
+            finishHint = Tips.EarnedPlus, bestPlanHint = Tips.FewerTiles };
         // delivering everyone needs the + that delivering together earns, so the hint shows at 0 or 1 star instead
-        l.finishHint = l.bestPlanHint; l.bestPlanHint = null;
         l.SetBoards((4, 4));
         l.inventory = Inv(cross: 1, ne: 3, wn: 1, tNES: 1, tESW: 2, tSWN: 1, tWNE: 2);
         l.obstacles.Add(l.At(0, 1, 2));
@@ -314,7 +309,7 @@ public static class Levels
     static LevelData Level18()
     {
         var l = new LevelData { title = "Level 18", targetScore = 1175, bestTiles = 12,
-            bestPlanHint = "a door can be a shortcut home." };
+            bestPlanHint = Tips.DetourForScore };
         l.SetBoards((4, 3), (4, 3));
         l.inventory = Inv(cross: 1, ne: 1, es: 2, sw: 1, wn: 1, h: 1, v: 3, tNES: 2, tESW: 1, tSWN: 1, tWNE: 1);
         Door(l, "A", 0, 1, 0, Dir.W);
@@ -338,7 +333,7 @@ public static class Levels
     static LevelData Level19()
     {
         var l = new LevelData { title = "Level 19", targetScore = 825, bestTiles = 12,
-            bestPlanHint = "pairs break a junction. Bring more in together." };
+            bestPlanHint = Tips.Pairs };
         l.SetBoards((5, 4));
         l.inventory = Inv(cross: 1, ne: 1, wn: 1, h: 3, v: 1, tNES: 1, tESW: 3, tSWN: 2, tWNE: 1);
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 4, 4);
@@ -354,7 +349,7 @@ public static class Levels
     static LevelData Level20()
     {
         var l = new LevelData { title = "Level 20", targetScore = 675, bestTiles = 9,
-            bestPlanHint = "deliver some together." };
+            finishHint = Tips.BridgeAndDetour, bestPlanHint = Tips.TogetherForScore };
         l.SetBoards((3, 3), (3, 3));
         l.inventory = Inv(bridge: 1, ne: 2, es: 2, wn: 2, h: 1, v: 1, tNES: 1, tESW: 1);
         Door(l, "A", 0, 2, 0, Dir.S);
@@ -373,7 +368,7 @@ public static class Levels
     static LevelData Level21()
     {
         var l = new LevelData { title = "Level 21", targetScore = 975, bestTiles = 9,
-            bestPlanHint = "pairs break a junction. Bring more in together." };
+            finishHint = Tips.Pairs, bestPlanHint = Tips.FewerTiles };
         l.SetBoards((2, 2), (2, 2), (2, 2), (2, 2));
         l.inventory = Inv(cross: 1, ne: 3, wn: 1, v: 3, tNES: 1, tESW: 1, tWNE: 1);
         Door(l, "A", 0, 0, 1, Dir.E);
@@ -395,7 +390,7 @@ public static class Levels
     static LevelData Level22()
     {
         var l = new LevelData { title = "Level 22", targetScore = 825, bestTiles = 10,
-            bestPlanHint = "deliver some together." };
+            finishHint = Tips.EarnedPlus, bestPlanHint = Tips.FewerTiles };
         l.SetBoards((4, 4));
         l.inventory = Inv(cross: 1, ne: 1, sw: 2, h: 2, v: 1, tNES: 1, tESW: 1, tSWN: 2);
         Obj(l, "Red", Red, 0, -1, 1, Dir.E, 0, 3, -1);
@@ -411,7 +406,7 @@ public static class Levels
     static LevelData Level23()
     {
         var l = new LevelData { title = "Level 23", targetScore = 750, bestTiles = 10,
-            bestPlanHint = "start two routes early." };
+            finishHint = Tips.EarnedPlus, bestPlanHint = Tips.TwoRoutes };
         l.SetBoards((4, 4));
         l.inventory = Inv(cross: 1, es: 1, sw: 1, h: 1, v: 2, tNES: 1, tESW: 1, tSWN: 1, tWNE: 1);
         Obj(l, "Red", Red, 0, 1, -1, Dir.N, 0, -1, 0);
@@ -427,7 +422,7 @@ public static class Levels
     static LevelData Level24()
     {
         var l = new LevelData { title = "Level 24", targetScore = 850, bestTiles = 12,
-            bestPlanHint = "pairs break a junction. Bring more in together." };
+            bestPlanHint = Tips.Pairs };
         l.SetBoards((5, 4));
         l.inventory = Inv(cross: 1, ne: 1, wn: 2, h: 3, v: 1, tNES: 1, tESW: 3, tSWN: 1, tWNE: 2);
         Obj(l, "Red", Red, 0, 1, 4, Dir.S, 0, -1, 3);
@@ -443,7 +438,7 @@ public static class Levels
     static LevelData Level25()
     {
         var l = new LevelData { title = "Level 25", targetScore = 1025, bestTiles = 13,
-            bestPlanHint = "pairs break a junction. Bring more in together." };
+            finishHint = Tips.Pairs, bestPlanHint = Tips.DetourForScore };
         l.section = "Finale"; // the Levels page starts a part here
         l.SetBoards((5, 4), (5, 4));
         l.inventory = Inv(cross: 1, ne: 2, es: 1, sw: 3, wn: 1, v: 1, tNES: 1, tESW: 2, tSWN: 1, tWNE: 2);
@@ -466,7 +461,7 @@ public static class Levels
     static LevelData Level26()
     {
         var l = new LevelData { title = "Level 26", targetScore = 1025, bestTiles = 11,
-            bestPlanHint = "start two routes early." };
+            finishHint = Tips.DetourToFinish, bestPlanHint = Tips.TwoRoutes };
         l.SetBoards((4, 4), (4, 4));
         l.inventory = Inv(es: 1, sw: 1, wn: 2, h: 1, v: 1, tESW: 3, tSWN: 1, tWNE: 2);
         Door(l, "A", 1, 1, 2, Dir.W);
@@ -488,7 +483,7 @@ public static class Levels
     static LevelData Level27()
     {
         var l = new LevelData { title = "Level 27", targetScore = 1025, bestTiles = 15,
-            bestPlanHint = "start one route early." };
+            finishHint = Tips.DetourToFinish, bestPlanHint = Tips.OneRoute };
         l.SetBoards((3, 3), (3, 3), (3, 3), (3, 3));
         l.inventory = Inv(ne: 3, sw: 1, h: 2, v: 4, tNES: 3, tESW: 1, tSWN: 2);
         Door(l, "A", 0, 1, 0, Dir.W);
@@ -514,7 +509,7 @@ public static class Levels
     static LevelData Level28()
     {
         var l = new LevelData { title = "Level 28", targetScore = 975, bestTiles = 14,
-            bestPlanHint = "start one route early." };
+            finishHint = Tips.DetourToFinish, bestPlanHint = Tips.OneRoute };
         l.SetBoards((5, 5), (5, 5));
         l.inventory = Inv(cross: 1, bridge: 1, ne: 1, es: 1, sw: 1, wn: 2, h: 1, v: 3, tNES: 2, tESW: 1, tWNE: 1);
         l.obstacles.Add(l.At(1, 1, 3));

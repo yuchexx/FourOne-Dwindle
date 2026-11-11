@@ -138,7 +138,7 @@ static class LevelMaker
                 bool fits = Check(s, l, p);
                 Gen.Trace?.Invoke($"  checks {(fits ? "passed" : "failed")} in {checkClock.ElapsedMilliseconds} ms");
                 if (!fits) continue;
-                l.targetScore = p.score; l.bestTiles = p.tiles; l.bestPlanHint = Export.Hint(p, l);
+                l.targetScore = p.score; l.bestTiles = p.tiles; (l.finishHint, l.bestPlanHint) = Export.Hints(p, l);
                 pr.result = Finish(l, p);
                 pr.result.tries = pr.tries; pr.result.seconds = (float)clock.Elapsed.TotalSeconds;
                 return;
@@ -283,9 +283,16 @@ static class LevelMaker
         for (int k = 0; k < r.steps.Count; k++) sb.Append($"    //   {k + 1}. {r.steps[k]}\n");
         sb.Append($"    // Score {r.props.score} with {r.props.tiles} tiles (target).\n");
         sb.Append($"    static LevelData Level{number}()\n    {{\n");
-        sb.Append($"        var l = new LevelData {{ title = \"Level {number}\", targetScore = {r.props.score}, bestTiles = {r.props.tiles},\n");
-        sb.Append($"            bestPlanHint = \"{r.level.bestPlanHint ?? Export.Hint(r.props)}\" }};\n");
-        if (!string.IsNullOrEmpty(l.tutorial)) sb.Append($"        l.tutorial = \"{l.tutorial}\";\n"); // kept when an existing level is written again
+        var tips = new List<string>();
+        if (!string.IsNullOrEmpty(l.finishHint)) tips.Add($"finishHint = {Export.TipCode(l.finishHint)}");
+        if (!string.IsNullOrEmpty(l.bestPlanHint)) tips.Add($"bestPlanHint = {Export.TipCode(l.bestPlanHint)}");
+        sb.Append($"        var l = new LevelData {{ title = \"Level {number}\", targetScore = {r.props.score}, bestTiles = {r.props.tiles}" +
+                  (tips.Count > 0 ? ",\n            " + string.Join(", ", tips) : "") + " };\n");
+        // the Levels page and tutorial lines, kept when an existing level is written again (or set in the window)
+        if (!string.IsNullOrEmpty(l.section)) sb.Append($"        l.section = \"{l.section}\"; // the Levels page starts a part here\n");
+        if (!string.IsNullOrEmpty(l.tutorial)) sb.Append($"        l.tutorial = \"{l.tutorial}\";\n");
+        if (l.teach) sb.Append("        l.teach = true;\n");
+        if (l.starsToPass != 1) sb.Append($"        l.starsToPass = {l.starsToPass}; // stars that unlock the next level\n");
         sb.Append($"        l.SetBoards({string.Join(", ", l.boards.Select(b => $"({b.width}, {b.height})"))});\n");
         sb.Append("        l.inventory = Inv(" + string.Join(", ", Tiles.All.Where(t => l.inventory.GetValueOrDefault(t) > 0).Select(t => $"{InvNames[t]}: {l.inventory[t]}")) + ");\n");
         foreach (var o in l.obstacles) { int b = l.BoardOf(o); var p = o - l.boards[b].origin; sb.Append($"        l.obstacles.Add(l.At({b}, {p.x}, {p.y}));\n"); }

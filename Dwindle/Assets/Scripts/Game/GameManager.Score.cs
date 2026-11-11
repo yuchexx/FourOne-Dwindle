@@ -66,7 +66,7 @@ public partial class GameManager
     string EndNote(int stars, bool purple, bool isLast)
     {
         string note =
-            stars == 3 ? (purple ? "You found the best plan on your own." : "Now try it without the answer.")
+            stars == 3 ? (purple ? "You found the best plan on your own!" : "Now try it without the answer?")
             : stars == 2 ? Tip(level.bestPlanHint)
             : Tip(level.finishHint); // levels where delivering everyone needs the trick
         if (level.starsToPass > 1 && stars < level.starsToPass && !isLast) // Next stays locked past 1 star: say why

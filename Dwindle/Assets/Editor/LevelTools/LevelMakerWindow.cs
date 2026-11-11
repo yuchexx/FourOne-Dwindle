@@ -281,6 +281,12 @@ public class LevelMakerWindow : EditorWindow
         levelNumber = Mathf.Max(1, EditorGUILayout.IntField("Level number", levelNumber));
         EditorGUILayout.LabelField("Idea (comment above it)");
         comment = EditorGUILayout.TextArea(comment, EditorStyles.textArea, GUILayout.MinHeight(36));
+        // the Levels page and the end window (Solve fills these from the level; Generate picks the tips)
+        l.teach = EditorGUILayout.Toggle(new GUIContent("Teach", "A trick's teach level: purple on the Levels page"), l.teach);
+        l.starsToPass = EditorGUILayout.IntSlider(new GUIContent("Stars to pass", "Stars that unlock the next level"), l.starsToPass, 1, 3);
+        l.section = NullIfBlank(EditorGUILayout.TextField(new GUIContent("Section", "Starts a part heading on the Levels page, e.g. Learn (blank: none)"), l.section ?? ""));
+        l.finishHint = TipField("Tip 0-1 stars", "The end window's tip when not everyone was delivered (blank: none)", l.finishHint);
+        l.bestPlanHint = TipField("Tip 2 stars", "The end window's tip when everyone was delivered, below the target (blank: none)", l.bestPlanHint);
         var code = LevelMaker.Code(r, levelNumber, comment);
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Copy C#", GUILayout.Height(24)))
@@ -303,6 +309,19 @@ public class LevelMakerWindow : EditorWindow
         EditorGUILayout.TextArea(code, new GUIStyle(EditorStyles.textArea) { wordWrap = true }, GUILayout.ExpandHeight(true));
         EditorGUILayout.EndScrollView();
         EditorGUILayout.Space(10);
+    }
+
+    static string NullIfBlank(string s) => string.IsNullOrWhiteSpace(s) ? null : s;
+
+    // a tip: typed, or one of Tips.cs's sentences picked from the list beside it
+    static string TipField(string label, string tooltip, string value)
+    {
+        var names = typeof(Tips).GetFields().Where(f => f.IsLiteral).ToList();
+        EditorGUILayout.BeginHorizontal();
+        value = NullIfBlank(EditorGUILayout.TextField(new GUIContent(label, tooltip), value ?? ""));
+        int pick = EditorGUILayout.Popup(0, new[] { "Pick" }.Concat(names.Select(f => f.Name)).ToArray(), GUILayout.Width(70));
+        EditorGUILayout.EndHorizontal();
+        return pick > 0 ? (string)names[pick - 1].GetRawConstantValue() : value;
     }
 
     // its solution first (Levels.cs links to it), then the level
