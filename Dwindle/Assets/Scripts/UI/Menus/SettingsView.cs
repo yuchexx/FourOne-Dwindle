@@ -18,8 +18,18 @@ public class SettingsView : MonoBehaviour
     public GameManager game;
     public LevelSelectView levelSelect; // its locks change with Unlock all
 
+    [System.Serializable]
+    public class Tab { public Button button; public GameObject page; }
+    [Header("Tabs: each button shows its page (the chosen one in Accent); opens on the first")]
+    public Tab[] tabs = new Tab[0];
+
     void Start()
     {
+        for (int i = 0; i < tabs.Length; i++)
+        {
+            int k = i;
+            if (tabs[i].button != null) tabs[i].button.onClick.AddListener(() => ShowTab(k));
+        }
         Choice(clickButton, Session.Placement.Click);
         Choice(dragButton, Session.Placement.Drag);
         Choice(bothButton, Session.Placement.Both);
@@ -58,6 +68,18 @@ public class SettingsView : MonoBehaviour
         if (hintTipsToggle != null) hintTipsToggle.SetIsOnWithoutNotify(game.ShowHintTips);
         ShowPlacement();
         panel.SetActive(true);
+        ShowTab(0); // after the panel is on, so nothing recolors the tabs after it
+    }
+
+    // the chosen tab's page shows, the others hide
+    void ShowTab(int i)
+    {
+        for (int k = 0; k < tabs.Length; k++)
+        {
+            if (tabs[k].page != null) tabs[k].page.SetActive(k == i);
+            if (tabs[k].button != null && tabs[k].button.targetGraphic != null)
+                tabs[k].button.targetGraphic.color = k == i ? UIPalette.Current.accent : UIPalette.Current.button;
+        }
     }
 
     public void Close() => panel.SetActive(false);
