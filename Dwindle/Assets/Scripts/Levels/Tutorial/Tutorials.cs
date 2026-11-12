@@ -54,12 +54,20 @@ public static class Target
     // the score history's row `index` from the top (0 = the newest), while the history is open
     public static Func<RectTransform> ScoreRow(GameManager game, int index) => () => game.hud.ScoreRow(index);
 
+    // the hint button. nothing in the HUD points at it, so it's found in the scene the first time and kept
+    static HintButton hintButton;
+    public static Func<RectTransform> Hint(GameManager game) => () =>
+    {
+        if (hintButton == null) hintButton = UnityEngine.Object.FindAnyObjectByType<HintButton>();
+        return hintButton != null && hintButton.button != null ? (RectTransform)hintButton.button.transform : null;
+    };
+
     // the Undo button (next to Restart, in the bottom-right corner)
     public static Func<RectTransform> Undo(GameManager game) =>
         () => game.hud.undoButton != null ? (RectTransform)game.hud.undoButton.transform : null;
 }
 
-// tutorials by name, one file each (Tutorials.Basics.cs, Tutorials.Doors.cs); a level picks one with LevelData.tutorial
+// tutorials by name, one file each (Tutorials.Basics.cs, Tutorials.Doors.cs, Tutorials.Bridge.cs, Tutorials.Routing.cs, Tutorials.Pairs.cs, Tutorials.BuildAhead.cs); a level picks one with LevelData.tutorial
 public static partial class Tutorials
 {
     // a tutorial's name -> its steps, made with the running game so steps can check it or set it up. a level picks its
@@ -68,6 +76,10 @@ public static partial class Tutorials
     {
         { "Basics", Basics },
         { "Doors", Doors },
+        { "Bridge", Bridge },
+        { "Routing", Routing },
+        { "Pairs", Pairs },
+        { "BuildAhead", BuildAhead },
     };
 
     // a tutorial's name -> its coach, for tutorials that have one (it takes over once the steps end)

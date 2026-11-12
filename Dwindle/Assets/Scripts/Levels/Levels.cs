@@ -76,6 +76,7 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 3", targetScore = 450, bestTiles = 3,
             finishHint = Tips.Bridge, bestPlanHint = Tips.TogetherForScore };
+        l.tutorial = "Bridge"; // for the tutorial (Tutorials.Bridge.cs): one step framing the bridge's supply card
         l.teach = true;
         l.starsToPass = 3; // a teach level is passed when it's solved properly
         l.SetBoards((2, 2));
@@ -169,6 +170,7 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 7", targetScore = 200, bestTiles = 9,
             bestPlanHint = Tips.Routing };
+        l.tutorial = "Routing"; // for the tutorial (Tutorials.Routing.cs): one step saying tiles can be limited
         l.teach = true;
         l.starsToPass = 3; // a teach level is passed when it's solved properly
         l.SetBoards((3, 3));
@@ -207,6 +209,7 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 9", targetScore = 750, bestTiles = 7,
             finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.Pairs };
+        l.tutorial = "Pairs"; // for the tutorial (Tutorials.Pairs.cs): one step saying to deliver all four at one junction
         l.teach = true;
         l.starsToPass = 3; // a teach level is passed when it's solved properly
         l.SetBoards((3, 3));
@@ -255,6 +258,7 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 11", targetScore = 550, bestTiles = 5,
             finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.OneRoute };
+        l.tutorial = "BuildAhead"; // for the tutorial (Tutorials.BuildAhead.cs): one step saying not to always deliver everyone at once
         l.teach = true;
         l.starsToPass = 3; // a teach level is passed when it's solved properly
         l.SetBoards((3, 3));

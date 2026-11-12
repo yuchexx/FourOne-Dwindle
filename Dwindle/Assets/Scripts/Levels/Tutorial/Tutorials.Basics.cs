@@ -4,8 +4,8 @@ using System.Linq;
 using UnityEngine;
 
 // the "Basics" tutorial (on the level with l.tutorial = "Basics"): for now only the welcome, the objects, their rings
-// (the goal) and the tiles, a line each; then its coach guides the player to deliver Red and Blue together, and
-// shows the + it earns
+// (the goal), the tiles, the 3 stars a tutorial level needs and the + placed last to deliver Red and Blue together,
+// a line each; then its coach guides the player to deliver Red and Blue together, and shows the + it earns
 public static partial class Tutorials
 {
     static List<TutorialStep> Basics(GameManager game) => new()
@@ -30,6 +30,16 @@ public static partial class Tutorials
         {
             text = "Place tiles to build their paths.",
             targets = new[] { Target.Supply(game) },
+        },
+        new TutorialStep
+        {
+            text = "Tutorial levels need 3 stars to go on.\nUse Hint if needed.",
+            // nothing framed: everything is dimmed and the bubble sits in the middle of the screen
+        },
+        new TutorialStep
+        {
+            text = "Place the \"+\" tile last\nto deliver Red and Blue together.",
+            // nothing framed: everything is dimmed and the bubble sits in the middle of the screen
             buttonText = "End",
         },
     };
@@ -73,7 +83,9 @@ public static partial class Tutorials
                 {
                     new TutorialStep
                     {
-                        text = $"{arrival.objectName} is delivered,\nso a random tile from its path is removed.",
+                        text = $"{arrival.objectName} is delivered,\nso a random tile from its path is removed." +
+                               // the first of the two only (in Level 1 both deliveries break a tile)
+                               (arrival.objectName == together[0] ? "\nSo plan ahead!" : ""),
                         targets = new[] { Target.Cell(game, arrival.board, arrival.square.x, arrival.square.y) },
                         delay = 0.3f, // the tile is seen to go first
                     },

@@ -407,6 +407,9 @@ public partial class GameManager : MonoBehaviour
     public void ShowStartScreen()
     {
         ReportLevel(); // Home from a level: a finished last level has no Next, so this is its only report
+        // for the tutorial: leaving a level midway (Leave, Levels, Main Menu) shows its Tutorial button from now on,
+        // like a restart. does nothing on the first start screen (no level yet) or for a level with no tutorial
+        EarnTutorialButton();
         StopAllCoroutines();
         if (tutorial != null) tutorial.Stop();
         stuck = false; // nothing keeps timing the stuck notice on the start screen
