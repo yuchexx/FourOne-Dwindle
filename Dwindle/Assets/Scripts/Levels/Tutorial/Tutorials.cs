@@ -139,6 +139,13 @@ public class TutorialCoach
     public string undoNote;                       // shown in the corner after an Undo
     public Func<GameAction, string> undoNoteFor;  // the note for the action that called for the Undo; null (or null back) = undoNote
     public Func<RectTransform>[] noteAbove;       // what the note stays above, so it covers none of it (see Target)
+    // the first Reset / the first Undo only: steps in place of resetNote / undoNote (the level loads again once the
+    // reset's steps end; the undo's show once the placement is undone). later ones get the note. null = always the note
+    public List<TutorialStep> firstResetSteps;
+    public List<TutorialStep> firstUndoSteps;
+    // set by TutorialController as each is shown. a coach is made for each run of its tutorial (the Tutorial button
+    // makes a new one), and kept across restarts and leaving the level, so each shows once per run
+    public bool firstResetShown, firstUndoShown;
     public Action onDone;                         // on Done: take the guides down
     public List<TutorialStep> doneSteps;          // shown after Done, like the tutorial's steps (e.g. what the player just earned)
     // until Done: as each delivered object's tile breaks (the delivered object, everyone delivered with it), steps to

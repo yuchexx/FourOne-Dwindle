@@ -76,6 +76,25 @@ public static partial class Tutorials
             },
             resetNote = "Place the + last to deliver both together. Give it a try!",
             undoNote = "Please choose the right direction.",
+            // the first slip of each kind: a step in the middle of the screen instead of the note in the corner
+            firstResetSteps = new()
+            {
+                new TutorialStep
+                {
+                    text = "Place the \"+\" tile last\nto deliver Red and Blue together.",
+                    // nothing framed: everything is dimmed and the bubble sits in the middle of the screen
+                    buttonText = "Try again",
+                },
+            },
+            firstUndoSteps = new()
+            {
+                new TutorialStep
+                {
+                    text = "That's the wrong direction.\nEach object has to head to its ring.",
+                    // nothing framed: everything is dimmed and the bubble sits in the middle of the screen
+                    buttonText = "Try again",
+                },
+            },
             noteAbove = new[] { Target.Supply(game), Target.Undo(game) }, // the supply bar, and Undo and Restart beside it
             // Red and Blue delivered together: as each one's tile breaks, before the next, the square it was on
             removalSteps = (arrival, together) =>
