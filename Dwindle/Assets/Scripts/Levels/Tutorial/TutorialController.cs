@@ -257,8 +257,8 @@ public class TutorialController : MonoBehaviour
 
     // the slip (a wrong way, a tile in the wrong spot) shows for Undo Delay, with the level held from ending (a wrong
     // way can leave everyone blocked) and nothing clickable; then the placement is undone, as with the Undo button,
-    // and the coach's note for it shows (over any note already there). Undo is called from here, not from inside the
-    // round that reported the action
+    // and the coach's note for it shows (over any note already there), or, the first time, its firstUndoSteps. Undo is
+    // called from here, not from inside the round that reported the action
     IEnumerator UndoWrongWay(GameAction action)
     {
         var g = coachGame;
@@ -267,9 +267,20 @@ public class TutorialController : MonoBehaviour
         g.HoldLevelEnd(true);
         overlay.Block();
         yield return new WaitForSecondsRealtime(undoDelay);
-        undoing = null;
         g.Undo();
         g.HoldLevelEnd(false);
+        // the coach's first undo: its steps in the middle of the screen in place of the note, once the placement is
+        // undone (so nothing moves under them). `undoing` stays set till they end, so no other reset or undo starts
+        var first = coach != null && !coach.firstUndoShown ? coach.firstUndoSteps : null;
+        if (first != null && first.Count > 0)
+        {
+            coach.firstUndoShown = true;
+            if (running != null) StopCoroutine(running);
+            game = g;
+            running = StartCoroutine(Run(first, done => undoing = null));
+            yield break;
+        }
+        undoing = null;
         overlay.Unblock();
         if (!string.IsNullOrEmpty(note)) overlay.ShowNote(note, noteSeconds, above);
     }
@@ -444,13 +455,30 @@ public class TutorialController : MonoBehaviour
     }
 
     // the delivery that called for the reset stays on screen for Reset Delay, with the level held from ending and
-    // nothing clickable; then the level loads again, and the coach comes back with its note (TryStart, ResumeCoach)
+    // nothing clickable; then the level loads again, and the coach comes back with its note (TryStart, ResumeCoach).
+    // the first time, its firstResetSteps show first, and the level loads again without the note once they end
     IEnumerator ResetLevel()
     {
         var g = coachGame;
         g.HoldLevelEnd(true);
         overlay.Block();
         yield return new WaitForSecondsRealtime(resetDelay);
+        // the coach's first reset: its steps in the middle of the screen in place of the note, and the level loads
+        // again once they end (no note then). the level end stays held, and `resetting` stays set till then, so a
+        // delivery meanwhile starts no other reset
+        var first = coach != null && !coach.firstResetShown ? coach.firstResetSteps : null;
+        if (first != null && first.Count > 0)
+        {
+            coach.firstResetShown = true;
+            if (running != null) StopCoroutine(running);
+            game = g;
+            running = StartCoroutine(Run(first, done =>
+            {
+                resetting = null;
+                done.ReloadLevel();
+            }));
+            yield break;
+        }
         resetting = null; // before the reload, whose Stop would otherwise stop this coroutine mid-way
         noteOnResume = true;
         g.ReloadLevel();

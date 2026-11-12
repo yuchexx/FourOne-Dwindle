@@ -54,12 +54,20 @@ public static class Target
     // the score history's row `index` from the top (0 = the newest), while the history is open
     public static Func<RectTransform> ScoreRow(GameManager game, int index) => () => game.hud.ScoreRow(index);
 
+    // the hint button. nothing in the HUD points at it, so it's found in the scene the first time and kept
+    static HintButton hintButton;
+    public static Func<RectTransform> Hint(GameManager game) => () =>
+    {
+        if (hintButton == null) hintButton = UnityEngine.Object.FindAnyObjectByType<HintButton>();
+        return hintButton != null && hintButton.button != null ? (RectTransform)hintButton.button.transform : null;
+    };
+
     // the Undo button (next to Restart, in the bottom-right corner)
     public static Func<RectTransform> Undo(GameManager game) =>
         () => game.hud.undoButton != null ? (RectTransform)game.hud.undoButton.transform : null;
 }
 
-// tutorials by name, one file each (Tutorials.Basics.cs, Tutorials.Doors.cs); a level picks one with LevelData.tutorial
+// tutorials by name, one file each (Tutorials.Basics.cs, Tutorials.Doors.cs, Tutorials.Bridge.cs, Tutorials.Routing.cs, Tutorials.Pairs.cs, Tutorials.BuildAhead.cs); a level picks one with LevelData.tutorial
 public static partial class Tutorials
 {
     // a tutorial's name -> its steps, made with the running game so steps can check it or set it up. a level picks its
@@ -68,6 +76,10 @@ public static partial class Tutorials
     {
         { "Basics", Basics },
         { "Doors", Doors },
+        { "Bridge", Bridge },
+        { "Routing", Routing },
+        { "Pairs", Pairs },
+        { "BuildAhead", BuildAhead },
     };
 
     // a tutorial's name -> its coach, for tutorials that have one (it takes over once the steps end)
@@ -127,6 +139,13 @@ public class TutorialCoach
     public string undoNote;                       // shown in the corner after an Undo
     public Func<GameAction, string> undoNoteFor;  // the note for the action that called for the Undo; null (or null back) = undoNote
     public Func<RectTransform>[] noteAbove;       // what the note stays above, so it covers none of it (see Target)
+    // the first Reset / the first Undo only: steps in place of resetNote / undoNote (the level loads again once the
+    // reset's steps end; the undo's show once the placement is undone). later ones get the note. null = always the note
+    public List<TutorialStep> firstResetSteps;
+    public List<TutorialStep> firstUndoSteps;
+    // set by TutorialController as each is shown. a coach is made for each run of its tutorial (the Tutorial button
+    // makes a new one), and kept across restarts and leaving the level, so each shows once per run
+    public bool firstResetShown, firstUndoShown;
     public Action onDone;                         // on Done: take the guides down
     public List<TutorialStep> doneSteps;          // shown after Done, like the tutorial's steps (e.g. what the player just earned)
     // until Done: as each delivered object's tile breaks (the delivered object, everyone delivered with it), steps to
