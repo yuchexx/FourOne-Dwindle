@@ -26,12 +26,19 @@ public class TelemetryManager : MonoBehaviour
 
     [Header("Parameters")]
     [SerializeField]
-    private int LEVEL_COUNT = 25; // Just some overshooting so new levels don't break the array
+    private int LEVEL_COUNT = Levels.All.Count; // Just some overshooting so new levels don't break the array
+
+    [Header("Testing")]
+    [Tooltip("Also send from the Unity editor. Keep off, or test plays land in the sheet")]
+    [SerializeField]
+    private bool sendInEditor = false;
 
     public static TelemetryManager Instance { get; private set; }
 
     public GameObject gameManager;
     private GameManager gameManagerScript;
+
+    bool levelBeat = false;
 
 
     private string sessionID;
@@ -41,8 +48,25 @@ public class TelemetryManager : MonoBehaviour
     private List<int> levelAttemptsPreCompletion; // Holds for each level until they beat it
     private List<int> levelAttemptsPostCompletion; // Holds for each level until they get 3 Stars
     private List<bool> levelCompletion;
-    private Dictionary<Vector3Int, List<TileType?>> tilePlacements;
 
+    // Current Attempt
+    private bool passedAlready; // Determine whether counted for pre or post
+    private bool counted; // To account for quits or closes even after one tile
+    private bool ended;
+    private string firstTile; // "board,x,y,tile" formatting
+
+    private Dictionary<Vector3Int, List<TileType?>> tilePlacements = new Dictionary<Vector3Int, List<TileType?>>();
+    private List<Step> steps = new List<Step>(); // Mirrors undo history
+    private List<(int step, HashSet<string> group)> deliveries = new List<(int, HashSet<string>)>();
+    private int takeBackFrame = -1; //a  move reports a take-back, then a placement, in the same frame
+
+    private struct Step
+    {
+        public GameActionKind kind; // To track PlaceTile or TakeBack
+        public Vector3Int at, from; // From is only for a move made
+        public TileType tile;
+        public bool move;
+    }
 
     private void Awake()
     {
@@ -55,15 +79,8 @@ public class TelemetryManager : MonoBehaviour
             levelAttemptsPreCompletion = new List<int>();
             levelAttemptsPostCompletion = new List<int>();
             levelCompletion = new List<bool>(LEVEL_COUNT);
-            tilePlacements = new Dictionary<Vector3Int, List<TileType?>>();
-            /*
-            for (int i = 0; i < LEVEL_COUNT; i++)
-            {
-                levelAttemptsPreCompletion.Add(0);
-                levelAttemptsPostCompletion.Add(0);
-                levelCompletion.Add(false);
-            }
-            */
+            //tilePlacements = new Dictionary<Vector3Int, List<TileType?>>();
+
         }
         else
         {
@@ -75,32 +92,36 @@ public class TelemetryManager : MonoBehaviour
     private void OnEnable()
 
     {
-#if !UNITY_EDITOR
+        if (Application.isEditor && !sendInEditor) return;
         gameManagerScript.ActionDone += eventSub;
-#endif
+
     }
 
 
     private void OnDisable()
     {
-#if !UNITY_EDITOR
+        if (Application.isEditor && !sendInEditor) return;
         gameManagerScript.ActionDone -= eventSub;
-#endif
     }
 
 
     public void StartLevel(int level)
     {
+        //levelBeat = false;
         currLevel = level + 1;
-        if (levelCompletion.Count < currLevel)
+        while (levelCompletion.Count < currLevel)
         {
-            for (int i = levelCompletion.Count; i < currLevel; i++)
-            {
-                levelAttemptsPreCompletion.Add(0);
-                levelAttemptsPostCompletion.Add(0);
-                levelCompletion.Add(false);
-            }
+            levelAttemptsPreCompletion.Add(0);
+            levelAttemptsPostCompletion.Add(0);
+            levelCompletion.Add(false);
         }
+        passedAlready = levelCompletion[currLevel - 1];
+        counted = false;
+        ended = false;
+        firstTile = null;
+        tilePlacements.Clear();
+        steps.Clear();
+        deliveries.Clear();
         levelStartTime = Time.realtimeSinceStartup;
     }
 
@@ -108,6 +129,7 @@ public class TelemetryManager : MonoBehaviour
     public void eventSub(GameAction gameAction)
     {
         Debug.Log($"GETTING the EVENT");
+        if (currLevel == 0) return;
         if (gameAction.kind == GameActionKind.Undo || gameAction.kind == GameActionKind.TakeBack)
         {
             int board = gameAction.board;
@@ -128,8 +150,56 @@ public class TelemetryManager : MonoBehaviour
             tilePlacements[fullCell].Add(gameAction.tile);
             finalPiecesUsed++;
         }
+        else if (gameAction.kind == GameActionKind.Restart)
+        {
+            // Send telemetrics only if they haven't beaten the level on the same attempt (to account for restarting after beating the level
+            // immediately
+            if (levelBeat)
+            {
+                levelBeat = false;
+            }
+            else
+            {
+
+                if (currLevel != 0)
+                {
+                    // Fine if sent multiple times over, google sheet will replace duplicates with the one with more attempts
+                    if (levelCompletion[currLevel - 1])
+                    {
+                        levelAttemptsPostCompletion[currLevel - 1]++;
+                        StartCoroutine(FillOutAnalytics("LevelAttemptsPostCompletion",
+                                  sessionID.ToString(),
+                                  currLevel.ToString(),
+                                  (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
+                                  finalPiecesUsed.ToString(), gameAction.stars.ToString(), gameAction.score.ToString(),
+                                  levelAttemptsPreCompletion[currLevel - 1].ToString(),
+                                  levelAttemptsPostCompletion[currLevel - 1].ToString(),
+                                  "0"));
+                    }
+                    else
+                    {
+                        if (gameAction.stars >= Levels.All[currLevel - 1].starsToPass) // passed = the next level unlocks
+                        {
+                            levelCompletion[currLevel - 1] = true;
+                        }
+                        levelAttemptsPreCompletion[currLevel - 1]++;
+                        StartCoroutine(FillOutAnalytics("LevelAttemptsPreCompletion",
+                                  sessionID.ToString(),
+                                  currLevel.ToString(),
+                                  (Time.realtimeSinceStartup - levelStartTime).ToString("0.00"),
+                                  finalPiecesUsed.ToString(), gameAction.stars.ToString(), gameAction.score.ToString(),
+                                  levelAttemptsPreCompletion[currLevel - 1].ToString(),
+                                  levelAttemptsPostCompletion[currLevel - 1].ToString(),
+                                  "0"));
+                    }
+                }
+
+
+            }
+        }
         else if (gameAction.kind == GameActionKind.LevelEnd)
         {
+
             // the level's own best plans - i only changed this bc its 28 lvls now
             LevelSolution currSolution = Levels.All[currLevel - 1].solution;
             if (currSolution == null) return;
@@ -231,6 +301,68 @@ public class TelemetryManager : MonoBehaviour
 
             finalPiecesUsed = 0;
             tilePlacements.Clear();
+            levelBeat = true;
+        }
+    }
+
+    // Attempts are counted when it starts: its first tile, or the end screen's Undo (or level end if no tile).
+    // Fine if sent multiple times over, google sheet will replace duplicates with the one with more attempts
+    private void CountAttempt()
+    {
+        if (counted || currLevel == 0) return;
+        counted = true;
+        int i = currLevel - 1;
+        if (passedAlready)
+        {
+            levelAttemptsPostCompletion[i]++;
+            StartCoroutine(Send(levelAttemptsPostForm, new Dictionary<string, string>
+            {
+                { "entry.1181161218", sessionID },
+                { "entry.336054205", currLevel.ToString() },
+                { "entry.820996616", levelAttemptsPostCompletion[i].ToString() },
+            }));
+        }
+        else
+        {
+            levelAttemptsPreCompletion[i]++;
+            StartCoroutine(Send(levelAttemptsPreForm, new Dictionary<string, string>
+            {
+                { "entry.795127675", sessionID },
+                { "entry.575500443", currLevel.ToString() },
+                { "entry.1099898166", levelAttemptsPreCompletion[i].ToString() },
+            }));
+        }
+    }
+    private static Vector3Int GetCell(GameAction a) => new Vector3Int(a.board, a.square.x, a.square.y);
+    private static Vector3Int GetKey(Square s) => new Vector3Int(s.board, s.square.x, s.square.y);
+    private static string LogEntry(Vector3Int cell, TileType tile) => $"{cell.x},{cell.y},{cell.z},{tile}"; // board,x,y,tile
+
+    private void Add(Vector3Int fullCell, TileType tile)
+    {
+        if (!tilePlacements.TryGetValue(fullCell, out List<TileType?> list)) tilePlacements[fullCell] = list = new List<TileType?>();
+        list.Add(tile);
+    }
+
+    private void Remove(Vector3Int fullCell)
+    {
+        if (!tilePlacements.TryGetValue(fullCell, out List<TileType?> list) || list.Count == 0) return;
+        list.RemoveAt(list.Count - 1);
+        if (list.Count == 0) tilePlacements.Remove(fullCell);
+    }
+
+    // Members must be passed in to copy values from start of coroutine so they aren't modified immediately after it's
+    // called due to levelStart overwriting their values in the class right after EndLevel is called
+    // Only really a problem when level is reset because these calls are on the same frame
+    private IEnumerator Send(string url, Dictionary<string, string> formData)
+    {
+        using (UnityWebRequest webReq = UnityWebRequest.Post(url, formData))
+        {
+            yield return webReq.SendWebRequest();
+
+            if (webReq.result == UnityWebRequest.Result.Success)
+                Debug.Log("Telemetry Form Successfully Sent");
+            else
+                Debug.LogError($"Error when submitting Telemetry Form: {webReq.error}");
         }
     }
 
