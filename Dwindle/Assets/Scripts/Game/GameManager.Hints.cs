@@ -64,14 +64,14 @@ public partial class GameManager
                 hints.Stage = 1;
                 break;
             case 1:
-            {
-                var st = CurrentState();
-                var plan = PlanMatcher.Closest(level, st) ?? PlanMatcher.Nearest(level, st);
-                HintBadges = PlanMatcher.Badges(level, plan.family, plan.order);
-                HintJunctions = PlanMatcher.Junctions(level, plan.family, plan.order);
-                hints.Stage = 2;
-                break;
-            }
+                {
+                    var st = CurrentState();
+                    var plan = PlanMatcher.Closest(level, st) ?? PlanMatcher.Nearest(level, st);
+                    HintBadges = PlanMatcher.Badges(level, plan.family, plan.order);
+                    HintJunctions = PlanMatcher.Junctions(level, plan.family, plan.order);
+                    hints.Stage = 2;
+                    break;
+                }
             case 2:
                 stage3 = new Stage3(level, CurrentState());
                 hints.Stage = 3;
@@ -135,8 +135,13 @@ public partial class GameManager
     void RecordArrow(MovingObject o, string door)
     {
         if (!arrowsSoFar.TryGetValue(o.spec.name, out var list)) arrowsSoFar[o.spec.name] = list = new List<ArrowRecord>();
-        list.Add(new ArrowRecord { square = door == null ? o.pos : (Vector2Int?)null, door = door, way = o.heading,
-                                   from = door == null ? (Vector2Int?)null : o.pos }); // o.pos: still the square it went in from
+        list.Add(new ArrowRecord
+        {
+            square = door == null ? o.pos : (Vector2Int?)null,
+            door = door,
+            way = o.heading,
+            from = door == null ? (Vector2Int?)null : o.pos
+        }); // o.pos: still the square it went in from
     }
 
     // HandleDeliveries: who arrived on this placement, on which square, with which tiles down (before any breaks)
@@ -147,6 +152,15 @@ public partial class GameManager
             for (int y = 0; y < Cells.GetLength(1); y++)
                 if (Cells[x, y]?.tile != null) occupied.Add(new Vector2Int(x, y));
         deliveriesSoFar.Add(new DeliveryRecord { objects = deliveredNow.Select(o => o.spec.name).ToArray(), at = lastPlaced, occupied = occupied, happened = true });
+    }
+
+    // for analytics: per best plan [family][order], how many deliveries so far happened as its, in order from the first
+    public int[][] DeliveriesInOrder()
+    {
+        var families = level?.solution?.families;
+        if (families == null) return new int[0][];
+        return families.Select((f, fi) => (f.orders ?? new DeliveryOrder[0])
+            .Select((o, oi) => PlanMatcher.MatchingDeliveries(level, fi, oi, deliveriesSoFar)).ToArray()).ToArray();
     }
 
     // LoadLevel (and so Restart, Replay, Next, picking a level): a fresh start, hints included
