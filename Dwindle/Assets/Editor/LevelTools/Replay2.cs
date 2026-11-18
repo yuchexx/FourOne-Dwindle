@@ -1,9 +1,8 @@
 using System; using System.Collections.Generic; using System.Linq; using UnityEngine;
 
 // plays a plan move by move with the game's rules (movement, doors, deliveries, the removal rule, the + reward,
-// and the ways a level ends early) and follows every tile a delivery could break:
-//   safe (the default): the plan works whichever tile the game picks each time
-//   lucky (any = true): it works for at least one pick each time, which undo's re-roll lets a player get to
+// and the ways a level ends early). each delivery breaks the tile BreakRule picks, as in the game, so there's one
+// way to play it out ("lucky" is the same as safe now: there's no roll to retry)
 class Replay2
 {
     class O
@@ -121,7 +120,7 @@ class Replay2
         return Break(st, i, now, 0, ev, new List<Vector2Int>(), st.objs.All(o => o.done));
     }
 
-    // the delivered objects break one tile each, one after another; every pick the game could make is followed
+    // the delivered objects break one tile each, one after another: the tile BreakRule picks, as the game does
     bool Break(State st, int i, List<int> now, int k, List<string> ev, List<Vector2Int> broken, bool finished)
     {
         if (k == now.Count)
@@ -139,31 +138,33 @@ class Replay2
             return Step(st, i + 1);
         }
         var d = st.objs[now[k]];
-        var cand = d.path.Distinct().Where(st.board.ContainsKey).ToList();
-        if (cand.Count == 0) return Break(st, i, now, k + 1, ev, broken, finished);
-        var reach = new HashSet<Vector2Int>(st.objs.Where(w => !w.done).SelectMany(w => Reachable(w, st.board)));
-        var group = cand.Where(reach.Contains).ToList();
-        if (group.Count == 0) group = cand;
-        if (finished) { st.board.Remove(group[0]); broken.Add(group[0]); return Break(st, i, now, k + 1, ev, broken, finished); } // nothing left to hurt
-        // the rest of each waiting object's planned route
-        var needed = new HashSet<Vector2Int>(st.objs.Where(w => !w.done).SelectMany(w => plan.routes[w.idx].order.Skip(w.path.Count)));
-        bool anyOk = false;
-        foreach (var c in group.OrderBy(needed.Contains))
+        TileType? TileAt(Vector2Int c) => st.board.TryGetValue(c, out var t) ? t : (TileType?)null;
+        bool IsObstacle(Vector2Int c) => L.obstacles.Contains(c);
+        var stillNeeded = new Dictionary<Vector2Int, int>(); // as the game (GameManager.PickRemoval)
+        var soonest = new Dictionary<Vector2Int, int>();
+        foreach (var w in st.objs.Where(w => !w.done))
         {
+            foreach (var kv in BreakRule.Ahead(L, w.pos, w.h, w.via, TileAt, IsObstacle, false))
+                if (!stillNeeded.TryGetValue(kv.Key, out var s) || kv.Value < s) stillNeeded[kv.Key] = kv.Value;
+            foreach (var kv in BreakRule.Ahead(L, w.pos, w.h, w.via, TileAt, IsObstacle, true))
+                if (!soonest.TryGetValue(kv.Key, out var s) || kv.Value < s) soonest[kv.Key] = kv.Value;
+        }
+        var pick = BreakRule.Pick(L, d.path, TileAt, stillNeeded, soonest);
+        if (pick == null) return Break(st, i, now, k + 1, ev, broken, finished);
+        var c = pick.Value;
+        if (!finished)
+        {
+            // the rest of each waiting object's planned route
+            var needed = new HashSet<Vector2Int>(st.objs.Where(w => !w.done).SelectMany(w => plan.routes[w.idx].order.Skip(w.path.Count)));
             if (needed.Contains(c))
             {
-                Fail($"{d.s.name}'s delivery can break {LB.Local(L, c)}, which {string.Join(" and ", st.objs.Where(w => !w.done && plan.routes[w.idx].order.Skip(w.path.Count).Contains(c)).Select(w => w.s.name))} still needs");
-                if (!any) return false;
-                continue;
+                Fail($"{d.s.name}'s delivery breaks {LB.Local(L, c)}, which {string.Join(" and ", st.objs.Where(w => !w.done && plan.routes[w.idx].order.Skip(w.path.Count).Contains(c)).Select(w => w.s.name))} still needs");
+                return false;
             }
-            if (++branches > maxBranches) { Fail("too many ways the tiles could break to check them all"); return false; }
-            var copy = group.Count == 1 ? st : st.Copy();
-            copy.board.Remove(c);
-            bool ok = Break(copy, i, now, k + 1, new List<string>(ev), new List<Vector2Int>(broken) { c }, finished);
-            if (ok) { anyOk = true; if (any) return true; }
-            else if (!any) return false;
         }
-        return anyOk;
+        st.board.Remove(c);
+        broken.Add(c);
+        return Break(st, i, now, k + 1, ev, broken, finished);
     }
 
     void Move(O o, Dictionary<Vector2Int, TileType> board, List<string> ev, List<(int, Dir)> ch)
@@ -204,25 +205,4 @@ class Replay2
     }
 
     // the placed tiles an object could still reach by following tiles ahead of it (every branch, through doors)
-    IEnumerable<Vector2Int> Reachable(O o, Dictionary<Vector2Int, TileType> board)
-    {
-        var seen = new HashSet<(Vector2Int, Dir, bool)>(); var cells = new HashSet<Vector2Int>();
-        var q = new Queue<(Vector2Int, Dir, bool)>(); q.Enqueue((o.pos, o.h, o.via));
-        while (q.Count > 0)
-        {
-            var (pos, h, via) = q.Dequeue();
-            if (!via && L.DoorOnEdge(pos, h) != null) continue;
-            var next = pos + DirUtil.Offset(h);
-            if (!InGrid(next) || !board.TryGetValue(next, out var t) || !Tiles.Has(t, DirUtil.Opposite(h))) continue;
-            cells.Add(next);
-            foreach (var e in Tiles.Exits(t, DirUtil.Opposite(h)))
-            {
-                var door = L.DoorOnEdge(next, e);
-                if (door == null) { if (seen.Add((next, e, false))) q.Enqueue((next, e, false)); continue; }
-                var p = L.Partner(door);
-                foreach (var hh in Into(p)) { var from = hh == p.side ? p.cell : p.Neighbor; if (seen.Add((from, hh, true))) q.Enqueue((from, hh, true)); }
-            }
-        }
-        return cells;
-    }
 }

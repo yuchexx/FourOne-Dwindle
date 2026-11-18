@@ -102,7 +102,7 @@ public static partial class Tutorials
                 {
                     new TutorialStep
                     {
-                        text = $"{arrival.objectName} is delivered,\nso a random tile from its path is removed." +
+                        text = $"{arrival.objectName} is delivered,\nso the most important tile on its path is removed." +
                                // the first of the two only (in Level 1 both deliveries break a tile)
                                (arrival.objectName == together[0] ? "\nSo plan ahead!" : ""),
                         targets = new[] { Target.Cell(game, arrival.board, arrival.square.x, arrival.square.y) },

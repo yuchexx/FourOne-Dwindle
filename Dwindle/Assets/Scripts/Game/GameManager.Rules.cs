@@ -191,86 +191,25 @@ public partial class GameManager
         Report(new GameAction { kind = GameActionKind.Delivered, arrivals = arrivals.ToArray(), score = Score }); // for analytics
         yield break;
     }
-    // which tile of a delivered object's path breaks. if some of them are still needed by an object that hasn't
-    // arrived (it can reach them along the tiles ahead of it), one of those breaks; otherwise any of them.
-    // within that, junctions are the likeliest, then tiles near a board's middle or next to a door
+    // which tile of a delivered object's path breaks: the same every time (BreakRule). tiles an object that hasn't
+    // arrived can still reach come first, then junctions, then the one a waiting object reaches soonest
     (Vector2Int?, string) PickRemoval(MovingObject o)
     {
-        var candidates = o.path.Distinct().Where(c => Cells[c.x, c.y].tile != null).ToList();
-        if (candidates.Count == 0) return (null, null);
-
+        TileType? TileAt(Vector2Int c) => Cells[c.x, c.y]?.tile;
+        bool Blocked(Vector2Int c) => Cells[c.x, c.y] == null || Cells[c.x, c.y].obstacle;
         var neededBy = new Dictionary<Vector2Int, string>();
+        var stillNeeded = new Dictionary<Vector2Int, int>(); // tiles a waiting object can reach now: the fewest steps
+        var soonest = new Dictionary<Vector2Int, int>();     // the same with the gaps ahead counted as filled
         foreach (var w in objects.Where(w => !w.completed))
-            foreach (var c in ReachableTiles(w))
-                if (!neededBy.ContainsKey(c)) neededBy[c] = w.spec.name;
-        var group = candidates.Where(neededBy.ContainsKey).ToList();
-        if (group.Count == 0) group = candidates;
-
-        var weights = group.Select(RemovalWeight).ToList();
-        float r = Random.value * weights.Sum();
-        for (int i = 0; i < group.Count; i++)
         {
-            r -= weights[i];
-            if (r <= 0 || i == group.Count - 1)
-                return (group[i], neededBy.TryGetValue(group[i], out var who) ? who : null);
+            foreach (var kv in BreakRule.Ahead(level, w.pos, w.heading, w.viaDoor, TileAt, Blocked, false))
+                if (!stillNeeded.TryGetValue(kv.Key, out var s) || kv.Value < s) { stillNeeded[kv.Key] = kv.Value; neededBy[kv.Key] = w.spec.name; }
+            foreach (var kv in BreakRule.Ahead(level, w.pos, w.heading, w.viaDoor, TileAt, Blocked, true))
+                if (!soonest.TryGetValue(kv.Key, out var s) || kv.Value < s) soonest[kv.Key] = kv.Value;
         }
-        return (null, null);
-    }
-
-    float RemovalWeight(Vector2Int c)
-    {
-        var t = Cells[c.x, c.y].tile.Value;
-        if (Tiles.Category(t) == TileCategory.Cross || Tiles.Category(t) == TileCategory.Tee) return 4f;
-        if (NextToDoor(c) || NearMiddle(c)) return 2f;
-        return 1f;
-    }
-
-    bool NextToDoor(Vector2Int c) => DirUtil.All.Any(d => level.DoorOnEdge(c, d) != null);
-
-    // the inner squares of a board (not on its outer edge), on boards bigger than 2x2
-    bool NearMiddle(Vector2Int c)
-    {
-        int b = level.BoardOf(c);
-        var bd = level.boards[b];
-        var p = c - bd.origin;
-        return bd.width > 2 && bd.height > 2 && p.x > 0 && p.y > 0 && p.x < bd.width - 1 && p.y < bd.height - 1;
-    }
-
-    // the placed tiles an object could still reach by following the tiles ahead of it - every branch of a
-    // junction, through doors too - before it comes to an empty square
-    HashSet<Vector2Int> ReachableTiles(MovingObject o)
-    {
-        var cells = new HashSet<Vector2Int>();
-        var seen = new HashSet<(Vector2Int, Dir, bool)>();
-        var queue = new Queue<(Vector2Int pos, Dir heading, bool viaDoor)>();
-        queue.Enqueue((o.pos, o.heading, o.viaDoor));
-        while (queue.Count > 0)
-        {
-            var (pos, heading, viaDoor) = queue.Dequeue();
-            if (!CanCross(pos, heading, viaDoor)) continue;
-            var next = pos + DirUtil.Offset(heading);
-            if (!board.InGrid(next)) continue;
-            var cell = Cells[next.x, next.y];
-            var entry = DirUtil.Opposite(heading);
-            if (cell.tile == null || !Tiles.Has(cell.tile.Value, entry)) continue;
-            cells.Add(next);
-            foreach (var exit in Tiles.Exits(cell.tile.Value, entry))
-            {
-                var door = level.DoorOnEdge(next, exit);
-                if (door == null)
-                {
-                    if (seen.Add((next, exit, false))) queue.Enqueue((next, exit, false));
-                    continue;
-                }
-                var partner = level.Partner(door);
-                foreach (var h in ArrivalHeadings(partner))
-                {
-                    var from = h == partner.side ? partner.cell : partner.Neighbor;
-                    if (seen.Add((from, h, true))) queue.Enqueue((from, h, true));
-                }
-            }
-        }
-        return cells;
+        var pick = BreakRule.Pick(level, o.path, TileAt, stillNeeded, soonest);
+        if (pick == null) return (null, null);
+        return (pick, neededBy.TryGetValue(pick.Value, out var who) ? who : null);
     }
     // end of level and stars
     void CheckLevelEnd()

@@ -18,7 +18,7 @@ public class RulesBasicsDemo : MonoBehaviour
         RulesDemoUI.Label("Tutorial", transform, new Vector2(0, 268), new Vector2(940, 32),
             "<b>New here? Try <color=#8EBEFF>Level 1</color> for a guided tutorial.</b>", 23, font);
         RulesDemoUI.Label("DwindleRule", transform, new Vector2(0, 222), new Vector2(940, 32),
-            "Each delivery <b>randomly</b> removes a traveled tile.", 22, font);
+            "Each delivery removes <b>the most important tile</b> on its path.", 22, font);
         var board = RulesDemoUI.Group("DwindleBoard", transform, new Vector2(0, -20), new Vector2(760, 420));
         RulesDemoUI.Box("BoardBackground", board, Vector2.zero, new Vector2(760, 420), RulesDemoUI.Panel);
         RulesDemoUI.EndLine("Red start line", board, new Vector2(-225, 62), new Vector2(-Endpoint, 62),
@@ -95,7 +95,7 @@ public class RulesBasicsDemo : MonoBehaviour
         RulesDemoUI.Face(blue, t < 11.2f ? Dir.W : Dir.N);
         stage.gameObject.SetActive(t >= 6.6f);
         stage.text = t < 8.8f ? "<b>Delivered!</b>" :
-            t < 14.5f ? "A traveled tile is <b>randomly removed!</b>" :
+            t < 14.5f ? "The <b>shared junction</b> is removed!" :
             "<b>Plan ahead for the paths you still need!</b>";
     }
 }
