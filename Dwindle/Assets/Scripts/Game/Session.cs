@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // what the game remembers: each level's best stars and whether it earned purple, the settings, and analytics' player id
-// and try counts. saved in the browser (PlayerPrefs), so a reload keeps it; Reset progress clears it.
-// Unlock all is not saved: it starts off on every load
+// and try counts. saved in the browser (PlayerPrefs), so a reload keeps it; Reset progress clears it
 public static class Session
 {
     const string Key = "dwindle."; // every saved value starts with this
 
-    // Settings: every level can be played, whatever the stars (not saved)
-    public static bool unlockAll;
+    // Settings: every level can be played, whatever the stars
+    static bool unlockAllValue;
+    public static bool unlockAll { get => unlockAllValue; set { unlockAllValue = value; SetBool("unlockAll", value); } }
 
     // Settings: how tiles are placed - click a tile then a square, drag a tile onto a square, or either
     public enum Placement { Both, Click, Drag }
@@ -109,7 +109,7 @@ public static class Session
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Load()
     {
-        unlockAll = false;
+        unlockAllValue = GetBool("unlockAll", false);
         placementValue = (Placement)PlayerPrefs.GetInt(Key + "placement", (int)Placement.Both);
         compactSupplyValue = GetBool("compactSupply", false);
         showTutorialsValue = GetBool("showTutorials", true);
