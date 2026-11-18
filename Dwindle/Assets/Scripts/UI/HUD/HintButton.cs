@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// the hint button: a dot per stage used, the stage 1 line under the score, and a check before stage 3 (the answer),
+// the hint button: a dot per stage used, the tile line (from stage 1), and a check before stage 2 (the answer),
 // which costs the purple stars
 public class HintButton : MonoBehaviour
 {
@@ -15,7 +15,7 @@ public class HintButton : MonoBehaviour
     public GameObject noPurpleLabel; // shown once the answer has been used
     [Tooltip("Optional: the note above Hide / Show, there from stage 1")]
     public HintNote stageNote;
-    [Tooltip("Asks before stage 3; its buttons call ShowAnswer and CloseConfirm")]
+    [Tooltip("Asks before stage 2 (the answer); its buttons call ShowAnswer and CloseConfirm")]
     public GameObject confirmPanel;
     [Tooltip("The Hide / Show button's text. Its On Click: HintButton > ToggleHidden")]
     public TMP_Text hideLabel;
@@ -70,7 +70,7 @@ public class HintButton : MonoBehaviour
     void Refresh()
     {
         int stage = game.HintStage;
-        bool reached = (stage == 1 || stage == 2) && stage > shownStage; // stage 1 or 2 just came: its menu opens once, like a hover
+        bool reached = stage == 1 && stage > shownStage; // stage 1 (the order) just came: its menu opens once, like a hover
         shownStage = stage;
         bool hidden = game.HintHidden;
         var palette = UIPalette.Current;

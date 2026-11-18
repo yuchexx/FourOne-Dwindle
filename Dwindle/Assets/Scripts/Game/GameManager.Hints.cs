@@ -14,15 +14,15 @@ public partial class GameManager
     Vector2Int lastPlaced; // the square placed in the round being played
 
     public event System.Action HintsChanged; // the hint button and the board's hint overlay should redraw
-    public int HintStage => hints.Stage;     // 0 to 3
+    public int HintStage => hints.Stage;     // 0 to 2
     public bool PurpleLost => hints.PurpleLost;
     public bool HintHidden { get; set; }     // Hide hint: the overlay is hidden, the stage stays
-    public string HintTilesText => Hints.TilesText(level); // stage 1, under the score
-    // stage 2, fixed when shown: who arrives in which delivery (same number = together), and where groups meet
+    public string HintTilesText => Hints.TilesText(level); // stage 1, with the order
+    // stage 1, fixed when shown: who arrives in which delivery (same number = together), and where groups meet
     public List<(string objectName, int number)> HintBadges { get; private set; } = new List<(string, int)>();
     public List<(Vector2Int square, int number)> HintJunctions { get; private set; } = new List<(Vector2Int, int)>();
 
-    // stage 3 (see Stage3): made at its first press, null before. placedForHints: a placement waiting to be checked
+    // stage 2, the answer (Stage3, named for the old third stage): made at its first press, null before. placedForHints: a placement waiting to be checked
     Stage3 stage3;
     bool placedForHints;
     public bool HintAnswerDone => stage3 != null && hints.Revealed >= stage3.Steps.Count;
@@ -62,20 +62,17 @@ public partial class GameManager
         switch (hints.Stage)
         {
             case 0:
-                hints.Stage = 1;
-                break;
-            case 1:
                 {
                     var st = CurrentState();
                     var plan = PlanMatcher.Closest(level, st) ?? PlanMatcher.Nearest(level, st);
                     HintBadges = PlanMatcher.Badges(level, plan.family, plan.order);
                     HintJunctions = PlanMatcher.Junctions(level, plan.family, plan.order);
-                    hints.Stage = 2;
+                    hints.Stage = 1;
                     break;
                 }
-            case 2:
+            case 1:
                 stage3 = new Stage3(level, CurrentState());
-                hints.Stage = 3;
+                hints.Stage = 2;
                 hints.Revealed = 1;
                 break;
             default:
@@ -103,15 +100,15 @@ public partial class GameManager
         RefreshHintedArrow();
     }
 
-    // the board's hints: stage 2's numbers and frames, or stage 3's ghosts in their place
+    // the board's hints: stage 1's numbers and frames, or the answer's ghosts (stage 2) in their place
     void DrawHints()
     {
         if (level == null || board.Cells == null) return;
         var st = CurrentState(); // the board, once for this redraw
         if (!busy) FollowBoard(st); // mid-round the board is half moved: it's judged once everything has stopped
         if (HintHidden) { board.ShowHints(new List<(string, int)>(), new List<(Vector2Int, int)>(), new List<(Vector2Int, TileType, int, StepState)>()); return; }
-        bool two = hints.Stage == 2;
-        board.ShowHints(two ? HintBadges : new List<(string, int)>(), two ? HintJunctions : new List<(Vector2Int, int)>(), HintGhosts(st));
+        bool order = hints.Stage == 1;
+        board.ShowHints(order ? HintBadges : new List<(string, int)>(), order ? HintJunctions : new List<(Vector2Int, int)>(), HintGhosts(st));
     }
 
     // stage 3, once everything has stopped: follows the board (see Stage3.Follow), with the placement this round if any
