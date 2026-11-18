@@ -839,6 +839,7 @@ public partial class BoardView : MonoBehaviour
     {
         public Vector2Int placedAt;
         public TileType placed;
+        public bool partial; // undo by step: only the moves after an arrow question; the placed tile stays
         public readonly List<RewindStep> steps = new List<RewindStep>();
     }
     public enum StepKind { Move, Teleport, Delivered, Blocked, Used }
@@ -859,6 +860,24 @@ public partial class BoardView : MonoBehaviour
     public Rewind StartRecording(Vector2Int placedAt, TileType placed) =>
         recording = new Rewind { placedAt = placedAt, placed = placed };
     public void StopRecording() => recording = null;
+
+    // undo by step: how much the round has recorded (an arrow question saves it), the part after it to play backwards,
+    // and the round recording again from there
+    public int RecordedSteps => recording?.steps.Count ?? 0;
+    public Rewind PartOf(Rewind r, int from)
+    {
+        if (r == null) return null;
+        var part = new Rewind { placedAt = r.placedAt, placed = r.placed, partial = true };
+        part.steps.AddRange(r.steps.Skip(from));
+        return part;
+    }
+    public void ResumeRecording(Rewind r, int from)
+    {
+        if (r == null) return;
+        if (from < r.steps.Count) r.steps.RemoveRange(from, r.steps.Count - from);
+        recording = r;
+    }
+    public bool UndoPlaying => undoAnim != null;
 
     void Record(MovingObject o, bool teleport)
     {
@@ -953,7 +972,7 @@ public partial class BoardView : MonoBehaviour
                     greyedForRewind.Add(step.cell);
                 }
             // the placed tile is back on its square for the whole rewind, even if a delivery broke it, and leaves at the end
-            if (Cells[rewind.placedAt.x, rewind.placedAt.y] is Cell placedCell) TileGoes(placedCell, rewind.placed);
+            if (!rewind.partial && Cells[rewind.placedAt.x, rewind.placedAt.y] is Cell placedCell) TileGoes(placedCell, rewind.placed);
         }
         undoAnim = StartCoroutine(UndoRoutine(rewind));
     }

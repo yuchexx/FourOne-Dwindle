@@ -15,7 +15,7 @@ public struct GameAction
     public string objectName; // ChooseDirection: who chose, e.g. "Red"
     public Dir direction;     // ChooseDirection: the way it faces now
     public string door;       // ClickDoor: the door's letter
-    public GameActionKind undid; // Undo: what it took back (PlaceTile or TakeBack), with its tile, board and square above
+    public GameActionKind undid; // Undo: what it took back (PlaceTile or TakeBack, or ChooseDirection: back to an arrow question, the tile stays), with its tile, board and square above
     public int score;         // Restart, LevelEnd, Delivered: the score at that point
     public int stars;         // LevelEnd: 0 to 3
     public int tilesUsed;     // Restart, LevelEnd: tiles placed and kept so far (placements minus take-backs and undos)

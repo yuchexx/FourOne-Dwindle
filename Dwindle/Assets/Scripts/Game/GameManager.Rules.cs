@@ -7,20 +7,23 @@ using UnityEngine;
 // can no longer be won (blocked objects, the stuck notice). part of GameManager
 public partial class GameManager
 {
-    // movement that happens after one tile placement
-    IEnumerator ResolveRound()
+    // movement that happens after one tile placement. resume: undo by step went back to this arrow question, so the
+    // round picks up there (the objects before it have already moved)
+    IEnumerator ResolveRound(ChoicePoint resume = null)
     {
         busy = true;
+        roundDelivered = resume == null ? new List<MovingObject>() : resume.delivered.Select(i => objects[i]).ToList();
+        while (resume != null && board.UndoPlaying) yield return null; // the rewind plays first, then the arrows show again
         HintsChanged?.Invoke(); // stage 3: the tile just placed shows how it stands from the start of the move
-        var deliveredNow = new List<MovingObject>();
-        foreach (var o in objects)
+        for (int i = resume?.obj ?? 0; i < objects.Count; i++)
         {
+            var o = objects[i];
             if (o.completed) continue;
-            yield return MoveObject(o);
+            yield return MoveObject(o, resume != null && i == resume.obj ? resume : null);
             board.LayoutWaitingObjects(objects);
             if (o.completed)
             {
-                deliveredNow.Add(o);
+                roundDelivered.Add(o);
                 deliveryPoints += pointsPerDelivery;
                 if (o.teleports > 0) teleportPoints += pointsPerTeleport; // once per delivered object
 
@@ -32,7 +35,7 @@ public partial class GameManager
             }
         }
 
-        if (deliveredNow.Count > 0) yield return HandleDeliveries(deliveredNow);
+        if (roundDelivered.Count > 0) yield return HandleDeliveries(roundDelivered);
 
         busy = false;
         RefreshAll();
@@ -40,9 +43,34 @@ public partial class GameManager
         CheckLevelEnd();
     }
 
-    // moves one object as far as the path goes, through doors too
-    IEnumerator MoveObject(MovingObject o)
+    List<MovingObject> roundDelivered = new List<MovingObject>(); // delivered so far this round
+    Snapshot roundSnapshot; // the undo snapshot of the placement whose round this is: its arrow questions go in it
+
+    // undo by step: an arrow question is about to show; saved with the placement so undo can come back to it
+    ChoicePoint SaveChoice(MovingObject o, List<Dir> ways, DoorSpec door)
     {
+        if (roundSnapshot == null) return null;
+        var choice = new ChoicePoint
+        {
+            state = Capture(), obj = objects.IndexOf(o), ways = ways, door = door,
+            delivered = roundDelivered.Select(x => objects.IndexOf(x)).ToArray(), rewindSteps = board.RecordedSteps,
+        };
+        roundSnapshot.choices.Add(choice);
+        return choice;
+    }
+
+    // moves one object as far as the path goes, through doors too. resume: it starts by asking that question again
+    IEnumerator MoveObject(MovingObject o, ChoicePoint resume = null)
+    {
+        if (resume != null)
+        {
+            if (resume.door == null) yield return LeaveSquare(o, resume.ways);
+            else
+            {
+                yield return ComeOut(o, resume.door);
+                yield return board.Slide(o, board.WaitPos(o));
+            }
+        }
         for (int guard = 0; guard < 500; guard++)
         {
             var next = o.pos + DirUtil.Offset(o.heading);
@@ -74,30 +102,36 @@ public partial class GameManager
             o.path.Add(next);
             board.SetLocked(next, true); // used now, so it can't be put back
 
-            // L, I and the bridge have one way out; + and T tiles let the player choose.
-            // a way out onto a door teleports
-            var ways = Tiles.Exits(cell.tile.Value, entry);
-            if (ways.Count == 1)
-            {
-                o.heading = ways[0];
-            }
-            else
-            {
-                HintsChanged?.Invoke(); // stage 3: the junction just placed shows how it stands while the arrow is picked
-                yield return board.AskDirection(o, ways, HintArrow(o)); // sets o.heading from the arrow the player clicks
-                ReportChoice(o); // for the tutorial
-                HintsChanged?.Invoke(); // a wrong way shows at once
-            }
-            o.view.Face(o.heading);
-
-            var door = level.DoorOnEdge(next, o.heading);
-            if (door != null)
-            {
-                yield return board.Slide(o, board.EdgePos(next, o.heading));
-                yield return Teleport(o, door);
-            }
-            yield return board.Slide(o, board.WaitPos(o));
+            yield return LeaveSquare(o, Tiles.Exits(cell.tile.Value, entry));
         }
+    }
+
+    // out of the square it's on: L, I and the bridge have one way out; + and T tiles let the player choose.
+    // a way out onto a door teleports; then it goes to where it waits
+    IEnumerator LeaveSquare(MovingObject o, List<Dir> ways)
+    {
+        if (ways.Count == 1)
+        {
+            o.heading = ways[0];
+        }
+        else
+        {
+            var choice = SaveChoice(o, ways, null); // undo by step comes back here
+            HintsChanged?.Invoke(); // stage 3: the junction just placed shows how it stands while the arrow is picked
+            yield return board.AskDirection(o, ways, HintArrow(o)); // sets o.heading from the arrow the player clicks
+            if (choice != null) choice.answered = true;
+            ReportChoice(o); // for the tutorial
+            HintsChanged?.Invoke(); // a wrong way shows at once
+        }
+        o.view.Face(o.heading);
+
+        var door = level.DoorOnEdge(o.pos, o.heading);
+        if (door != null)
+        {
+            yield return board.Slide(o, board.EdgePos(o.pos, o.heading));
+            yield return Teleport(o, door);
+        }
+        yield return board.Slide(o, board.WaitPos(o));
     }
 
     // through one door and out of its partner, then facing a square beside it
@@ -112,13 +146,21 @@ public partial class GameManager
             outBoard = partner.board, outSquare = partner.cell - level.boards[partner.board].origin, outSide = partner.side,
         });
         yield return board.Teleport(o, board.EdgePos(partner.cell, partner.side));
+        yield return ComeOut(o, door);
+    }
 
+    // at the partner of the door it went into: which way it faces (asked when both sides are on a board)
+    IEnumerator ComeOut(MovingObject o, DoorSpec door)
+    {
+        var partner = level.Partner(door);
         var into = ArrivalHeadings(partner);
         if (into.Count == 1) o.heading = into[0];
         else
         {
+            var choice = SaveChoice(o, into, door); // undo by step comes back here
             HintsChanged?.Invoke(); // stage 3: the board as it stands while the way out is picked
             yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into, HintArrow(o, door));
+            if (choice != null) choice.answered = true;
             ReportChoice(o, door.label); // for the tutorial and the hints
             HintsChanged?.Invoke(); // a wrong way shows at once
         }

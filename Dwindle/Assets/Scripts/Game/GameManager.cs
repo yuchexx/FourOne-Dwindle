@@ -121,6 +121,7 @@ public partial class GameManager : MonoBehaviour
         hud.SetScoreLog(null);
         deliveryPoints = comboPoints = teleportPoints = unusedPoints = 0;
         history.Clear();
+        roundSnapshot = null;
         endWindowHeld = false; // for the tutorial: a held end window never outlives its level
         levelEndHeld = false;  // for the tutorial: nor a held level end (GameManager.Tutorial.cs)
         earnedFlashHeld = false; // for the tutorial: nor a held earned flash (GameManager.Tutorial.cs)
@@ -179,6 +180,7 @@ public partial class GameManager : MonoBehaviour
         snapshot.rewind = board.StartRecording(p, t); // this tile and the moves it causes, so undo can play them backwards
         snapshot.action = OnSquare(GameActionKind.PlaceTile, p, t); // what an undo of it reports
         history.Record(snapshot);
+        roundSnapshot = snapshot; // its round's arrow questions go in it (undo by step)
         inventory[t]--;
         board.SetTile(p, t);
         lastPlaced = p; // for the hints: the square whose round this is
@@ -286,6 +288,7 @@ public partial class GameManager : MonoBehaviour
         snapshot.rewind = board.StartRecording(to, t);
         snapshot.action = OnSquare(GameActionKind.PlaceTile, to, t); // what an undo of it reports
         history.Record(snapshot);
+        roundSnapshot = snapshot;
         board.TakeBackTile(from);
         board.SetTile(to, t);
         lastPlaced = to; // for the hints

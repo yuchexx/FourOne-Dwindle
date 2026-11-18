@@ -12,6 +12,7 @@ public class SettingsView : MonoBehaviour
     public Button bothButton;
     [Header("Switches")]
     public Toggle undoAnimationToggle;
+    public Toggle undoByStepToggle; // undo goes back to the last arrow question first
     public Toggle unlockAllToggle;
     public Toggle compactSupplyToggle; // the supply shows only this level's tiles (and the +)
     public Toggle showTutorialsToggle;
@@ -44,6 +45,7 @@ public class SettingsView : MonoBehaviour
         Choice(dragButton, Session.Placement.Drag);
         Choice(bothButton, Session.Placement.Both);
         undoAnimationToggle.onValueChanged.AddListener(on => game.AnimateUndo = on);
+        if (undoByStepToggle != null) undoByStepToggle.onValueChanged.AddListener(on => game.UndoByStep = on);
         unlockAllToggle.onValueChanged.AddListener(on =>
         {
             game.UnlockAll = on;
@@ -88,6 +90,7 @@ public class SettingsView : MonoBehaviour
     public void Open()
     {
         undoAnimationToggle.SetIsOnWithoutNotify(game.AnimateUndo);
+        if (undoByStepToggle != null) undoByStepToggle.SetIsOnWithoutNotify(game.UndoByStep);
         unlockAllToggle.SetIsOnWithoutNotify(game.UnlockAll);
         if (compactSupplyToggle != null) compactSupplyToggle.SetIsOnWithoutNotify(game.CompactSupply);
         if (showTutorialsToggle != null) showTutorialsToggle.SetIsOnWithoutNotify(game.ShowTutorials);

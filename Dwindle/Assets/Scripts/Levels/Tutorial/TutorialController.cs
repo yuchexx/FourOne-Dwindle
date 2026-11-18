@@ -267,7 +267,7 @@ public class TutorialController : MonoBehaviour
         g.HoldLevelEnd(true);
         overlay.Block();
         yield return new WaitForSecondsRealtime(undoDelay);
-        g.Undo();
+        g.UndoPlacement(); // the whole placement, whatever undo by step is set to
         g.HoldLevelEnd(false);
         // the coach's first undo: its steps in the middle of the screen in place of the note, once the placement is
         // undone (so nothing moves under them). `undoing` stays set till they end, so no other reset or undo starts

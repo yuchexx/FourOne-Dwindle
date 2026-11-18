@@ -188,6 +188,7 @@ public partial class GameManager
 
     // Settings
     public bool AnimateUndo { get => Session.animateUndo; set { Session.animateUndo = value; board.animateUndo = value; } }
+    public bool UndoByStep { get => Session.undoByStep; set => Session.undoByStep = value; }
     public bool UnlockAll { get => Session.unlockAll; set => Session.unlockAll = value; }
     // the tutorials from the next level start; for the tutorial: its button by the title changes right away
     public bool ShowTutorials

@@ -33,6 +33,10 @@ public static class Session
     static bool animateUndoValue;
     public static bool animateUndo { get => animateUndoValue; set { animateUndoValue = value; SetBool("animateUndo", value); } }
 
+    // Settings: undo goes back to the last arrow question first, then the placement (on by default)
+    static bool undoByStepValue;
+    public static bool undoByStep { get => undoByStepValue; set { undoByStepValue = value; SetBool("undoByStep", value); } }
+
     // the best result per level (index in Levels.All)
     public struct Record
     {
@@ -115,6 +119,7 @@ public static class Session
         showTutorialsValue = GetBool("showTutorials", true);
         showHintTipsValue = GetBool("showHintTips", true);
         animateUndoValue = GetBool("animateUndo", true);
+        undoByStepValue = GetBool("undoByStep", true);
         lastOpenedValue = PlayerPrefs.GetInt(Key + "lastOpened", -1);
         if (lastOpenedValue >= Levels.All.Count) lastOpenedValue = -1; // the levels changed since
         records.Clear();

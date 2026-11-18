@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-// undo: a snapshot before every tile placement, and going back to the newest one
+// undo: a snapshot before every tile placement (with its round's arrow questions), and going back to the newest one
 public partial class GameManager
 {
     readonly UndoHistory history = new UndoHistory();
@@ -44,10 +44,21 @@ public partial class GameManager
         };
     }
 
-    // for the Undo button - works mid-round too (moving, a junction or a recovery choice), not once the level is over
-    public void Undo()
+    // for the Undo button - works mid-round too (moving, a junction or a recovery choice), not once the level is over.
+    // Settings' undo by step (on by default): back to the last arrow question first, then the placement
+    public void Undo() => UndoBy(Session.undoByStep);
+
+    // for the tutorial (a coach undoing a wrong move): always the whole placement
+    public void UndoPlacement() => UndoBy(false);
+
+    void UndoBy(bool byStep)
     {
         if (levelOver || !history.CanUndo) return;
+
+        // a question whose arrows are showing now: going back means the one before it
+        var top = history.Peek();
+        while (top.choices.Count > 0 && !top.choices[top.choices.Count - 1].answered) top.choices.RemoveAt(top.choices.Count - 1);
+        if (byStep && top.choices.Count > 0) { UndoChoice(top); return; }
 
         var snapshot = history.Pop();
         board.BeginUndo(objects, snapshot.rewind); // where everything is now, to rewind from (see BoardView.animateUndo)
@@ -71,7 +82,45 @@ public partial class GameManager
         Report(new GameAction { kind = GameActionKind.Undo, undid = undone.kind, tile = undone.tile, board = undone.board, square = undone.square });
     }
 
-    // the end window's Undo button: back into the level, as it was before its last placement. Undo itself refuses
+    // undo by step: back to the placement's last arrow question, which shows again (the tile stays). the moves after
+    // it play backwards, then the round goes on from the question
+    void UndoChoice(Snapshot placement)
+    {
+        var choice = placement.choices[placement.choices.Count - 1];
+        placement.choices.RemoveAt(placement.choices.Count - 1);
+        roundSnapshot = placement; // the round's questions from here on go in it again
+        board.BeginUndo(objects, board.PartOf(placement.rewind, choice.rewindSteps));
+        StopAllCoroutines(); // the round, with the slides, teleports and choices it is waiting on
+        board.ClearChoices();
+        board.StopFlashes();
+        hud.ResetSlotFlashes();
+        busy = true; // mid-round: the hints wait for the round to end before judging the board
+        board.HideGhost();
+        selected = null;
+        DropPickedUp();
+        stuck = false;
+        HideStuckNotice();
+
+        var shownSupply = new Dictionary<TileType, int>(inventory);
+        Restore(choice.state);
+        board.ResumeRecording(placement.rewind, choice.rewindSteps); // what follows is recorded again, for undoing the placement
+        // the asking object waits where it was asked: on its + or T, or at the door it came out of
+        var o = objects[choice.obj];
+        var partner = choice.door != null ? level.Partner(choice.door) : null;
+        o.view.Rect.anchoredPosition = partner != null ? board.EdgePos(partner.cell, partner.side) : board.CellPos(o.pos);
+        hud.ShowSupplyDuringRewind(shownSupply);
+        board.PlayUndo(objects, hud.SlotIconRect, () => hud.RefreshInventory(inventory, selected));
+        if (placement.rewind != null) lastPlaced = placement.rewind.placedAt; // for the hints: the square whose round this is
+        placedForHints = true; // stage 3 judges the placement again once this round ends
+        StartCoroutine(ResolveRound(choice));
+
+        // for analytics: a step back inside the placement (it stays), at the square where the question was
+        var at = partner != null ? partner.cell : o.pos;
+        int b = level.BoardOf(at);
+        Report(new GameAction { kind = GameActionKind.Undo, undid = GameActionKind.ChooseDirection, board = b, square = at - level.boards[b].origin });
+    }
+
+    // the end window's Undo button: back into the level, one step back (its last arrow question, or its last placement). Undo itself refuses
     // once the level is over, so this reopens the level first. it undoes a placement even when the level was ended
     // with End level: the placement before that is what comes back
     public void UndoFromEndWindow()

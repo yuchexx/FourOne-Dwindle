@@ -346,6 +346,12 @@ public class TelemetryManager : MonoBehaviour
                     levelStartTime = Time.realtimeSinceStartup; // each try timed on its own
                     CountAttempt();
                 }
+                if (a.undid == GameActionKind.ChooseDirection)
+                {
+                    // undo by step: back to an arrow question. the placement stays; its deliveries happen again (or not)
+                    deliveries.RemoveAll(d => d.step >= steps.Count);
+                    break;
+                }
                 if (steps.Count == 0) return;
                 var lastStep = steps[steps.Count - 1];
                 steps.RemoveAt(steps.Count - 1);
