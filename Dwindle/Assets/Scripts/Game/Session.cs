@@ -37,6 +37,10 @@ public static class Session
     static bool undoByStepValue;
     public static bool undoByStep { get => undoByStepValue; set { undoByStepValue = value; SetBool("undoByStep", value); } }
 
+    // Settings: hovering a placement (or an arrow) crosses out the tiles it would break (on by default)
+    static bool showBreaksValue;
+    public static bool showBreaks { get => showBreaksValue; set { showBreaksValue = value; SetBool("showBreaks", value); } }
+
     // the best result per level (index in Levels.All)
     public struct Record
     {
@@ -120,6 +124,7 @@ public static class Session
         showHintTipsValue = GetBool("showHintTips", true);
         animateUndoValue = GetBool("animateUndo", true);
         undoByStepValue = GetBool("undoByStep", true);
+        showBreaksValue = GetBool("showBreaks", true);
         lastOpenedValue = PlayerPrefs.GetInt(Key + "lastOpened", -1);
         if (lastOpenedValue >= Levels.All.Count) lastOpenedValue = -1; // the levels changed since
         records.Clear();

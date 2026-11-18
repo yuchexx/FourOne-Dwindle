@@ -64,6 +64,7 @@ public partial class GameManager
         board.BeginUndo(objects, snapshot.rewind); // where everything is now, to rewind from (see BoardView.animateUndo)
         StopAllCoroutines(); // the round, with the slides, teleports and choices it is waiting on
         board.ClearChoices();
+        ClearRoundMarks(); // show tile breaks: the round's tints go (a resumed round marks its question again)
         board.StopFlashes();
         hud.ResetSlotFlashes();
         busy = false;
@@ -92,6 +93,7 @@ public partial class GameManager
         board.BeginUndo(objects, board.PartOf(placement.rewind, choice.rewindSteps));
         StopAllCoroutines(); // the round, with the slides, teleports and choices it is waiting on
         board.ClearChoices();
+        ClearRoundMarks(); // show tile breaks: the round's tints go (a resumed round marks its question again)
         board.StopFlashes();
         hud.ResetSlotFlashes();
         busy = true; // mid-round: the hints wait for the round to end before judging the board

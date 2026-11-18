@@ -14,6 +14,7 @@ public partial class GameManager
         busy = true;
         roundDelivered = resume == null ? new List<MovingObject>() : resume.delivered.Select(i => objects[i]).ToList();
         while (resume != null && board.UndoPlaying) yield return null; // the rewind plays first, then the arrows show again
+        if (resume == null) MarkRound(); // show tile breaks: what this placement breaks (a resumed round re-marks at its question)
         HintsChanged?.Invoke(); // stage 3: the tile just placed shows how it stands from the start of the move
         for (int i = resume?.obj ?? 0; i < objects.Count; i++)
         {
@@ -36,6 +37,7 @@ public partial class GameManager
         }
 
         if (roundDelivered.Count > 0) yield return HandleDeliveries(roundDelivered);
+        ClearRoundMarks(); // tints of tiles that didn't break
 
         busy = false;
         RefreshAll();
@@ -117,8 +119,10 @@ public partial class GameManager
         else
         {
             var choice = SaveChoice(o, ways, null); // undo by step comes back here
+            MarkQuestion(o, null, ways); // show tile breaks: what these arrows could break
             HintsChanged?.Invoke(); // stage 3: the junction just placed shows how it stands while the arrow is picked
             yield return board.AskDirection(o, ways, HintArrow(o)); // sets o.heading from the arrow the player clicks
+            MarkPicked(o);
             if (choice != null) choice.answered = true;
             ReportChoice(o); // for the tutorial
             HintsChanged?.Invoke(); // a wrong way shows at once
@@ -158,8 +162,10 @@ public partial class GameManager
         else
         {
             var choice = SaveChoice(o, into, door); // undo by step comes back here
+            MarkQuestion(o, door, into);
             HintsChanged?.Invoke(); // stage 3: the board as it stands while the way out is picked
             yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into, HintArrow(o, door));
+            MarkPicked(o);
             if (choice != null) choice.answered = true;
             ReportChoice(o, door.label); // for the tutorial and the hints
             HintsChanged?.Invoke(); // a wrong way shows at once
@@ -205,6 +211,7 @@ public partial class GameManager
             arrivals.Add(arrival);
 
             board.ClearTile(c.Value);
+            board.ClearBreakMark(c.Value); // its tint goes with it
 
             // for the tutorial (GameManager.Tutorial.cs, onRemoval): it may hold here to show this tile gone, before
             // the next one breaks
@@ -239,19 +246,9 @@ public partial class GameManager
     {
         TileType? TileAt(Vector2Int c) => Cells[c.x, c.y]?.tile;
         bool Blocked(Vector2Int c) => Cells[c.x, c.y] == null || Cells[c.x, c.y].obstacle;
-        var neededBy = new Dictionary<Vector2Int, string>();
-        var stillNeeded = new Dictionary<Vector2Int, int>(); // tiles a waiting object can reach now: the fewest steps
-        var soonest = new Dictionary<Vector2Int, int>();     // the same with the gaps ahead counted as filled
-        foreach (var w in objects.Where(w => !w.completed))
-        {
-            foreach (var kv in BreakRule.Ahead(level, w.pos, w.heading, w.viaDoor, TileAt, Blocked, false))
-                if (!stillNeeded.TryGetValue(kv.Key, out var s) || kv.Value < s) { stillNeeded[kv.Key] = kv.Value; neededBy[kv.Key] = w.spec.name; }
-            foreach (var kv in BreakRule.Ahead(level, w.pos, w.heading, w.viaDoor, TileAt, Blocked, true))
-                if (!soonest.TryGetValue(kv.Key, out var s) || kv.Value < s) soonest[kv.Key] = kv.Value;
-        }
-        var pick = BreakRule.Pick(level, o.path, TileAt, stillNeeded, soonest);
-        if (pick == null) return (null, null);
-        return (pick, neededBy.TryGetValue(pick.Value, out var who) ? who : null);
+        var waiting = objects.Where(w => !w.completed).ToList();
+        var pick = BreakRule.For(level, o.path, waiting.Select(w => (w.pos, w.heading, w.viaDoor)).ToList(), TileAt, Blocked, out int who);
+        return (pick, who >= 0 ? waiting[who].spec.name : null);
     }
     // end of level and stars
     void CheckLevelEnd()

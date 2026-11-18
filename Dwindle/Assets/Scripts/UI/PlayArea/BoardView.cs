@@ -94,6 +94,7 @@ public partial class BoardView : MonoBehaviour
         UIBuilder.Clear(markersRoot);
         UIBuilder.Clear(objectsRoot);
         UIBuilder.Clear(choicesRoot);
+        breakMarks.Clear(); // gone with the cells
 
         // leave room for one ring of cells around each board, where objects and destinations sit
         int cols = level.width + 2, rows = level.height + 2;
@@ -637,6 +638,7 @@ public partial class BoardView : MonoBehaviour
         ghost = Instantiate(tilePrefab, cell.view.transform);
         ghost.Show(t.Value, Color.Lerp(tileColor, cellColor, ghostFade));
         ghostCell = p;
+        ghostChanged?.Invoke(p, t); // show tile breaks
     }
 
     void HideGhost(Vector2Int p)
@@ -648,6 +650,7 @@ public partial class BoardView : MonoBehaviour
     public void HideGhost()
     {
         if (ghost == null) return;
+        ghostChanged?.Invoke(null, null);
         Destroy(ghost.gameObject);
         ghost = null;
         var cell = Cells != null && ghostCell.x < Cells.GetLength(0) && ghostCell.y < Cells.GetLength(1) ? Cells[ghostCell.x, ghostCell.y] : null;
@@ -801,16 +804,66 @@ public partial class BoardView : MonoBehaviour
             button.GetComponent<Graphic>().color = o.spec.color;
             if (hinted == d) hintedArrow = button.GetComponent<Graphic>();
             button.onClick.AddListener(() => pickedDirection = dir);
+            var relay = button.gameObject.AddComponent<HoverRelay>(); // show tile breaks: what this arrow would break
+            relay.onEnter = () => arrowHovered?.Invoke(dir);
+            relay.onExit = () => arrowHovered?.Invoke(null);
         }
 
         while (pickedDirection == null) yield return null; // wait for a click
         hintedArrow = null;
 
         UIBuilder.Clear(choicesRoot);
+        arrowHovered?.Invoke(null);
         o.heading = pickedDirection.Value;
     }
 
-    public void ClearChoices() => UIBuilder.Clear(choicesRoot);
+    public void ClearChoices()
+    {
+        UIBuilder.Clear(choicesRoot);
+        arrowHovered?.Invoke(null); // its marks go with it
+    }
+
+    // Settings' show tile breaks: GameManager works out the marks (BreakPreview) when the hover preview changes square
+    // or tile (null: gone) and when an arrow is hovered (null: left or picked)
+    public Action<Vector2Int?, TileType?> ghostChanged;
+    public Action<Dir?> arrowHovered;
+    public Vector2Int? DraggingFrom => draggedFrom; // a board tile being dragged: its square
+
+    [Header("Break marks (Settings: show tile breaks)")]
+    [Tooltip("The light tint over a tile that would break (its alpha: how see-through)")]
+    public Color breakTint = new Color(0.86f, 0.2f, 0.2f, 0.2f);
+    readonly Dictionary<Vector2Int, GameObject> breakMarks = new Dictionary<Vector2Int, GameObject>();
+
+    // every tile that could break gets the same tint (sure or only for some arrows)
+    public void ShowBreakMarks(BreakPreview.Result r)
+    {
+        ClearBreakMarks();
+        if (r == null || Cells == null) return;
+        foreach (var c in r.always.Concat(r.maybe)) BreakMark(c);
+    }
+
+    public void ClearBreakMarks()
+    {
+        foreach (var m in breakMarks.Values) if (m != null) Destroy(m);
+        breakMarks.Clear();
+    }
+
+    // a tile just broke: its tint goes with it
+    public void ClearBreakMark(Vector2Int c)
+    {
+        if (breakMarks.TryGetValue(c, out var m) && m != null) Destroy(m);
+        breakMarks.Remove(c);
+    }
+
+    // a light red tint over the square
+    void BreakMark(Vector2Int c)
+    {
+        var cell = Cells[c.x, c.y];
+        if (cell == null || breakMarks.ContainsKey(c)) return;
+        var tint = UIBuilder.NewImage("BreakMark", cell.view.transform, breakTint).rectTransform;
+        UIBuilder.Fill(tint);
+        breakMarks[c] = tint.gameObject;
+    }
 
     // briefly tints a cell red so the player sees where a tile was removed
     IEnumerator Flash(Image img)

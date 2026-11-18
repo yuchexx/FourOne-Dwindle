@@ -66,6 +66,29 @@ public static class BreakRule
         return r;
     }
 
+    // the tile a delivered object breaks (path: every square it went through), given the objects still waiting: where
+    // each stands, the way it faces, and whether it just came out of a door. the game and the break preview both use
+    // this. neededBy: the waiting object (its place in waiting) that still had the tile ahead of it, or -1
+    public static Vector2Int? For(LevelData l, IList<Vector2Int> path, IList<(Vector2Int pos, Dir heading, bool viaDoor)> waiting,
+        Func<Vector2Int, TileType?> tileAt, Func<Vector2Int, bool> blocked, out int neededBy,
+        Func<int, bool, Dictionary<Vector2Int, int>> ahead = null) // the break preview: Ahead for waiting[i], from its cache
+    {
+        ahead ??= (i, throughEmpty) => Ahead(l, waiting[i].pos, waiting[i].heading, waiting[i].viaDoor, tileAt, blocked, throughEmpty);
+        var stillNeeded = new Dictionary<Vector2Int, int>(); // tiles a waiting object can reach now: the fewest steps
+        var soonest = new Dictionary<Vector2Int, int>();     // the same with the gaps ahead counted as filled
+        var who = new Dictionary<Vector2Int, int>();
+        for (int i = 0; i < waiting.Count; i++)
+        {
+            foreach (var kv in ahead(i, false))
+                if (!stillNeeded.TryGetValue(kv.Key, out var s) || kv.Value < s) { stillNeeded[kv.Key] = kv.Value; who[kv.Key] = i; }
+            foreach (var kv in ahead(i, true))
+                if (!soonest.TryGetValue(kv.Key, out var s) || kv.Value < s) soonest[kv.Key] = kv.Value;
+        }
+        var pick = Pick(l, path, tileAt, stillNeeded, soonest);
+        neededBy = pick != null && who.TryGetValue(pick.Value, out var n) ? n : -1;
+        return pick;
+    }
+
     // stillNeeded: tiles a waiting object can reach now along the tiles (Ahead, throughEmpty false), fewest steps.
     // soonest: the same with empty squares counted as filled (Ahead, throughEmpty true), for the tie-break
     public static Vector2Int? Pick(LevelData l, IList<Vector2Int> path, Func<Vector2Int, TileType?> tileAt,

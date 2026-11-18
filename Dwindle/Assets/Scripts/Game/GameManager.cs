@@ -79,6 +79,8 @@ public partial class GameManager : MonoBehaviour
         board.dockIcon = hud.SlotIconRect; // a tile dragged from the board is as big as in the dock
         board.onDock = hud.OnDock;
         board.onTileMoved = OnTileMoved;
+        board.ghostChanged = OnGhostChanged; // show tile breaks (GameManager.Preview.cs)
+        board.arrowHovered = OnArrowHovered;
         // boards with several parts fit between the top bar and the dock
         board.keepBelow = new[] { hud.levelTitleText ? hud.levelTitleText.rectTransform : null, hud.scoreText ? hud.scoreText.rectTransform : null };
         board.keepAbove = new[] { hud.supplyDock };
@@ -122,6 +124,7 @@ public partial class GameManager : MonoBehaviour
         deliveryPoints = comboPoints = teleportPoints = unusedPoints = 0;
         history.Clear();
         roundSnapshot = null;
+        asking = null; roundMarks = null; // show tile breaks
         endWindowHeld = false; // for the tutorial: a held end window never outlives its level
         levelEndHeld = false;  // for the tutorial: nor a held level end (GameManager.Tutorial.cs)
         earnedFlashHeld = false; // for the tutorial: nor a held earned flash (GameManager.Tutorial.cs)

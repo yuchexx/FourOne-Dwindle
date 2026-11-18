@@ -13,6 +13,7 @@ public class SettingsView : MonoBehaviour
     [Header("Switches")]
     public Toggle undoAnimationToggle;
     public Toggle undoByStepToggle; // undo goes back to the last arrow question first
+    public Toggle showBreaksToggle; // hovering a placement crosses out the tiles it would break
     public Toggle unlockAllToggle;
     public Toggle compactSupplyToggle; // the supply shows only this level's tiles (and the +)
     public Toggle showTutorialsToggle;
@@ -46,6 +47,7 @@ public class SettingsView : MonoBehaviour
         Choice(bothButton, Session.Placement.Both);
         undoAnimationToggle.onValueChanged.AddListener(on => game.AnimateUndo = on);
         if (undoByStepToggle != null) undoByStepToggle.onValueChanged.AddListener(on => game.UndoByStep = on);
+        if (showBreaksToggle != null) showBreaksToggle.onValueChanged.AddListener(on => game.ShowBreaks = on);
         unlockAllToggle.onValueChanged.AddListener(on =>
         {
             game.UnlockAll = on;
@@ -91,6 +93,7 @@ public class SettingsView : MonoBehaviour
     {
         undoAnimationToggle.SetIsOnWithoutNotify(game.AnimateUndo);
         if (undoByStepToggle != null) undoByStepToggle.SetIsOnWithoutNotify(game.UndoByStep);
+        if (showBreaksToggle != null) showBreaksToggle.SetIsOnWithoutNotify(game.ShowBreaks);
         unlockAllToggle.SetIsOnWithoutNotify(game.UnlockAll);
         if (compactSupplyToggle != null) compactSupplyToggle.SetIsOnWithoutNotify(game.CompactSupply);
         if (showTutorialsToggle != null) showTutorialsToggle.SetIsOnWithoutNotify(game.ShowTutorials);
