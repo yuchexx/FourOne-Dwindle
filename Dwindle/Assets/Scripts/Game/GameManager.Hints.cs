@@ -51,12 +51,13 @@ public partial class GameManager
     }
 
     // the hint button: the next stage, or one more ghost
-    // pressed while objects move, it waits and runs once the board is still (see Update), so the press isn't lost
+    // pressed while objects move, it waits and runs once they stop or the arrows show (see Update), so the press isn't lost.
+    // while the arrows show it runs at once
     public void UseHint()
     {
         hintQueued = false;
         if (level == null || level.solution == null || levelOver) return;
-        if (busy) { hintQueued = true; return; }
+        if (busy && asking == null) { hintQueued = true; return; }
         var s = level.solution;
         switch (hints.Stage)
         {
@@ -85,6 +86,13 @@ public partial class GameManager
         HintHidden = false;
         Report(new GameAction { kind = GameActionKind.Hint, hintStage = hints.Stage, answerStep = hints.Revealed }); // for analytics
         HintsChanged?.Invoke();
+        RefreshHintedArrow();
+    }
+
+    // the arrows showing now: the one the hint points to pulses (a hint used, hidden or shown while they show)
+    void RefreshHintedArrow()
+    {
+        if (asking != null) board.SetHintedArrow(HintArrow(asking.Value.o, asking.Value.door));
     }
 
     // Hide / Show: the hints go away and come back; the stage stays (the next Hint press shows them again)
@@ -92,6 +100,7 @@ public partial class GameManager
     {
         HintHidden = !HintHidden;
         HintsChanged?.Invoke();
+        RefreshHintedArrow();
     }
 
     // the board's hints: stage 2's numbers and frames, or stage 3's ghosts in their place

@@ -237,6 +237,27 @@ public partial class GameManager : MonoBehaviour
         DropPickedUp();
     }
 
+    // while the arrows show: a press on anything that can't be used now (a square, a door, the supply, empty space)
+    // shakes them and the waiting object, so it's clear a way has to be picked first. buttons that still work (Undo, Restart, Hint, the menu)
+    // don't, and nothing does while a menu or pop-up is open on top
+    void ShakeIfNotUsable()
+    {
+        if (asking == null) return;
+        var pointer = UnityEngine.InputSystem.Pointer.current;
+        var mouse = UnityEngine.InputSystem.Mouse.current;
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        if (pointer == null || events == null) return;
+        if (!pointer.press.wasPressedThisFrame && !(mouse != null && mouse.rightButton.wasPressedThisFrame)) return;
+        var screen = menu.gameScreen.transform;
+        foreach (Transform t in screen.parent) if (t != screen && t.gameObject.activeSelf) return; // Settings, Rules, Leave...
+        var hits = new List<UnityEngine.EventSystems.RaycastResult>();
+        events.RaycastAll(new UnityEngine.EventSystems.PointerEventData(events) { position = pointer.position.ReadValue() }, hits);
+        var top = hits.Count > 0 ? hits[0].gameObject : null;
+        var usable = top != null && !board.IsDoor(top) && !board.OnSquare(top) ? top.GetComponentInParent<UnityEngine.UI.Selectable>() : null;
+        if (usable != null && usable.IsInteractable()) return; // an arrow, Undo, Restart, Hint, the menu...
+        board.ShakeArrows(asking.Value.o);
+    }
+
     // any press on the dock, empty cards and the bar too: finishes an undo rewind, and returns a picked-up board tile
     // (the card's own click then does nothing)
     bool returnedOnPress;
@@ -399,8 +420,9 @@ public partial class GameManager : MonoBehaviour
     // the wait, while stuck and the notice isn't up yet
     void Update()
     {
-        if (hintQueued && !busy) UseHint(); // a hint pressed during a move
+        if (hintQueued && (!busy || asking != null)) UseHint(); // a hint pressed during a move: once it stops, or the arrows show
         CancelPickUpOffBoard();
+        ShakeIfNotUsable();
         if (stuck && !levelOver && !busy && !hud.StuckNoticeShowing && Time.time - stuckSince >= StuckWait) ShowStuckNotice();
 
         // the supply cards don't light up under the mouse while a tile can't be picked (see SelectTile)

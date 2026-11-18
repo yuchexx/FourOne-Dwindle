@@ -791,6 +791,9 @@ public partial class BoardView : MonoBehaviour
     public IEnumerator AskDirectionAt(MovingObject o, Vector2 center, List<Dir> options, Dir? hinted = null)
     {
         UIBuilder.Clear(choicesRoot);
+        StopShake();
+        arrowGraphics.Clear();
+        arrowColor = o.spec.color;
         pickedDirection = null;
         hintedArrow = null;
         foreach (var d in options)
@@ -803,6 +806,7 @@ public partial class BoardView : MonoBehaviour
             rt.localEulerAngles = new Vector3(0, 0, DirUtil.Angle(d)); // the prefab's arrow points up
             button.GetComponent<Graphic>().color = o.spec.color;
             if (hinted == d) hintedArrow = button.GetComponent<Graphic>();
+            arrowGraphics[d] = button.GetComponent<Graphic>();
             button.onClick.AddListener(() => pickedDirection = dir);
             var relay = button.gameObject.AddComponent<HoverRelay>(); // show tile breaks: what this arrow would break
             relay.onEnter = () => arrowHovered?.Invoke(dir);
@@ -811,6 +815,7 @@ public partial class BoardView : MonoBehaviour
 
         while (pickedDirection == null) yield return null; // wait for a click
         hintedArrow = null;
+        StopShake(); // picked mid-shake: the object goes from where it rests
 
         UIBuilder.Clear(choicesRoot);
         arrowHovered?.Invoke(null);
@@ -820,7 +825,67 @@ public partial class BoardView : MonoBehaviour
     public void ClearChoices()
     {
         UIBuilder.Clear(choicesRoot);
+        StopShake();
+        arrowGraphics.Clear();
+        hintedArrow = null;
         arrowHovered?.Invoke(null); // its marks go with it
+    }
+
+    // the arrows showing now, by way, and their color (the object's)
+    readonly Dictionary<Dir, Graphic> arrowGraphics = new Dictionary<Dir, Graphic>();
+    Color arrowColor;
+
+    // a hint used while the arrows show (stage 3, or hidden or shown again): the arrow it points to now pulses
+    public void SetHintedArrow(Dir? way)
+    {
+        if (hintedArrow != null) hintedArrow.color = arrowColor;
+        hintedArrow = way is Dir d && arrowGraphics.TryGetValue(d, out var g) ? g : null;
+    }
+
+    public bool IsDoor(GameObject go) => go != null && doorViews.Any(v => go.transform.IsChildOf(v.bar) || go.transform.IsChildOf(v.badge));
+    public bool OnSquare(GameObject go) => go != null && go.transform.IsChildOf(cellsRoot); // squares have a Button, for clicks
+
+    [Header("Arrows")]
+    [Tooltip("How long the arrows shake when something else is clicked while a way has to be picked")]
+    [Min(0f)] public float arrowShakeSeconds = 0.35f;
+    [Tooltip("How far they shake, as a share of a square")]
+    [Min(0f)] public float arrowShakeDistance = 0.08f;
+    Coroutine arrowShake;
+    Vector2? choicesHome; // where the arrows' root rests
+    RectTransform shaking; // the object shaking with them, and where it rests
+    Vector2 shakingHome;
+
+    // a click on something that can't be used while the arrows show: they shake side to side, fading out, with the
+    // object waiting for them
+    public void ShakeArrows(MovingObject o)
+    {
+        if (choicesRoot.childCount == 0) return;
+        StopShake();
+        choicesHome ??= choicesRoot.anchoredPosition;
+        shaking = o?.view != null ? o.view.Rect : null;
+        shakingHome = shaking != null ? shaking.anchoredPosition : Vector2.zero;
+        arrowShake = StartCoroutine(Shake());
+    }
+
+    IEnumerator Shake()
+    {
+        for (float t = 0; t < arrowShakeSeconds; t += Time.unscaledDeltaTime)
+        {
+            float x = Mathf.Sin(t * 50f) * arrowShakeDistance * CellSize * (1f - t / arrowShakeSeconds);
+            choicesRoot.anchoredPosition = choicesHome.Value + new Vector2(x, 0);
+            if (shaking != null) shaking.anchoredPosition = shakingHome + new Vector2(x, 0);
+            yield return null;
+        }
+        StopShake();
+    }
+
+    void StopShake()
+    {
+        if (arrowShake != null) StopCoroutine(arrowShake);
+        arrowShake = null;
+        if (choicesHome != null) choicesRoot.anchoredPosition = choicesHome.Value;
+        if (shaking != null) shaking.anchoredPosition = shakingHome;
+        shaking = null;
     }
 
     // Settings' show tile breaks: GameManager works out the marks (BreakPreview) when the hover preview changes square

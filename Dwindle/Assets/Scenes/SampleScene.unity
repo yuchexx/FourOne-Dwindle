@@ -19385,6 +19385,8 @@ MonoBehaviour:
   endLineOpacity: 1
   keepStartLine: 0
   keepRingLine: 0
+  arrowShakeSeconds: 0.35
+  arrowShakeDistance: 0.04
   breakTint: {r: 1, g: 0.4509804, b: 0.4509804, a: 0.39215687}
   animateUndo: 1
   rewindSpeed: 4
