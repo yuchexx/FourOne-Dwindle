@@ -2,27 +2,38 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-// what this play session remembers: each level's best stars and whether it earned purple, and the Unlock all setting.
-// nothing is saved, so reloading the page starts over
+// what the game remembers: each level's best stars and whether it earned purple, the settings, and analytics' player id
+// and try counts. saved in the browser (PlayerPrefs), so a reload keeps it; Reset progress clears it.
+// Unlock all is not saved: it starts off on every load
 public static class Session
 {
-    // Settings: every level can be played, whatever the stars
+    const string Key = "dwindle."; // every saved value starts with this
+
+    // Settings: every level can be played, whatever the stars (not saved)
     public static bool unlockAll;
 
     // Settings: how tiles are placed - click a tile then a square, drag a tile onto a square, or either
     public enum Placement { Both, Click, Drag }
-    public static Placement placement = Placement.Both;
+    static Placement placementValue;
+    public static Placement placement { get => placementValue; set { placementValue = value; SetInt("placement", (int)value); } }
 
     // Settings: the supply shows only the tiles this level hands out (the + always, since it can be earned)
-    public static bool compactSupply;
+    static bool compactSupplyValue;
+    public static bool compactSupply { get => compactSupplyValue; set { compactSupplyValue = value; SetBool("compactSupply", value); } }
 
     // Settings: tutorial levels show their step-by-step boxes
-    public static bool showTutorials = true;
+    static bool showTutorialsValue;
+    public static bool showTutorials { get => showTutorialsValue; set { showTutorialsValue = value; SetBool("showTutorials", value); } }
 
     // Settings: hovering a stage 2 hint mark says what it means
-    public static bool showHintTips = true;
+    static bool showHintTipsValue;
+    public static bool showHintTips { get => showHintTipsValue; set { showHintTipsValue = value; SetBool("showHintTips", value); } }
 
-    // the best result per level (index in Levels.All) this session
+    // Settings: undo plays the move backwards
+    static bool animateUndoValue;
+    public static bool animateUndo { get => animateUndoValue; set { animateUndoValue = value; SetBool("animateUndo", value); } }
+
+    // the best result per level (index in Levels.All)
     public struct Record
     {
         public int stars;    // 0 to 3
@@ -33,7 +44,8 @@ public static class Session
     public static Record Get(int level) => records.TryGetValue(level, out var r) ? r : default;
 
     // the level opened most recently (-1: none yet); the Levels page opens on its page
-    public static int lastOpened = -1;
+    static int lastOpenedValue = -1;
+    public static int lastOpened { get => lastOpenedValue; set { lastOpenedValue = value; SetInt("lastOpened", value); } }
 
     // keeps the best: the most stars, and purple once it's been earned
     public static void Save(int level, int stars, bool purple)
@@ -42,9 +54,11 @@ public static class Session
         r.stars = Math.Max(r.stars, stars);
         r.purple |= purple;
         records[level] = r;
+        PlayerPrefs.SetInt($"{Key}level{level}.stars", r.stars);
+        SetBool($"level{level}.purple", r.purple);
     }
 
-    // enough stars to unlock the next level (most levels 1, some 2: LevelData.starsToPass)
+    // enough stars to unlock the next level (most levels 1, teach levels 3: LevelData.starsToPass)
     public static bool Passed(int level) => Get(level).stars >= Levels.All[level].starsToPass;
 
     // open when it's the first level, the one before it is passed, or Unlock all is on
@@ -58,16 +72,57 @@ public static class Session
         return count - 1;
     }
 
-    // a new session each time Play is pressed in the editor
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void StartOver()
+    // for analytics: one id per player that lasts between visits (a new one after Reset progress)
+    public static string PlayerId
     {
-        records.Clear();
-        lastOpened = -1;
+        get
+        {
+            string id = PlayerPrefs.GetString(Key + "playerId", "");
+            if (id == "") { id = Guid.NewGuid().ToString(); PlayerPrefs.SetString(Key + "playerId", id); PlayerPrefs.Save(); }
+            return id;
+        }
+    }
+
+    // for analytics: counts one more try on a level, before or after it's passed, and returns the new total
+    public static int AddTry(int level, bool afterPassing)
+    {
+        string k = $"{Key}level{level}.{(afterPassing ? "triesAfter" : "triesBefore")}";
+        int n = PlayerPrefs.GetInt(k, 0) + 1;
+        PlayerPrefs.SetInt(k, n);
+        PlayerPrefs.Save();
+        return n;
+    }
+
+    // Settings > Reset progress: stars, settings, the player id and try counts all go back to a first visit
+    public static void ResetAll()
+    {
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
+        Load();
+    }
+
+    static void SetBool(string name, bool value) => SetInt(name, value ? 1 : 0);
+    static void SetInt(string name, int value) { PlayerPrefs.SetInt(Key + name, value); PlayerPrefs.Save(); }
+    static bool GetBool(string name, bool fallback) => PlayerPrefs.GetInt(Key + name, fallback ? 1 : 0) == 1;
+
+    // reads what was saved (defaults on a first visit). also runs each time Play is pressed in the editor
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    static void Load()
+    {
         unlockAll = false;
-        placement = Placement.Both;
-        compactSupply = false;
-        showTutorials = true;
-        showHintTips = true;
+        placementValue = (Placement)PlayerPrefs.GetInt(Key + "placement", (int)Placement.Both);
+        compactSupplyValue = GetBool("compactSupply", false);
+        showTutorialsValue = GetBool("showTutorials", true);
+        showHintTipsValue = GetBool("showHintTips", true);
+        animateUndoValue = GetBool("animateUndo", true);
+        lastOpenedValue = PlayerPrefs.GetInt(Key + "lastOpened", -1);
+        if (lastOpenedValue >= Levels.All.Count) lastOpenedValue = -1; // the levels changed since
+        records.Clear();
+        for (int i = 0; i < Levels.All.Count; i++)
+        {
+            int stars = PlayerPrefs.GetInt($"{Key}level{i}.stars", 0);
+            bool purple = GetBool($"level{i}.purple", false);
+            if (stars > 0 || purple) records[i] = new Record { stars = stars, purple = purple };
+        }
     }
 }

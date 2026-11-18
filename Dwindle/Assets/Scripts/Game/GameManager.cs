@@ -83,7 +83,18 @@ public partial class GameManager : MonoBehaviour
         board.keepBelow = new[] { hud.levelTitleText ? hud.levelTitleText.rectTransform : null, hud.scoreText ? hud.scoreText.rectTransform : null };
         board.keepAbove = new[] { hud.supplyDock };
         HintsChanged += DrawHints;
+        board.animateUndo = Session.animateUndo; // the saved setting
         if (menu.levelSelect != null) menu.levelSelect.Build(Levels.All, LoadLevel); // the Levels page's cards
+        ShowStartScreen();
+    }
+
+    // Settings > Reset progress: forgets every star and setting, then back to the start screen
+    public void ResetProgress()
+    {
+        Session.ResetAll();
+        board.animateUndo = Session.animateUndo;
+        if (level != null) hud.BuildSlots(SupplyTypes(), SelectTile, SupplyDragStart, e => board.MoveDrag(e), SupplyDragEnd); // compact supply back to off
+        if (menu.levelSelect != null) menu.levelSelect.Refresh();
         ShowStartScreen();
     }
 

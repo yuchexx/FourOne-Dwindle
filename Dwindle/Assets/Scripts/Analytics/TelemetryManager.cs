@@ -41,7 +41,7 @@ public class TelemetryManager : MonoBehaviour
     private GameManager gameManagerScript;
 
 
-    private string sessionID;
+    private string sessionID => Session.PlayerId; // saved, so the same player keeps one id between visits
     private float levelStartTime = 0.0f;
     private int currLevel = 0;
     private int finalPiecesUsed = 0;
@@ -75,7 +75,6 @@ public class TelemetryManager : MonoBehaviour
             Instance = this;
             DontDestroyOnLoad(gameObject);
             gameManagerScript = gameManager.GetComponent<GameManager>();
-            sessionID = Guid.NewGuid().ToString();
             levelAttemptsPreCompletion = new List<int>();
             levelAttemptsPostCompletion = new List<int>();
             levelCompletion = new List<bool>(LEVEL_COUNT);
@@ -115,7 +114,7 @@ public class TelemetryManager : MonoBehaviour
             levelAttemptsPostCompletion.Add(0);
             levelCompletion.Add(false);
         }
-        passedAlready = levelCompletion[currLevel - 1];
+        passedAlready = Session.Passed(currLevel - 1); // saved progress, so it survives a reload
         counted = false;
         ended = false;
         firstTile = null;
@@ -343,7 +342,7 @@ public class TelemetryManager : MonoBehaviour
                     ended = false;
                     counted = false;
                     firstTile = null; // this attempt's first tile is the next one placed
-                    passedAlready = levelCompletion[currLevel - 1];
+                    passedAlready = Session.Passed(currLevel - 1);
                     levelStartTime = Time.realtimeSinceStartup; // each try timed on its own
                     CountAttempt();
                 }
@@ -483,7 +482,7 @@ public class TelemetryManager : MonoBehaviour
         int i = currLevel - 1;
         if (passedAlready)
         {
-            levelAttemptsPostCompletion[i]++;
+            levelAttemptsPostCompletion[i] = Session.AddTry(i, true); // saved, so the count carries on after a reload
             StartCoroutine(Send(levelAttemptsPostForm, new Dictionary<string, string>
             {
                 { "entry.1181161218", sessionID },
@@ -493,7 +492,7 @@ public class TelemetryManager : MonoBehaviour
         }
         else
         {
-            levelAttemptsPreCompletion[i]++;
+            levelAttemptsPreCompletion[i] = Session.AddTry(i, false);
             StartCoroutine(Send(levelAttemptsPreForm, new Dictionary<string, string>
             {
                 { "entry.795127675", sessionID },

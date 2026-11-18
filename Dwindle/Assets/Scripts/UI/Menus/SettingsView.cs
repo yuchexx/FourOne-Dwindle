@@ -16,6 +16,9 @@ public class SettingsView : MonoBehaviour
     public Toggle compactSupplyToggle; // the supply shows only this level's tiles (and the +)
     public Toggle showTutorialsToggle;
     public Toggle hintTipsToggle; // hovering a stage 2 hint mark says what it means
+    [Header("Reset progress: the button opens the confirm pop-up; its buttons call ConfirmReset and CloseResetConfirm")]
+    public Button resetProgressButton;
+    public GameObject resetConfirmPanel;
     public GameManager game;
     public LevelSelectView levelSelect; // its locks change with Unlock all
 
@@ -49,6 +52,22 @@ public class SettingsView : MonoBehaviour
         if (compactSupplyToggle != null) compactSupplyToggle.onValueChanged.AddListener(on => game.CompactSupply = on);
         if (showTutorialsToggle != null) showTutorialsToggle.onValueChanged.AddListener(on => game.ShowTutorials = on);
         if (hintTipsToggle != null) hintTipsToggle.onValueChanged.AddListener(on => game.ShowHintTips = on);
+        if (resetProgressButton != null) resetProgressButton.onClick.AddListener(() => { if (resetConfirmPanel != null) resetConfirmPanel.SetActive(true); });
+        CloseResetConfirm();
+    }
+
+    // the confirm pop-up's Reset button: everything resets and it's back to the start screen
+    public void ConfirmReset()
+    {
+        CloseResetConfirm();
+        game.ResetProgress();
+        Close();
+    }
+
+    // the confirm pop-up's Cancel button
+    public void CloseResetConfirm()
+    {
+        if (resetConfirmPanel != null) resetConfirmPanel.SetActive(false);
     }
 
     void Choice(Button b, Session.Placement p)
@@ -74,6 +93,7 @@ public class SettingsView : MonoBehaviour
         if (showTutorialsToggle != null) showTutorialsToggle.SetIsOnWithoutNotify(game.ShowTutorials);
         if (hintTipsToggle != null) hintTipsToggle.SetIsOnWithoutNotify(game.ShowHintTips);
         ShowPlacement();
+        CloseResetConfirm();
         panel.SetActive(true);
         ShowTab(0); // after the panel is on, so nothing recolors the tabs after it
     }
@@ -92,5 +112,9 @@ public class SettingsView : MonoBehaviour
         }
     }
 
-    public void Close() => panel.SetActive(false);
+    public void Close()
+    {
+        CloseResetConfirm();
+        panel.SetActive(false);
+    }
 }
