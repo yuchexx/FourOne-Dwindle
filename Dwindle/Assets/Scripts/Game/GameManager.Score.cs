@@ -31,6 +31,7 @@ public partial class GameManager
         }
         if (menu.endWindow == null) return; // not set up yet (Step 3)
         bool purple = stars == 3 && !hints.PurpleLost;
+        AudioManager.LevelEnd(stars, stars >= level.starsToPass);
         menu.endWindow.Show(EndTitle(stars, purple), earned, purple, goals,
             stars == 3 ? $"Score {Score} · target reached!" : $"Score {Score}",
             EndNote(stars, purple, isLast),

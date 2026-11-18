@@ -86,6 +86,7 @@ public partial class GameManager
                     yield return board.Slide(o, board.OutsidePos(next)); // the ring (see BoardView.endDistance)
                     o.pos = next;
                     o.completed = true;
+                    AudioManager.Play(AudioManager.Sfx.Delivered, AudioManager.Note(roundDelivered.Count)); // each next one this move higher
                     board.MarkDelivered(o);
                 }
                 yield break; // leaving the board anywhere else is a dead end
@@ -103,6 +104,7 @@ public partial class GameManager
             o.pos = next;
             o.path.Add(next);
             board.SetLocked(next, true); // used now, so it can't be put back
+            AudioManager.Play(AudioManager.Sfx.Step);
 
             yield return LeaveSquare(o, Tiles.Exits(cell.tile.Value, entry));
         }
@@ -120,6 +122,7 @@ public partial class GameManager
         {
             var choice = SaveChoice(o, ways, null); // undo by step comes back here
             MarkQuestion(o, null, ways); // show tile breaks: what these arrows could break
+            AudioManager.Play(AudioManager.Sfx.ArrowsAppear);
             HintsChanged?.Invoke(); // stage 3: the junction just placed shows how it stands while the arrow is picked
             yield return board.AskDirection(o, ways, HintArrow(o)); // sets o.heading from the arrow the player clicks
             MarkPicked(o);
@@ -149,6 +152,7 @@ public partial class GameManager
             inBoard = door.board, inSquare = door.cell - level.boards[door.board].origin, inSide = door.side,
             outBoard = partner.board, outSquare = partner.cell - level.boards[partner.board].origin, outSide = partner.side,
         });
+        AudioManager.Play(AudioManager.Sfx.Door);
         yield return board.Teleport(o, board.EdgePos(partner.cell, partner.side));
         yield return ComeOut(o, door);
     }
@@ -163,6 +167,7 @@ public partial class GameManager
         {
             var choice = SaveChoice(o, into, door); // undo by step comes back here
             MarkQuestion(o, door, into);
+            AudioManager.Play(AudioManager.Sfx.ArrowsAppear);
             HintsChanged?.Invoke(); // stage 3: the board as it stands while the way out is picked
             yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into, HintArrow(o, door));
             MarkPicked(o);
@@ -212,6 +217,7 @@ public partial class GameManager
 
             board.ClearTile(c.Value);
             board.ClearBreakMark(c.Value); // its tint goes with it
+            AudioManager.Play(AudioManager.Sfx.TileBreak);
 
             // for the tutorial (GameManager.Tutorial.cs, onRemoval): it may hold here to show this tile gone, before
             // the next one breaks
@@ -412,6 +418,7 @@ public partial class GameManager
     void ShowStuckNotice()
     {
         if (hud.StuckNoticeShowing) return;
+        AudioManager.Play(AudioManager.Sfx.StuckNotice);
         hud.ShowStuckNotice(Undo, Restart, EndLevelNow); // the wording is the notice's own, set in the scene
     }
 

@@ -256,6 +256,7 @@ public partial class GameManager : MonoBehaviour
         var usable = top != null && !board.IsDoor(top) && !board.OnSquare(top) ? top.GetComponentInParent<UnityEngine.UI.Selectable>() : null;
         if (usable != null && usable.IsInteractable()) return; // an arrow, Undo, Restart, Hint, the menu...
         board.ShakeArrows(asking.Value.o);
+        AudioManager.Play(AudioManager.Sfx.Nope);
     }
 
     // any press on the dock, empty cards and the bar too: finishes an undo rewind, and returns a picked-up board tile

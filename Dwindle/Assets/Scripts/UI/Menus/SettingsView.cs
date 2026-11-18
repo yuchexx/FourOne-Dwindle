@@ -14,6 +14,9 @@ public class SettingsView : MonoBehaviour
     public Toggle undoAnimationToggle;
     public Toggle undoByStepToggle; // undo goes back to the last arrow question first
     public Toggle showBreaksToggle; // hovering a placement crosses out the tiles it would break
+    [Header("Sound: 0 to 1 sliders")]
+    public Slider musicSlider;
+    public Slider effectsSlider;
     public Toggle unlockAllToggle;
     public Toggle compactSupplyToggle; // the supply shows only this level's tiles (and the +)
     public Toggle showTutorialsToggle;
@@ -48,6 +51,8 @@ public class SettingsView : MonoBehaviour
         undoAnimationToggle.onValueChanged.AddListener(on => game.AnimateUndo = on);
         if (undoByStepToggle != null) undoByStepToggle.onValueChanged.AddListener(on => game.UndoByStep = on);
         if (showBreaksToggle != null) showBreaksToggle.onValueChanged.AddListener(on => game.ShowBreaks = on);
+        if (musicSlider != null) musicSlider.onValueChanged.AddListener(v => Session.musicVolume = v);
+        if (effectsSlider != null) effectsSlider.onValueChanged.AddListener(v => Session.effectsVolume = v);
         unlockAllToggle.onValueChanged.AddListener(on =>
         {
             game.UnlockAll = on;
@@ -94,6 +99,8 @@ public class SettingsView : MonoBehaviour
         undoAnimationToggle.SetIsOnWithoutNotify(game.AnimateUndo);
         if (undoByStepToggle != null) undoByStepToggle.SetIsOnWithoutNotify(game.UndoByStep);
         if (showBreaksToggle != null) showBreaksToggle.SetIsOnWithoutNotify(game.ShowBreaks);
+        if (musicSlider != null) musicSlider.SetValueWithoutNotify(Session.musicVolume);
+        if (effectsSlider != null) effectsSlider.SetValueWithoutNotify(Session.effectsVolume);
         unlockAllToggle.SetIsOnWithoutNotify(game.UnlockAll);
         if (compactSupplyToggle != null) compactSupplyToggle.SetIsOnWithoutNotify(game.CompactSupply);
         if (showTutorialsToggle != null) showTutorialsToggle.SetIsOnWithoutNotify(game.ShowTutorials);
@@ -122,5 +129,6 @@ public class SettingsView : MonoBehaviour
     {
         CloseResetConfirm();
         panel.SetActive(false);
+        Session.SaveNow(); // the volume sliders
     }
 }

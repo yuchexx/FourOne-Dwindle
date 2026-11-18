@@ -41,6 +41,11 @@ public static class Session
     static bool showBreaksValue;
     public static bool showBreaks { get => showBreaksValue; set { showBreaksValue = value; SetBool("showBreaks", value); } }
 
+    // Settings > Sound: 0 to 1
+    static float musicVolumeValue, effectsVolumeValue;
+    public static float musicVolume { get => musicVolumeValue; set { musicVolumeValue = value; SetFloat("musicVolume", value); } }
+    public static float effectsVolume { get => effectsVolumeValue; set { effectsVolumeValue = value; SetFloat("effectsVolume", value); } }
+
     // the best result per level (index in Levels.All)
     public struct Record
     {
@@ -111,6 +116,8 @@ public static class Session
 
     static void SetBool(string name, bool value) => SetInt(name, value ? 1 : 0);
     static void SetInt(string name, int value) { PlayerPrefs.SetInt(Key + name, value); PlayerPrefs.Save(); }
+    static void SetFloat(string name, float value) => PlayerPrefs.SetFloat(Key + name, value); // a slider: written out by SaveNow
+    public static void SaveNow() => PlayerPrefs.Save(); // Settings closed: the volumes go to disk
     static bool GetBool(string name, bool fallback) => PlayerPrefs.GetInt(Key + name, fallback ? 1 : 0) == 1;
 
     // reads what was saved (defaults on a first visit). also runs each time Play is pressed in the editor
@@ -125,6 +132,8 @@ public static class Session
         animateUndoValue = GetBool("animateUndo", true);
         undoByStepValue = GetBool("undoByStep", true);
         showBreaksValue = GetBool("showBreaks", true);
+        musicVolumeValue = PlayerPrefs.GetFloat(Key + "musicVolume", 0.8f);
+        effectsVolumeValue = PlayerPrefs.GetFloat(Key + "effectsVolume", 0.8f);
         lastOpenedValue = PlayerPrefs.GetInt(Key + "lastOpened", -1);
         if (lastOpenedValue >= Levels.All.Count) lastOpenedValue = -1; // the levels changed since
         records.Clear();
