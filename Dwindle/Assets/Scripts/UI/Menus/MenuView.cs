@@ -93,6 +93,7 @@ public class MenuView : MonoBehaviour
     // the Levels page's Back button
     public void HideLevels()
     {
+        if (levelSelect != null && levelSelect.BackToMap()) return; // a part's list goes back to the part map first
         levelsScreen.SetActive(false);
         startScreen.SetActive(true);
     }

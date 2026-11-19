@@ -94,6 +94,7 @@ public partial class GameManager : MonoBehaviour
     public void ResetProgress()
     {
         Session.ResetAll();
+        if (menu.levelSelect != null) menu.levelSelect.ForgetProgress(); // the part map's object back to the start
         board.animateUndo = Session.animateUndo;
         if (level != null) hud.BuildSlots(SupplyTypes(), SelectTile, SupplyDragStart, e => board.MoveDrag(e), SupplyDragEnd); // compact supply back to off
         if (menu.levelSelect != null) menu.levelSelect.Refresh();

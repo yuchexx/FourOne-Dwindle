@@ -114,6 +114,19 @@ public static class Session
         Load();
     }
 
+    // the level list's version: change it when levels are reordered, so old stars don't land on other levels
+    const string LevelOrder = "plan-130";
+
+    // a new level order: stars, purple, tries and the last level opened go; settings and the player id stay
+    static void ForgetLevels()
+    {
+        for (int i = 0; i < 200; i++)
+            foreach (var k in new[] { "stars", "purple", "triesBefore", "triesAfter" }) PlayerPrefs.DeleteKey($"{Key}level{i}.{k}");
+        PlayerPrefs.DeleteKey(Key + "lastOpened");
+        PlayerPrefs.SetString(Key + "levelOrder", LevelOrder);
+        PlayerPrefs.Save();
+    }
+
     static void SetBool(string name, bool value) => SetInt(name, value ? 1 : 0);
     static void SetInt(string name, int value) { PlayerPrefs.SetInt(Key + name, value); PlayerPrefs.Save(); }
     static void SetFloat(string name, float value) => PlayerPrefs.SetFloat(Key + name, value); // a slider: written out by SaveNow
@@ -134,6 +147,7 @@ public static class Session
         showBreaksValue = GetBool("showBreaks", true);
         musicVolumeValue = PlayerPrefs.GetFloat(Key + "musicVolume", 0.8f);
         effectsVolumeValue = PlayerPrefs.GetFloat(Key + "effectsVolume", 0.8f);
+        if (PlayerPrefs.GetString(Key + "levelOrder", "") != LevelOrder) ForgetLevels(); // stars are saved by place in the list
         lastOpenedValue = PlayerPrefs.GetInt(Key + "lastOpened", -1);
         if (lastOpenedValue >= Levels.All.Count) lastOpenedValue = -1; // the levels changed since
         records.Clear();

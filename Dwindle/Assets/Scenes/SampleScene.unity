@@ -175,7 +175,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &23401641
 RectTransform:
   m_ObjectHideFlags: 0
@@ -195,6 +195,7 @@ RectTransform:
   - {fileID: 1664372975}
   - {fileID: 2112581375}
   - {fileID: 51469488}
+  - {fileID: 1322573075}
   m_Father: {fileID: 835069422}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -898,7 +899,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 90}
+  m_AnchoredPosition: {x: 0, y: 60}
   m_SizeDelta: {x: 48, y: 24}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &51469489
@@ -10709,7 +10710,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 237}
+  m_AnchoredPosition: {x: 0, y: 240}
   m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &729762764
@@ -13807,7 +13808,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Show answer
+  m_text: Reset
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -19039,6 +19040,99 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PaletteColor
   role: 3
   alpha: 1
+--- !u!1 &1322573074
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1322573075}
+  - component: {fileID: 1322573076}
+  m_Layer: 5
+  m_Name: PartMap
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1322573075
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1322573074}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 23401641}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1322573076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1322573074}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0adc35b7688641f4e93ddd504d6fc4dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PartBoardMap
+  tileTemplate: {fileID: 0}
+  tilesPerRow: 3
+  tileSpacing: 24
+  rowSpacing: 24
+  starsText: '{got}/{max} stars'
+  lockedText: Locked
+  tilePrefab: {fileID: 6843708312104345976, guid: 77d393a08574f884f81bb3b359c3a1c8, type: 3}
+  objectPrefab: {fileID: 2627278351851024847, guid: a6145b1b8ae5ed64fb9a4b886315167c, type: 3}
+  ringPrefab: {fileID: 169439478486752816, guid: 5e6e9d85e20ef5d438afa2e6afe516a5, type: 3}
+  textTemplate: {fileID: 452587435}
+  buttonStyle: {fileID: 729762764}
+  cellSize: 170
+  cellGap: 8
+  boardY: -40
+  cellColor: {r: 0.32, g: 0.33, b: 0.37, a: 1}
+  roadColor: {r: 0.62, g: 0.64, b: 0.7, a: 1}
+  traveledColor: {r: 0.49, g: 0.51, b: 0.97, a: 1}
+  roadAheadAlpha: 0.25
+  lockedAlpha: 0.45
+  ballColor: {r: 0.49, g: 0.51, b: 0.97, a: 1}
+  ringHoleColor: {r: 0.125, g: 0.133, b: 0.153, a: 1}
+  showRoads: 1
+  showBall: 1
+  walk: 1
+  secondsPerSquare: 0.22
+  maxWalkSquares: 2
+  ballSize: 0.5
+  ringSize: 0.6
+  outsideDistance: 0.9
+  showDots: 1
+  dotSize: 0.08
+  dotGap: 0.06
+  dotOpacity: 1
+  saveKey: Dwindle.mapBall
+  order:
+  - {x: 0, y: 2}
+  - {x: 1, y: 2}
+  - {x: 2, y: 2}
+  - {x: 2, y: 1}
+  - {x: 1, y: 1}
+  - {x: 0, y: 1}
+  - {x: 0, y: 0}
+  - {x: 1, y: 0}
+  - {x: 2, y: 0}
+  owners: 000000000100000002000000030000000400000005000000060000000600000007000000
 --- !u!1 &1353816286
 GameObject:
   m_ObjectHideFlags: 0
@@ -20466,12 +20560,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04ba85d402d8a3a43b9538df81fbd8cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelSelectView
+  partMap: {fileID: 1322573076}
+  listRoot: {fileID: 0}
+  partTitle: {fileID: 1678560257}
+  menu: {fileID: 1454499147}
+  autoPartMap: 1
+  autoBoardMap: 1
+  autoTileSize: {x: 300, y: 130}
+  autoTilesPerRow: 3
+  autoFirstRowY: 160
   cardTemplate: {fileID: 729762767}
   cardsPerRow: 4
+  leftAlignRows: 1
   rowsPerPage: 4
   cardSpacing: 30
   rowSpacing: 30
   cardText: Level {n}
+  lessonText: Lesson {n}
   lockedText: Locked
   prevButton: {fileID: 1664372977}
   nextButton: {fileID: 2112581377}
@@ -20480,7 +20585,7 @@ MonoBehaviour:
   showParts: 1
   headingTemplate: {fileID: 1623308338}
   headingSpace: 40
-  continuedText: Challenge
+  continuedText: '{name}'
   tutorialCardColor: {r: 0.2509804, g: 0.23137255, b: 0.5411765, a: 1}
   frameWidth: 3
   frameColor: {r: 0.2509804, g: 0.23137255, b: 0.5411765, a: 1}
@@ -24431,7 +24536,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -65, y: 100}
+  m_AnchoredPosition: {x: -65, y: 70}
   m_SizeDelta: {x: 40, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1664372976
@@ -24725,7 +24830,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -120}
+  m_AnchoredPosition: {x: 0, y: -100}
   m_SizeDelta: {x: 600, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1678560256
@@ -30556,7 +30661,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 65, y: 100}
+  m_AnchoredPosition: {x: 65, y: 70}
   m_SizeDelta: {x: 40, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2112581376
