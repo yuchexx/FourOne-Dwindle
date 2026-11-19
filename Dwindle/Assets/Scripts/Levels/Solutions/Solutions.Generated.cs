@@ -3300,108 +3300,8 @@ public static partial class Solutions
     };
     // ---- end of Level 52 ----
 
-    // ---- Level 53 (1 best plans, 1 tile layouts, 1 road family) ----
+    // ---- Level 53 (2 best plans, 1 tile layouts, 1 road family) ----
     public static LevelSolution Level53() => new LevelSolution
-    {
-        target = 550, bestTiles = 4,
-        tricks = new[]
-        {
-            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
-            TrickOf("Detour", TrickNeed.NotUsed),
-            TrickOf("Build ahead", TrickNeed.RequiredForTarget),
-            TrickOf("Earned +", TrickNeed.NotUsed),
-            TrickOf("Bridge", TrickNeed.NotUsed),
-        },
-        families = new[]
-        {
-            // family A: 1 tile layouts
-            new RoadFamily
-            {
-                roads = new[]
-                {
-                    RoadOf("Red", new[] { (0, 0, 0) },
-                        Turn(0, 0, 0, Dir.S)),
-                    RoadOf("Blue", new[] { (0, 1, 1), (0, 0, 1), (0, 0, 0), (0, 1, 0) },
-                        Turn(0, 0, 1, Dir.S), Turn(0, 0, 0, Dir.E)),
-                    RoadOf("Green", new[] { (0, 0, 1) },
-                        Turn(0, 0, 1, Dir.W)),
-                },
-                squares = new[]
-                {
-                    Allow(0, 0, 0, TileType.Cross),
-                    Allow(0, 0, 1, TileType.Cross),
-                    Allow(0, 1, 0, TileType.StraightH),
-                    Allow(0, 1, 1, TileType.CornerWN),
-                },
-                orders = new[]
-                {
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Green" }, At(0, 0, 1, (0, 1, 1))),
-                            Deliver(new[] { "Red", "Blue" }, At(0, 0, 0)),
-                        },
-                    },
-                },
-            },
-        },
-        answerFamily = 0, answerOrder = 0,
-    };
-    // ---- end of Level 53 ----
-
-    // ---- Level 54 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level54() => new LevelSolution
-    {
-        target = 550, bestTiles = 4,
-        tricks = new[]
-        {
-            TrickOf("Delivered together", TrickNeed.RequiredForTarget),
-            TrickOf("Detour", TrickNeed.NotUsed),
-            TrickOf("Build ahead", TrickNeed.RequiredForTarget),
-            TrickOf("Earned +", TrickNeed.NotUsed),
-            TrickOf("Bridge", TrickNeed.NotUsed),
-        },
-        families = new[]
-        {
-            // family A: 1 tile layouts
-            new RoadFamily
-            {
-                roads = new[]
-                {
-                    RoadOf("Red", new[] { (0, 1, 1), (0, 0, 1), (0, 0, 0), (0, 1, 0) },
-                        Turn(0, 0, 1, Dir.S), Turn(0, 0, 0, Dir.E)),
-                    RoadOf("Blue", new[] { (0, 0, 0) },
-                        Turn(0, 0, 0, Dir.W)),
-                    RoadOf("Green", new[] { (0, 0, 1) },
-                        Turn(0, 0, 1, Dir.N)),
-                },
-                squares = new[]
-                {
-                    Allow(0, 0, 0, TileType.Cross),
-                    Allow(0, 0, 1, TileType.Cross),
-                    Allow(0, 1, 0, TileType.CornerSW),
-                    Allow(0, 1, 1, TileType.CornerWN),
-                },
-                orders = new[]
-                {
-                    new DeliveryOrder
-                    {
-                        deliveries = new[]
-                        {
-                            Deliver(new[] { "Green" }, At(0, 0, 1, (0, 1, 1))),
-                            Deliver(new[] { "Red", "Blue" }, At(0, 0, 0)),
-                        },
-                    },
-                },
-            },
-        },
-        answerFamily = 0, answerOrder = 0,
-    };
-    // ---- end of Level 54 ----
-
-    // ---- Level 55 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level55() => new LevelSolution
     {
         target = 550, bestTiles = 6,
         tricks = new[]
@@ -3450,10 +3350,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 55 ----
+    // ---- end of Level 53 ----
 
-    // ---- Level 56 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level56() => new LevelSolution
+    // ---- Level 54 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level54() => new LevelSolution
     {
         target = 550, bestTiles = 6,
         tricks = new[]
@@ -3502,10 +3402,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 56 ----
+    // ---- end of Level 54 ----
 
-    // ---- Level 57 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level57() => new LevelSolution
+    // ---- Level 55 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level55() => new LevelSolution
     {
         target = 550, bestTiles = 7,
         tricks = new[]
@@ -3555,10 +3455,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 57 ----
+    // ---- end of Level 55 ----
 
-    // ---- Level 58 (7 best plans, 3 tile layouts, 1 road family) ----
-    public static LevelSolution Level58() => new LevelSolution
+    // ---- Level 56 (7 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level56() => new LevelSolution
     {
         target = 550, bestTiles = 8,
         tricks = new[]
@@ -3625,10 +3525,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 58 ----
+    // ---- end of Level 56 ----
 
-    // ---- Level 59 (4 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level59() => new LevelSolution
+    // ---- Level 57 (4 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level57() => new LevelSolution
     {
         target = 550, bestTiles = 9,
         tricks = new[]
@@ -3680,10 +3580,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 59 ----
+    // ---- end of Level 57 ----
 
-    // ---- Level 60 (4 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level60() => new LevelSolution
+    // ---- Level 58 (4 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level58() => new LevelSolution
     {
         target = 550, bestTiles = 5,
         tricks = new[]
@@ -3731,10 +3631,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 60 ----
+    // ---- end of Level 58 ----
 
-    // ---- Level 61 (4 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level61() => new LevelSolution
+    // ---- Level 59 (4 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level59() => new LevelSolution
     {
         target = 550, bestTiles = 5,
         tricks = new[]
@@ -3782,10 +3682,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 61 ----
+    // ---- end of Level 59 ----
 
-    // ---- Level 62 (6 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level62() => new LevelSolution
+    // ---- Level 60 (6 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level60() => new LevelSolution
     {
         target = 550, bestTiles = 6,
         tricks = new[]
@@ -3834,10 +3734,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 62 ----
+    // ---- end of Level 60 ----
 
-    // ---- Level 63 (6 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level63() => new LevelSolution
+    // ---- Level 61 (6 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level61() => new LevelSolution
     {
         target = 550, bestTiles = 6,
         tricks = new[]
@@ -3886,10 +3786,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 63 ----
+    // ---- end of Level 61 ----
 
-    // ---- Level 64 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level64() => new LevelSolution
+    // ---- Level 62 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level62() => new LevelSolution
     {
         target = 550, bestTiles = 6,
         tricks = new[]
@@ -3937,10 +3837,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 64 ----
+    // ---- end of Level 62 ----
 
-    // ---- Level 65 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level65() => new LevelSolution
+    // ---- Level 63 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level63() => new LevelSolution
     {
         target = 550, bestTiles = 7,
         tricks = new[]
@@ -3989,10 +3889,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 65 ----
+    // ---- end of Level 63 ----
 
-    // ---- Level 66 (12 best plans, 6 tile layouts, 2 road families) ----
-    public static LevelSolution Level66() => new LevelSolution
+    // ---- Level 64 (12 best plans, 6 tile layouts, 2 road families) ----
+    public static LevelSolution Level64() => new LevelSolution
     {
         target = 825, bestTiles = 7,
         tricks = new[]
@@ -4080,10 +3980,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 66 ----
+    // ---- end of Level 64 ----
 
-    // ---- Level 67 (4 best plans, 2 tile layouts, 1 road family) ----
-    public static LevelSolution Level67() => new LevelSolution
+    // ---- Level 65 (4 best plans, 2 tile layouts, 1 road family) ----
+    public static LevelSolution Level65() => new LevelSolution
     {
         target = 825, bestTiles = 7,
         tricks = new[]
@@ -4135,10 +4035,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 67 ----
+    // ---- end of Level 65 ----
 
-    // ---- Level 68 (4 best plans, 4 tile layouts, 1 road family) ----
-    public static LevelSolution Level68() => new LevelSolution
+    // ---- Level 66 (4 best plans, 4 tile layouts, 1 road family) ----
+    public static LevelSolution Level66() => new LevelSolution
     {
         target = 825, bestTiles = 7,
         tricks = new[]
@@ -4190,10 +4090,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 68 ----
+    // ---- end of Level 66 ----
 
-    // ---- Level 69 (14 best plans, 5 tile layouts, 1 road family) ----
-    public static LevelSolution Level69() => new LevelSolution
+    // ---- Level 67 (14 best plans, 5 tile layouts, 1 road family) ----
+    public static LevelSolution Level67() => new LevelSolution
     {
         target = 825, bestTiles = 8,
         tricks = new[]
@@ -4254,10 +4154,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 69 ----
+    // ---- end of Level 67 ----
 
-    // ---- Level 70 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level70() => new LevelSolution
+    // ---- Level 68 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level68() => new LevelSolution
     {
         target = 550, bestTiles = 4,
         tricks = new[]
@@ -4304,10 +4204,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 70 ----
+    // ---- end of Level 68 ----
 
-    // ---- Level 71 (3 best plans, 2 tile layouts, 1 road family) ----
-    public static LevelSolution Level71() => new LevelSolution
+    // ---- Level 69 (3 best plans, 2 tile layouts, 1 road family) ----
+    public static LevelSolution Level69() => new LevelSolution
     {
         target = 475, bestTiles = 6,
         tricks = new[]
@@ -4364,10 +4264,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 71 ----
+    // ---- end of Level 69 ----
 
-    // ---- Level 72 (8 best plans, 3 tile layouts, 1 road family) ----
-    public static LevelSolution Level72() => new LevelSolution
+    // ---- Level 70 (8 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level70() => new LevelSolution
     {
         target = 475, bestTiles = 7,
         tricks = new[]
@@ -4425,10 +4325,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 72 ----
+    // ---- end of Level 70 ----
 
-    // ---- Level 73 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level73() => new LevelSolution
+    // ---- Level 71 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level71() => new LevelSolution
     {
         target = 400, bestTiles = 6,
         tricks = new[]
@@ -4477,10 +4377,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 73 ----
+    // ---- end of Level 71 ----
 
-    // ---- Level 74 (2 best plans, 2 tile layouts, 2 road families) ----
-    public static LevelSolution Level74() => new LevelSolution
+    // ---- Level 72 (2 best plans, 2 tile layouts, 2 road families) ----
+    public static LevelSolution Level72() => new LevelSolution
     {
         target = 400, bestTiles = 8,
         tricks = new[]
@@ -4566,10 +4466,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 74 ----
+    // ---- end of Level 72 ----
 
-    // ---- Level 75 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level75() => new LevelSolution
+    // ---- Level 73 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level73() => new LevelSolution
     {
         target = 400, bestTiles = 3,
         tricks = new[]
@@ -4615,10 +4515,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 75 ----
+    // ---- end of Level 73 ----
 
-    // ---- Level 76 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level76() => new LevelSolution
+    // ---- Level 74 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level74() => new LevelSolution
     {
         target = 400, bestTiles = 5,
         tricks = new[]
@@ -4666,10 +4566,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 76 ----
+    // ---- end of Level 74 ----
 
-    // ---- Level 77 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level77() => new LevelSolution
+    // ---- Level 75 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level75() => new LevelSolution
     {
         target = 400, bestTiles = 7,
         tricks = new[]
@@ -4719,10 +4619,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 77 ----
+    // ---- end of Level 75 ----
 
-    // ---- Level 78 (12 best plans, 2 tile layouts, 1 road family) ----
-    public static LevelSolution Level78() => new LevelSolution
+    // ---- Level 76 (12 best plans, 2 tile layouts, 1 road family) ----
+    public static LevelSolution Level76() => new LevelSolution
     {
         target = 475, bestTiles = 7,
         tricks = new[]
@@ -4772,10 +4672,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 78 ----
+    // ---- end of Level 76 ----
 
-    // ---- Level 79 (4 best plans, 2 tile layouts, 1 road family) ----
-    public static LevelSolution Level79() => new LevelSolution
+    // ---- Level 77 (4 best plans, 2 tile layouts, 1 road family) ----
+    public static LevelSolution Level77() => new LevelSolution
     {
         target = 825, bestTiles = 7,
         tricks = new[]
@@ -4827,10 +4727,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 79 ----
+    // ---- end of Level 77 ----
 
-    // ---- Level 80 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level80() => new LevelSolution
+    // ---- Level 78 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level78() => new LevelSolution
     {
         target = 400, bestTiles = 4,
         tricks = new[]
@@ -4875,10 +4775,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 80 ----
+    // ---- end of Level 78 ----
 
-    // ---- Level 81 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level81() => new LevelSolution
+    // ---- Level 79 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level79() => new LevelSolution
     {
         target = 475, bestTiles = 4,
         tricks = new[]
@@ -4923,10 +4823,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 81 ----
+    // ---- end of Level 79 ----
 
-    // ---- Level 82 (7 best plans, 2 tile layouts, 1 road family) ----
-    public static LevelSolution Level82() => new LevelSolution
+    // ---- Level 80 (7 best plans, 2 tile layouts, 1 road family) ----
+    public static LevelSolution Level80() => new LevelSolution
     {
         target = 550, bestTiles = 6,
         tricks = new[]
@@ -4983,10 +4883,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 82 ----
+    // ---- end of Level 80 ----
 
-    // ---- Level 83 (15 best plans, 4 tile layouts, 1 road family) ----
-    public static LevelSolution Level83() => new LevelSolution
+    // ---- Level 81 (15 best plans, 4 tile layouts, 1 road family) ----
+    public static LevelSolution Level81() => new LevelSolution
     {
         target = 475, bestTiles = 8,
         tricks = new[]
@@ -5043,10 +4943,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 83 ----
+    // ---- end of Level 81 ----
 
-    // ---- Level 84 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level84() => new LevelSolution
+    // ---- Level 82 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level82() => new LevelSolution
     {
         target = 400, bestTiles = 7,
         tricks = new[]
@@ -5094,10 +4994,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 84 ----
+    // ---- end of Level 82 ----
 
-    // ---- Level 85 (4 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level85() => new LevelSolution
+    // ---- Level 83 (4 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level83() => new LevelSolution
     {
         target = 475, bestTiles = 6,
         tricks = new[]
@@ -5146,10 +5046,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 85 ----
+    // ---- end of Level 83 ----
 
-    // ---- Level 86 (4 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level86() => new LevelSolution
+    // ---- Level 84 (4 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level84() => new LevelSolution
     {
         target = 475, bestTiles = 6,
         tricks = new[]
@@ -5198,10 +5098,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 86 ----
+    // ---- end of Level 84 ----
 
-    // ---- Level 87 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level87() => new LevelSolution
+    // ---- Level 85 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level85() => new LevelSolution
     {
         target = 475, bestTiles = 6,
         tricks = new[]
@@ -5249,10 +5149,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 87 ----
+    // ---- end of Level 85 ----
 
-    // ---- Level 88 (16 best plans, 4 tile layouts, 2 road families) ----
-    public static LevelSolution Level88() => new LevelSolution
+    // ---- Level 86 (16 best plans, 4 tile layouts, 2 road families) ----
+    public static LevelSolution Level86() => new LevelSolution
     {
         target = 550, bestTiles = 8,
         tricks = new[]
@@ -5334,10 +5234,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 88 ----
+    // ---- end of Level 86 ----
 
-    // ---- Level 89 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level89() => new LevelSolution
+    // ---- Level 87 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level87() => new LevelSolution
     {
         target = 475, bestTiles = 5,
         tricks = new[]
@@ -5385,10 +5285,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 89 ----
+    // ---- end of Level 87 ----
 
-    // ---- Level 90 (18 best plans, 3 tile layouts, 1 road family) ----
-    public static LevelSolution Level90() => new LevelSolution
+    // ---- Level 88 (18 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level88() => new LevelSolution
     {
         target = 825, bestTiles = 6,
         tricks = new[]
@@ -5439,10 +5339,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 90 ----
+    // ---- end of Level 88 ----
 
-    // ---- Level 91 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level91() => new LevelSolution
+    // ---- Level 89 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level89() => new LevelSolution
     {
         target = 475, bestTiles = 6,
         tricks = new[]
@@ -5491,10 +5391,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 91 ----
+    // ---- end of Level 89 ----
 
-    // ---- Level 92 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level92() => new LevelSolution
+    // ---- Level 90 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level90() => new LevelSolution
     {
         target = 150, bestTiles = 2,
         tricks = new[]
@@ -5534,10 +5434,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 92 ----
+    // ---- end of Level 90 ----
 
-    // ---- Level 93 (24 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level93() => new LevelSolution
+    // ---- Level 91 (24 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level91() => new LevelSolution
     {
         target = 300, bestTiles = 7,
         tricks = new[]
@@ -5591,10 +5491,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 93 ----
+    // ---- end of Level 91 ----
 
-    // ---- Level 94 (3 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level94() => new LevelSolution
+    // ---- Level 92 (3 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level92() => new LevelSolution
     {
         target = 225, bestTiles = 3,
         tricks = new[]
@@ -5634,10 +5534,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 94 ----
+    // ---- end of Level 92 ----
 
-    // ---- Level 95 (4 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level95() => new LevelSolution
+    // ---- Level 93 (4 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level93() => new LevelSolution
     {
         target = 225, bestTiles = 4,
         tricks = new[]
@@ -5679,10 +5579,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 95 ----
+    // ---- end of Level 93 ----
 
-    // ---- Level 96 (4 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level96() => new LevelSolution
+    // ---- Level 94 (4 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level94() => new LevelSolution
     {
         target = 225, bestTiles = 4,
         tricks = new[]
@@ -5724,10 +5624,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 96 ----
+    // ---- end of Level 94 ----
 
-    // ---- Level 97 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level97() => new LevelSolution
+    // ---- Level 95 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level95() => new LevelSolution
     {
         target = 475, bestTiles = 5,
         tricks = new[]
@@ -5772,10 +5672,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 97 ----
+    // ---- end of Level 95 ----
 
-    // ---- Level 98 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level98() => new LevelSolution
+    // ---- Level 96 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level96() => new LevelSolution
     {
         target = 425, bestTiles = 5,
         tricks = new[]
@@ -5818,10 +5718,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 98 ----
+    // ---- end of Level 96 ----
 
-    // ---- Level 99 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level99() => new LevelSolution
+    // ---- Level 97 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level97() => new LevelSolution
     {
         target = 425, bestTiles = 5,
         tricks = new[]
@@ -5866,10 +5766,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 99 ----
+    // ---- end of Level 97 ----
 
-    // ---- Level 100 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level100() => new LevelSolution
+    // ---- Level 98 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level98() => new LevelSolution
     {
         target = 425, bestTiles = 5,
         tricks = new[]
@@ -5914,10 +5814,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 100 ----
+    // ---- end of Level 98 ----
 
-    // ---- Level 101 (8 best plans, 2 tile layouts, 2 road families) ----
-    public static LevelSolution Level101() => new LevelSolution
+    // ---- Level 99 (8 best plans, 2 tile layouts, 2 road families) ----
+    public static LevelSolution Level99() => new LevelSolution
     {
         target = 575, bestTiles = 9,
         tricks = new[]
@@ -6005,10 +5905,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 101 ----
+    // ---- end of Level 99 ----
 
-    // ---- Level 102 (18 best plans, 3 tile layouts, 1 road family) ----
-    public static LevelSolution Level102() => new LevelSolution
+    // ---- Level 100 (18 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level100() => new LevelSolution
     {
         target = 650, bestTiles = 9,
         tricks = new[]
@@ -6068,10 +5968,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 102 ----
+    // ---- end of Level 100 ----
 
-    // ---- Level 103 (4 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level103() => new LevelSolution
+    // ---- Level 101 (4 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level101() => new LevelSolution
     {
         target = 650, bestTiles = 8,
         tricks = new[]
@@ -6122,10 +6022,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 103 ----
+    // ---- end of Level 101 ----
 
-    // ---- Level 104 (5 best plans, 2 tile layouts, 1 road family) ----
-    public static LevelSolution Level104() => new LevelSolution
+    // ---- Level 102 (5 best plans, 2 tile layouts, 1 road family) ----
+    public static LevelSolution Level102() => new LevelSolution
     {
         target = 700, bestTiles = 7,
         tricks = new[]
@@ -6183,10 +6083,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 104 ----
+    // ---- end of Level 102 ----
 
-    // ---- Level 105 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level105() => new LevelSolution
+    // ---- Level 103 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level103() => new LevelSolution
     {
         target = 550, bestTiles = 5,
         tricks = new[]
@@ -6231,10 +6131,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 105 ----
+    // ---- end of Level 103 ----
 
-    // ---- Level 106 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level106() => new LevelSolution
+    // ---- Level 104 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level104() => new LevelSolution
     {
         target = 550, bestTiles = 4,
         tricks = new[]
@@ -6278,10 +6178,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 106 ----
+    // ---- end of Level 104 ----
 
-    // ---- Level 107 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level107() => new LevelSolution
+    // ---- Level 105 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level105() => new LevelSolution
     {
         target = 550, bestTiles = 5,
         tricks = new[]
@@ -6326,10 +6226,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 107 ----
+    // ---- end of Level 105 ----
 
-    // ---- Level 108 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level108() => new LevelSolution
+    // ---- Level 106 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level106() => new LevelSolution
     {
         target = 550, bestTiles = 6,
         tricks = new[]
@@ -6375,10 +6275,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 108 ----
+    // ---- end of Level 106 ----
 
-    // ---- Level 109 (6 best plans, 1 tile layouts, 2 road families) ----
-    public static LevelSolution Level109() => new LevelSolution
+    // ---- Level 107 (6 best plans, 1 tile layouts, 2 road families) ----
+    public static LevelSolution Level107() => new LevelSolution
     {
         target = 500, bestTiles = 6,
         tricks = new[]
@@ -6454,10 +6354,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 109 ----
+    // ---- end of Level 107 ----
 
-    // ---- Level 110 (4 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level110() => new LevelSolution
+    // ---- Level 108 (4 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level108() => new LevelSolution
     {
         target = 550, bestTiles = 7,
         tricks = new[]
@@ -6504,10 +6404,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 110 ----
+    // ---- end of Level 108 ----
 
-    // ---- Level 111 (4 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level111() => new LevelSolution
+    // ---- Level 109 (4 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level109() => new LevelSolution
     {
         target = 500, bestTiles = 8,
         tricks = new[]
@@ -6555,10 +6455,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 111 ----
+    // ---- end of Level 109 ----
 
-    // ---- Level 112 (8 best plans, 4 tile layouts, 1 road family) ----
-    public static LevelSolution Level112() => new LevelSolution
+    // ---- Level 110 (8 best plans, 4 tile layouts, 1 road family) ----
+    public static LevelSolution Level110() => new LevelSolution
     {
         target = 950, bestTiles = 10,
         tricks = new[]
@@ -6612,10 +6512,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 112 ----
+    // ---- end of Level 110 ----
 
-    // ---- Level 113 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level113() => new LevelSolution
+    // ---- Level 111 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level111() => new LevelSolution
     {
         target = 950, bestTiles = 11,
         tricks = new[]
@@ -6670,10 +6570,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 113 ----
+    // ---- end of Level 111 ----
 
-    // ---- Level 114 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level114() => new LevelSolution
+    // ---- Level 112 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level112() => new LevelSolution
     {
         target = 525, bestTiles = 6,
         tricks = new[]
@@ -6721,10 +6621,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 114 ----
+    // ---- end of Level 112 ----
 
-    // ---- Level 115 (6 best plans, 2 tile layouts, 2 road families) ----
-    public static LevelSolution Level115() => new LevelSolution
+    // ---- Level 113 (6 best plans, 2 tile layouts, 2 road families) ----
+    public static LevelSolution Level113() => new LevelSolution
     {
         target = 600, bestTiles = 7,
         tricks = new[]
@@ -6806,10 +6706,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 115 ----
+    // ---- end of Level 113 ----
 
-    // ---- Level 116 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level116() => new LevelSolution
+    // ---- Level 114 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level114() => new LevelSolution
     {
         target = 600, bestTiles = 7,
         tricks = new[]
@@ -6858,10 +6758,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 116 ----
+    // ---- end of Level 114 ----
 
-    // ---- Level 117 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level117() => new LevelSolution
+    // ---- Level 115 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level115() => new LevelSolution
     {
         target = 600, bestTiles = 5,
         tricks = new[]
@@ -6907,10 +6807,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 117 ----
+    // ---- end of Level 115 ----
 
-    // ---- Level 118 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level118() => new LevelSolution
+    // ---- Level 116 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level116() => new LevelSolution
     {
         target = 600, bestTiles = 6,
         tricks = new[]
@@ -6957,10 +6857,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 118 ----
+    // ---- end of Level 116 ----
 
-    // ---- Level 119 (16 best plans, 3 tile layouts, 1 road family) ----
-    public static LevelSolution Level119() => new LevelSolution
+    // ---- Level 117 (16 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level117() => new LevelSolution
     {
         target = 475, bestTiles = 8,
         tricks = new[]
@@ -7019,10 +6919,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 119 ----
+    // ---- end of Level 117 ----
 
-    // ---- Level 120 (6 best plans, 3 tile layouts, 1 road family) ----
-    public static LevelSolution Level120() => new LevelSolution
+    // ---- Level 118 (6 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level118() => new LevelSolution
     {
         target = 825, bestTiles = 7,
         tricks = new[]
@@ -7073,10 +6973,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 120 ----
+    // ---- end of Level 118 ----
 
-    // ---- Level 121 (45 best plans, 9 tile layouts, 2 road families) ----
-    public static LevelSolution Level121() => new LevelSolution
+    // ---- Level 119 (45 best plans, 9 tile layouts, 2 road families) ----
+    public static LevelSolution Level119() => new LevelSolution
     {
         target = 550, bestTiles = 8,
         tricks = new[]
@@ -7162,10 +7062,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 121 ----
+    // ---- end of Level 119 ----
 
-    // ---- Level 122 (18 best plans, 3 tile layouts, 1 road family) ----
-    public static LevelSolution Level122() => new LevelSolution
+    // ---- Level 120 (18 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level120() => new LevelSolution
     {
         target = 550, bestTiles = 7,
         tricks = new[]
@@ -7215,10 +7115,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 122 ----
+    // ---- end of Level 120 ----
 
-    // ---- Level 123 (2 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level123() => new LevelSolution
+    // ---- Level 121 (2 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level121() => new LevelSolution
     {
         target = 750, bestTiles = 8,
         tricks = new[]
@@ -7270,10 +7170,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 123 ----
+    // ---- end of Level 121 ----
 
-    // ---- Level 124 (8 best plans, 3 tile layouts, 2 road families) ----
-    public static LevelSolution Level124() => new LevelSolution
+    // ---- Level 122 (8 best plans, 3 tile layouts, 2 road families) ----
+    public static LevelSolution Level122() => new LevelSolution
     {
         target = 825, bestTiles = 10,
         tricks = new[]
@@ -7367,10 +7267,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 124 ----
+    // ---- end of Level 122 ----
 
-    // ---- Level 125 (12 best plans, 6 tile layouts, 1 road family) ----
-    public static LevelSolution Level125() => new LevelSolution
+    // ---- Level 123 (12 best plans, 6 tile layouts, 1 road family) ----
+    public static LevelSolution Level123() => new LevelSolution
     {
         target = 900, bestTiles = 9,
         tricks = new[]
@@ -7424,10 +7324,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 125 ----
+    // ---- end of Level 123 ----
 
-    // ---- Level 126 (399 best plans, 119 tile layouts, 3 road families) ----
-    public static LevelSolution Level126() => new LevelSolution
+    // ---- Level 124 (399 best plans, 119 tile layouts, 3 road families) ----
+    public static LevelSolution Level124() => new LevelSolution
     {
         target = 825, bestTiles = 12,
         tricks = new[]
@@ -7567,10 +7467,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 126 ----
+    // ---- end of Level 124 ----
 
-    // ---- Level 127 (8 best plans, 4 tile layouts, 1 road family) ----
-    public static LevelSolution Level127() => new LevelSolution
+    // ---- Level 125 (8 best plans, 4 tile layouts, 1 road family) ----
+    public static LevelSolution Level125() => new LevelSolution
     {
         target = 825, bestTiles = 10,
         tricks = new[]
@@ -7625,10 +7525,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 127 ----
+    // ---- end of Level 125 ----
 
-    // ---- Level 128 (8 best plans, 4 tile layouts, 1 road family) ----
-    public static LevelSolution Level128() => new LevelSolution
+    // ---- Level 126 (8 best plans, 4 tile layouts, 1 road family) ----
+    public static LevelSolution Level126() => new LevelSolution
     {
         target = 750, bestTiles = 10,
         tricks = new[]
@@ -7683,10 +7583,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 128 ----
+    // ---- end of Level 126 ----
 
-    // ---- Level 129 (36 best plans, 6 tile layouts, 1 road family) ----
-    public static LevelSolution Level129() => new LevelSolution
+    // ---- Level 127 (36 best plans, 6 tile layouts, 1 road family) ----
+    public static LevelSolution Level127() => new LevelSolution
     {
         target = 850, bestTiles = 12,
         tricks = new[]
@@ -7743,10 +7643,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 129 ----
+    // ---- end of Level 127 ----
 
-    // ---- Level 130 (12 best plans, 3 tile layouts, 1 road family) ----
-    public static LevelSolution Level130() => new LevelSolution
+    // ---- Level 128 (12 best plans, 3 tile layouts, 1 road family) ----
+    public static LevelSolution Level128() => new LevelSolution
     {
         target = 675, bestTiles = 9,
         tricks = new[]
@@ -7814,10 +7714,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 130 ----
+    // ---- end of Level 128 ----
 
-    // ---- Level 131 (7 best plans, 2 tile layouts, 1 road family) ----
-    public static LevelSolution Level131() => new LevelSolution
+    // ---- Level 129 (7 best plans, 2 tile layouts, 1 road family) ----
+    public static LevelSolution Level129() => new LevelSolution
     {
         target = 975, bestTiles = 9,
         tricks = new[]
@@ -7879,10 +7779,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 131 ----
+    // ---- end of Level 129 ----
 
-    // ---- Level 132 (30 best plans, 30 tile layouts, 3 road families) ----
-    public static LevelSolution Level132() => new LevelSolution
+    // ---- Level 130 (30 best plans, 30 tile layouts, 3 road families) ----
+    public static LevelSolution Level130() => new LevelSolution
     {
         target = 1025, bestTiles = 13,
         tricks = new[]
@@ -8021,10 +7921,10 @@ public static partial class Solutions
         },
         answerFamily = 1, answerOrder = 0,
     };
-    // ---- end of Level 132 ----
+    // ---- end of Level 130 ----
 
-    // ---- Level 133 (1 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level133() => new LevelSolution
+    // ---- Level 131 (1 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level131() => new LevelSolution
     {
         target = 950, bestTiles = 11,
         tricks = new[]
@@ -8079,10 +7979,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 133 ----
+    // ---- end of Level 131 ----
 
-    // ---- Level 134 (1347 best plans, 449 tile layouts, 3 road families) ----
-    public static LevelSolution Level134() => new LevelSolution
+    // ---- Level 132 (1347 best plans, 449 tile layouts, 3 road families) ----
+    public static LevelSolution Level132() => new LevelSolution
     {
         target = 1175, bestTiles = 12,
         tricks = new[]
@@ -8221,10 +8121,10 @@ public static partial class Solutions
         },
         answerFamily = 1, answerOrder = 0,
     };
-    // ---- end of Level 134 ----
+    // ---- end of Level 132 ----
 
-    // ---- Level 135 (3 best plans, 1 tile layouts, 1 road family) ----
-    public static LevelSolution Level135() => new LevelSolution
+    // ---- Level 133 (3 best plans, 1 tile layouts, 1 road family) ----
+    public static LevelSolution Level133() => new LevelSolution
     {
         target = 1025, bestTiles = 11,
         tricks = new[]
@@ -8280,10 +8180,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 135 ----
+    // ---- end of Level 133 ----
 
-    // ---- Level 136 (56 best plans, 14 tile layouts, 4 road families) ----
-    public static LevelSolution Level136() => new LevelSolution
+    // ---- Level 134 (56 best plans, 14 tile layouts, 4 road families) ----
+    public static LevelSolution Level134() => new LevelSolution
     {
         target = 975, bestTiles = 14,
         tricks = new[]
@@ -8471,10 +8371,10 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 136 ----
+    // ---- end of Level 134 ----
 
-    // ---- Level 137 (9 best plans, 3 tile layouts, 2 road families) ----
-    public static LevelSolution Level137() => new LevelSolution
+    // ---- Level 135 (9 best plans, 3 tile layouts, 2 road families) ----
+    public static LevelSolution Level135() => new LevelSolution
     {
         target = 1025, bestTiles = 15,
         tricks = new[]
@@ -8578,5 +8478,5 @@ public static partial class Solutions
         },
         answerFamily = 0, answerOrder = 0,
     };
-    // ---- end of Level 137 ----
+    // ---- end of Level 135 ----
 }

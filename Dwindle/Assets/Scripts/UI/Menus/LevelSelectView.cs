@@ -35,6 +35,8 @@ public class LevelSelectView : MonoBehaviour
     [Min(1)] public int cardsPerRow = 4;
     [Tooltip("A short row (fewer than Cards Per Row) starts at the left, under the full rows; off: centered")]
     public bool leftAlignRows = true;
+    [Tooltip("Inside a part: each section starts a new row under its heading. Off: all the part's levels in one run, each heading over the card where its section starts (in Play mode, changes show right away)")]
+    public bool sectionRows = true;
     [Tooltip("Rows of cards on one page; more go on the next page")]
     [Min(1)] public int rowsPerPage = 4;
     [Tooltip("Space between cards side by side")]
@@ -61,6 +63,8 @@ public class LevelSelectView : MonoBehaviour
     public TMP_Text headingTemplate;
     [Tooltip("Extra space above a part's first row, where its heading goes")]
     public float headingSpace = 40f;
+    [Tooltip("Moves every heading, in pixels (x right, y up)")]
+    public Vector2 headingOffset;
     [Tooltip("A part that carries on from the page before; {name} is its name")]
     public string continuedText = "{name} (continued)";
 
@@ -133,6 +137,13 @@ public class LevelSelectView : MonoBehaviour
             partOf.Add(part);
             groupOf.Add(group);
             if (parts.Count == 0 || parts[parts.Count - 1] != part) parts.Add(part);
+        }
+        // a part with only one section (Challenge, Finale): no heading, the page's title already says it
+        foreach (var p in parts)
+        {
+            var names = new HashSet<string>();
+            for (int i = 0; i < cards.Count; i++) if (partOf[i] == p && groupOf[i] != null) names.Add(groupOf[i]);
+            if (names.Count <= 1) for (int i = 0; i < cards.Count; i++) if (partOf[i] == p) groupOf[i] = null;
         }
         if (prevButton != null) { prevButton.onClick.RemoveListener(PrevPage); prevButton.onClick.AddListener(PrevPage); }
         if (nextButton != null) { nextButton.onClick.RemoveListener(NextPage); nextButton.onClick.AddListener(NextPage); }
@@ -213,7 +224,7 @@ public class LevelSelectView : MonoBehaviour
     string PartLabel(int p) => partText.Replace("{n}", (p + 1).ToString()).Replace("{name}", parts[p] ?? "");
 
     // the heading a card's row goes under: its section inside a part map's part, else its part
-    string HeadOf(int i) => ByPart ? groupOf[i] : showParts ? partOf[i] : null;
+    string HeadOf(int i) => ByPart ? (sectionRows ? groupOf[i] : null) : showParts ? partOf[i] : null;
     bool Shown(int i) => !ByPart || shownPart < 0 || partOf[i] == parts[shownPart];
 
     // rows: a row ends when full or where a new heading starts. pages: rowsPerPage rows each. a heading's first row on
@@ -245,17 +256,44 @@ public class LevelSelectView : MonoBehaviour
             int p = r / rowsPerPage;
             if (r % rowsPerPage == 0) y = firstCard.y; // a new page starts at the top
             var row = rows[r];
-            string head = HeadOf(row[0]);
-            bool headStarts = r == 0 || HeadOf(rows[r - 1][0]) != head;
-            if (!string.IsNullOrEmpty(head) && (headStarts || r % rowsPerPage == 0))
+            int across = leftAlignRows ? cardsPerRow : row.Count;
+            float CardX(int k) => firstCard.x + (k - (across - 1) / 2f) * (cardSize.x + cardSpacing);
+            if (ByPart && !sectionRows)
             {
-                y -= headingSpace;
-                AddHeading(headStarts ? head : continuedText.Replace("{name}", head), p, y + cardSize.y / 2f + headingSpace / 2f);
+                // one run of cards: each section's heading sits over the card where it starts (and over the first
+                // card of a page that carries on a section)
+                var starts = new List<(int k, string text)>();
+                for (int k = 0; k < row.Count; k++)
+                {
+                    int i = row[k];
+                    bool sectionStarts = i == 0 || !Shown(i - 1) || groupOf[i] != groupOf[i - 1];
+                    if (!string.IsNullOrEmpty(groupOf[i]) && sectionStarts) starts.Add((k, groupOf[i]));
+                    else if (k == 0 && r % rowsPerPage == 0 && !string.IsNullOrEmpty(groupOf[i])) starts.Add((0, continuedText.Replace("{name}", groupOf[i])));
+                }
+                if (starts.Count > 0)
+                {
+                    y -= headingSpace;
+                    for (int s = 0; s < starts.Count; s++)
+                    {
+                        float left = CardX(starts[s].k) - cardSize.x / 2f;
+                        float right = s + 1 < starts.Count ? CardX(starts[s + 1].k) - cardSize.x / 2f - cardSpacing : CardX(cardsPerRow - 1) + cardSize.x / 2f;
+                        AddHeadingAt(starts[s].text, p, y + cardSize.y / 2f + headingSpace / 2f, left, right - left);
+                    }
+                }
+            }
+            else
+            {
+                string head = HeadOf(row[0]);
+                bool headStarts = r == 0 || HeadOf(rows[r - 1][0]) != head;
+                if (!string.IsNullOrEmpty(head) && (headStarts || r % rowsPerPage == 0))
+                {
+                    y -= headingSpace;
+                    AddHeading(headStarts ? head : continuedText.Replace("{name}", head), p, y + cardSize.y / 2f + headingSpace / 2f);
+                }
             }
             for (int k = 0; k < row.Count; k++)
             {
-                ((RectTransform)cards[row[k]].transform).anchoredPosition = new Vector2(
-                    firstCard.x + (k - ((leftAlignRows ? cardsPerRow : row.Count) - 1) / 2f) * (cardSize.x + cardSpacing), y);
+                ((RectTransform)cards[row[k]].transform).anchoredPosition = new Vector2(CardX(k), y);
                 pageOf[row[k]] = p;
             }
             y -= cardSize.y + rowSpacing;
@@ -315,9 +353,21 @@ public class LevelSelectView : MonoBehaviour
         var h = Instantiate(headingTemplate, headingTemplate.transform.parent);
         h.name = $"Heading {text}";
         h.text = text;
-        h.rectTransform.anchoredPosition = new Vector2(firstCard.x, y);
+        h.rectTransform.anchoredPosition = new Vector2(firstCard.x, y) + headingOffset;
         headings.Add(h);
         headingPage.Add(p);
+    }
+
+    // a heading from x = left, width wide (left aligned), for one run of cards with headings over their section's first card
+    void AddHeadingAt(string text, int p, float y, float left, float width)
+    {
+        if (headingTemplate == null) return;
+        AddHeading(text, p, y);
+        var h = headings[headings.Count - 1];
+        var rt = h.rectTransform;
+        rt.sizeDelta = new Vector2(width, rt.sizeDelta.y);
+        rt.anchoredPosition = new Vector2(left + width * rt.pivot.x, y) + headingOffset;
+        h.alignment = TextAlignmentOptions.Left;
     }
 
     // the Levels button: open on the last opened level's page (before any, the level to play next)

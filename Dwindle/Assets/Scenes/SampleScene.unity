@@ -10710,7 +10710,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 240}
+  m_AnchoredPosition: {x: 0, y: 180}
   m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &729762764
@@ -20581,11 +20581,12 @@ MonoBehaviour:
   cardTemplate: {fileID: 729762767}
   cardsPerRow: 4
   leftAlignRows: 1
+  sectionRows: 0
   rowsPerPage: 4
   cardSpacing: 30
   rowSpacing: 30
   cardText: Level {n}
-  lessonText: Lesson {n}
+  lessonText: Level {n}
   lockedText: Locked
   prevButton: {fileID: 1664372977}
   nextButton: {fileID: 2112581377}
@@ -20593,8 +20594,9 @@ MonoBehaviour:
   pageText: '{p} / {total}'
   showParts: 1
   headingTemplate: {fileID: 1623308338}
-  headingSpace: 40
-  continuedText: '{name}'
+  headingSpace: 0
+  headingOffset: {x: 0, y: 15}
+  continuedText: '{name} (continued)'
   tutorialCardColor: {r: 0.2509804, g: 0.23137255, b: 0.5411765, a: 1}
   frameWidth: 3
   frameColor: {r: 0.2509804, g: 0.23137255, b: 0.5411765, a: 1}
@@ -23731,8 +23733,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 28
-  m_fontSizeBase: 28
+  m_fontSize: 24
+  m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
