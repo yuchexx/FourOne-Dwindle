@@ -150,8 +150,15 @@ public static class PlanMatcher
         if (now.Count > 0)
         {
             if (placed == null) return false; // everything has stopped: nobody should still be able to arrive
-            sim.deliveries.Add(new DeliveryRecord { objects = now.ToArray(), at = placed.Value, occupied = new HashSet<Vector2Int>(sim.tiles.Keys) });
+            // this round's deliveries and their real breaks, as the game will play them once everything stops (the
+            // "before" tiles miss a double build ahead: each road started early alone is enough, but not neither)
+            sim.deliveries.Add(new DeliveryRecord { objects = now.ToArray(), at = placed.Value, occupied = new HashSet<Vector2Int>(sim.tiles.Keys), happened = true });
             if (now.Count >= 2) sim.supply[TileType.Cross] = sim.supply.GetValueOrDefault(TileType.Cross) + 1; // delivering together earns a +
+            foreach (var n in now)
+            {
+                var pick = BreakFor(l, sim, walker, n, now);
+                if (pick != null) sim.tiles.Remove(pick.Value);
+            }
         }
         if (!Fits(l, family, order, sim)) return false;
         if (sim.deliveries.Count == total) return true;
@@ -171,6 +178,50 @@ public static class PlanMatcher
             if (!Fits(l, family, order, sim)) return false;
         }
         return sim.deliveries.Count == total;
+    }
+
+    // the tile the game breaks when this object is delivered (BreakRule, with every object still on its way)
+    public static Vector2Int? BreakFor(LevelData l, PlayerState st, RoadWalker walker, string delivered, List<string> arrivedNow)
+    {
+        TileType? TileAt(Vector2Int c) => st.tiles.TryGetValue(c, out var t) ? t : (TileType?)null;
+        bool IsObstacle(Vector2Int c) => l.obstacles.Contains(c);
+        var stillNeeded = new Dictionary<Vector2Int, int>();
+        var soonest = new Dictionary<Vector2Int, int>();
+        var done = new HashSet<string>(st.deliveries.SelectMany(d => d.objects));
+        foreach (var w in walker.OnTheWay.Where(x => !done.Contains(x) && !arrivedNow.Contains(x)))
+        {
+            var (pos, heading, via) = Where(l, st, walker, w);
+            foreach (var kv in BreakRule.Ahead(l, pos, heading, via, TileAt, IsObstacle, false))
+                if (!stillNeeded.TryGetValue(kv.Key, out var s) || kv.Value < s) stillNeeded[kv.Key] = kv.Value;
+            foreach (var kv in BreakRule.Ahead(l, pos, heading, via, TileAt, IsObstacle, true))
+                if (!soonest.TryGetValue(kv.Key, out var s) || kv.Value < s) soonest[kv.Key] = kv.Value;
+        }
+        var path = st.passed.TryGetValue(delivered, out var p) ? p : new List<Vector2Int>();
+        return BreakRule.Pick(l, path, TileAt, stillNeeded, soonest);
+    }
+
+    // where an object waits on its road: its square and the way it faces (just out of a door's partner after a door)
+    static (Vector2Int pos, Dir heading, bool via) Where(LevelData l, PlayerState st, RoadWalker walker, string name)
+    {
+        var spec = l.objects.First(o => o.name == name);
+        var road = walker.Road(name);
+        int reached = st.passed.TryGetValue(name, out var gone) ? gone.Count : 0;
+        if (reached == 0 || reached >= road.Count) return (spec.start, spec.heading, false);
+        var last = road[reached - 1]; var next = road[reached];
+        foreach (var d in DirUtil.All)
+            if (last + DirUtil.Offset(d) == next && l.DoorOnEdge(last, d) == null) return (last, d, false);
+        foreach (var d in DirUtil.All)
+        {
+            var door = l.DoorOnEdge(last, d);
+            if (door == null) continue;
+            var partner = l.Partner(door);
+            foreach (var h in new[] { DirUtil.Opposite(partner.side), partner.side })
+            {
+                var from = h == partner.side ? partner.cell : partner.Neighbor;
+                if (from + DirUtil.Offset(h) == next) return (from, h, true);
+            }
+        }
+        return (last, spec.heading, false);
     }
 
     // a group still to come can't arrive together any more: every square that could deliver it already has a tile, so
