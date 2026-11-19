@@ -18,6 +18,10 @@ public class PartBoardMap : PartMapView
     public float cellSize = 170f;
     public float cellGap = 8f;
     public float boardY = -40f;          // the board's middle, from the screen's middle
+    [Tooltip("The whole board bigger or smaller: squares, texts, roads, object, ring, dots (in Play mode, changes show right away)")]
+    [Range(0.3f, 2f)] public float boardScale = 1f;
+    [Tooltip("Moves the whole board, in pixels (in Play mode, changes show right away)")]
+    public Vector2 boardOffset;
     public Color cellColor = new Color(0.32f, 0.33f, 0.37f);
     [Tooltip("The road not traveled yet")]
     public Color roadColor = new Color(0.62f, 0.64f, 0.70f);
@@ -44,6 +48,14 @@ public class PartBoardMap : PartMapView
     [Tooltip("How far outside the board the start and the ring sit, in squares (1 = a whole square out, 0.5 = half)")]
     [Range(0f, 1.5f)] public float outsideDistance = 1f;
     [Tooltip("The dotted lines from the start into the board and from the board out to the ring, like a level's")]
+    [Header("Part names and stars (in Play mode, changes show right away)")]
+    [Range(0.05f, 0.4f)] public float nameSize = 0.17f;   // as a share of a square
+    [Range(0.05f, 0.4f)] public float starsSize = 0.13f;
+    public Color nameColor = Color.white;
+    public Color starsColor = Color.white;
+    [Tooltip("How far locked parts' texts fade toward the background (0 = gone, 1 = like open ones)")]
+    [Range(0f, 1f)] public float lockedTextAlpha = 0.55f;
+
     public bool showDots = true;
     [Range(0.02f, 0.3f)] public float dotSize = 0.08f;   // as a share of a square
     [Range(0.02f, 0.3f)] public float dotGap = 0.06f;    // between dots, as a share of a square
@@ -81,6 +93,7 @@ public class PartBoardMap : PartMapView
         squares.Clear();
         root = new GameObject("Board", typeof(RectTransform)).GetComponent<RectTransform>();
         root.SetParent(transform, false);
+        ApplyScale();
 
         int count = Mathf.Min(order.Length, owners.Length);
         for (int i = 0; i < count; i++)
@@ -149,8 +162,8 @@ public class PartBoardMap : PartMapView
         if (s.main)
         {
             // with a road the texts keep clear of its middle; without one they sit in the middle
-            s.name = showRoads ? MakeText("Name", s.rect, title, 0.62f, 1f, 0.17f) : MakeText("Name", s.rect, title, 0.48f, 0.85f, 0.17f);
-            s.stars = showRoads ? MakeText("Stars", s.rect, "", 0f, 0.36f, 0.13f) : MakeText("Stars", s.rect, "", 0.15f, 0.45f, 0.13f);
+            s.name = showRoads ? MakeText("Name", s.rect, title, 0.62f, 1f, nameSize) : MakeText("Name", s.rect, title, 0.48f, 0.85f, nameSize);
+            s.stars = showRoads ? MakeText("Stars", s.rect, "", 0f, 0.36f, starsSize) : MakeText("Stars", s.rect, "", 0.15f, 0.45f, starsSize);
         }
         return s;
     }
@@ -180,8 +193,8 @@ public class PartBoardMap : PartMapView
             if (s.part != part) continue;
             s.open = open;
             s.bg.color = SquareColor(open);
-            if (s.name != null) s.name.color = TextColor(open);
-            if (s.stars != null) s.stars.color = TextColor(open);
+            if (s.name != null) s.name.color = TextColor(nameColor, open);
+            if (s.stars != null) s.stars.color = TextColor(starsColor, open);
             if (!s.main) continue;
             s.button.interactable = open;
             s.stars.text = open ? starsText.Replace("{got}", got.ToString()).Replace("{max}", max.ToString()) : lockedText;
@@ -315,6 +328,12 @@ public class PartBoardMap : PartMapView
     void OnValidate()
     {
         if (!Application.isPlaying || squares.Count == 0) return;
+        ApplyScale();
+        foreach (var s in squares)
+        {
+            if (s.name != null) { s.name.fontSize = cellSize * nameSize; s.name.color = TextColor(nameColor, s.open); }
+            if (s.stars != null) { s.stars.fontSize = cellSize * starsSize; s.stars.color = TextColor(starsColor, s.open); }
+        }
         if (ringView != null) { ringView.Setup(ballColor, cellSize * ringSize); ringView.hole.color = ringHoleColor; ((RectTransform)ringView.transform).anchoredPosition = RingPos(); ringView.SetDelivered(target == squares.Count); }
         if (ball != null && walking == null) { ball.Setup(ballColor, cellSize * ballSize); PlaceBall(ballAt); }
         if (root != null) DrawDots();
@@ -334,7 +353,21 @@ public class PartBoardMap : PartMapView
 
     // a locked square: its color mixed toward the background, solid
     Color SquareColor(bool open) { var c = open ? cellColor : Color.Lerp(UIPalette.Current.background, cellColor, lockedAlpha); c.a = 1f; return c; }
-    Color TextColor(bool open) { var c = textTemplate != null ? textTemplate.color : Color.white; return open ? c : Color.Lerp(UIPalette.Current.background, c, 0.55f); }
+    Color TextColor(Color c, bool open) => open ? c : Color.Lerp(UIPalette.Current.background, c, lockedTextAlpha);
+
+    // the whole board scaled around its middle, and moved
+    void ApplyScale()
+    {
+        if (root == null) return;
+        root.localScale = Vector3.one * boardScale;
+        root.anchoredPosition = new Vector2(0f, boardY) * (1f - boardScale) + boardOffset;
+    }
+
+    // new part names (the Part Text format changed)
+    public override void Rename(IList<string> names)
+    {
+        foreach (var s in squares) if (s.name != null && s.part < names.Count) s.name.text = names[s.part];
+    }
 
     static Image MakeImage(string name, Transform parent, Color color)
     {

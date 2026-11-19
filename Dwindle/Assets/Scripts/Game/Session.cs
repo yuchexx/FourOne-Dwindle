@@ -115,7 +115,7 @@ public static class Session
     }
 
     // the level list's version: change it when levels are reordered, so old stars don't land on other levels
-    const string LevelOrder = "plan-130";
+    const string LevelOrder = "plan-137";
 
     // a new level order: stars, purple, tries and the last level opened go; settings and the player id stay
     static void ForgetLevels()

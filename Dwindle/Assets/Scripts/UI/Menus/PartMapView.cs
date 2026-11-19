@@ -56,4 +56,7 @@ public class PartMapView : MonoBehaviour
 
     // Reset progress: forget anything saved about where the player was
     public virtual void Forget() { }
+
+    // new part names (the Part Text format changed in the Inspector)
+    public virtual void Rename(IList<string> names) { }
 }

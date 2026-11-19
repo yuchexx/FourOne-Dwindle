@@ -19102,6 +19102,8 @@ MonoBehaviour:
   cellSize: 170
   cellGap: 8
   boardY: -40
+  boardScale: 1.15
+  boardOffset: {x: 0, y: 0}
   cellColor: {r: 0.32, g: 0.33, b: 0.37, a: 1}
   roadColor: {r: 0.62, g: 0.64, b: 0.7, a: 1}
   traveledColor: {r: 0.49, g: 0.51, b: 0.97, a: 1}
@@ -19117,6 +19119,11 @@ MonoBehaviour:
   ballSize: 0.5
   ringSize: 0.6
   outsideDistance: 0.9
+  nameSize: 0.17
+  starsSize: 0.13
+  nameColor: {r: 1, g: 1, b: 1, a: 1}
+  starsColor: {r: 1, g: 1, b: 1, a: 1}
+  lockedTextAlpha: 0.55
   showDots: 1
   dotSize: 0.08
   dotGap: 0.06
@@ -20566,6 +20573,8 @@ MonoBehaviour:
   menu: {fileID: 1454499147}
   autoPartMap: 1
   autoBoardMap: 1
+  reopenLastPart: 1
+  partText: '{n} {name}'
   autoTileSize: {x: 300, y: 130}
   autoTilesPerRow: 3
   autoFirstRowY: 160
