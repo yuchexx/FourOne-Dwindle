@@ -104,7 +104,7 @@ public static class Levels
         var l = new LevelData { title = "Level 4", targetScore = 175, bestTiles = 1, bestPlanHint = Tips.FewerTiles };
         l.group = "Corner (L)"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
-        l.tutorial = "Unused"; // for the tutorial (Tutorials.Unused.cs): no steps at the start; at the end, what the straight left unused scores
+        l.tutorial = "Unused"; // for the tutorial (Tutorials.Unused.cs): at the start, the L tile's card named; at the end, what the straight left unused scores
         l.SetBoards((1, 1));
         l.inventory = Inv(es: 1, h: 1);
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, 1, 0);
