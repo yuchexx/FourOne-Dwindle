@@ -270,7 +270,7 @@ public partial class GameManager
         TileType? TileAt(Vector2Int c) => Cells[c.x, c.y]?.tile;
         bool Blocked(Vector2Int c) => Cells[c.x, c.y] == null || Cells[c.x, c.y].obstacle;
         var waiting = objects.Where(w => !w.completed).ToList();
-        var pick = BreakRule.For(level, o.path, waiting.Select(w => (w.pos, w.heading, w.viaDoor)).ToList(), TileAt, Blocked, out int who);
+        var pick = BreakRule.For(level, o.path, waiting.Select(w => new BreakRule.Waiting(w.pos, w.heading, w.viaDoor, w.spec.dest, w.path)).ToList(), TileAt, Blocked, out int who);
         return (pick, who >= 0 ? waiting[who].spec.name : null);
     }
     // end of level and stars

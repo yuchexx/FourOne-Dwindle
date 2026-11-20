@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // which tile a delivery breaks, the same every time (the game and the Level Maker's solver both use this):
-//   1. the delivered object's path tiles still on the board; only the ones a waiting object can still reach along the
-//      tiles ahead of it, if any (a tile every waiting object has already passed is safe, so building ahead protects it)
-//   2. junctions (T, +) first, then tiles next to a door or in a board's middle, then the rest
-//   3. ties: the one a waiting object would reach soonest (once the empty squares ahead of it are filled), then the
-//      one the delivered object passed last (nearest its ring)
+//   1. the delivered object's path tiles still on the board; only the ones a waiting object could still use, if any: on a
+//      road from it to its ring (empty squares as any tile, no square twice, its passed squares closed except a + or bridge)
+//   2. must-pass first: tiles on every such road of a waiting object (closing the square leaves no way to its ring)
+//   3. then junctions (T, +), then tiles next to a door or in a board's middle, then the rest
+//   4. ties: the smallest detour (how much longer than the object's shortest road), then the fewest steps to it, then
+//      the one the delivered object passed last (nearest its ring)
 public static class BreakRule
 {
     // the tiles a waiting object could reach going forward from where it is, each with the fewest steps to it.
@@ -52,6 +53,143 @@ public static class BreakRule
         return steps;
     }
 
+    // a waiting object, for Needed: where it stands, the way it faces, just out of a door, its ring, the squares it went through
+    public struct Waiting
+    {
+        public Vector2Int pos, ring; public Dir heading; public bool viaDoor; public IList<Vector2Int> passed;
+        public Waiting(Vector2Int pos, Dir heading, bool viaDoor, Vector2Int ring, IList<Vector2Int> passed)
+        { this.pos = pos; this.heading = heading; this.viaDoor = viaDoor; this.ring = ring; this.passed = passed; }
+    }
+
+    // the candidates a waiting object could still use: each on a road from it to its ring (empty squares as any tile, no
+    // square twice, its own passed squares closed except a + or bridge). value: detour * 1000 + steps, where detour = how
+    // much longer the shortest such road through it is than the object's shortest road, steps = squares walked to reach it.
+    // its ring can't be reached at all: what it can reach now along the tiles, as before
+    public static Dictionary<Vector2Int, int> Needed(LevelData l, Waiting w, ICollection<Vector2Int> candidates,
+        Func<Vector2Int, TileType?> tileAt, Func<Vector2Int, bool> blocked)
+    {
+        var result = new Dictionary<Vector2Int, int>();
+        bool Recrossable(Vector2Int c) { var t = tileAt(c); return t != null && (Tiles.Category(t.Value) == TileCategory.Cross || t.Value == TileType.Bridge); }
+        var closed = new HashSet<Vector2Int>();
+        if (w.passed != null) foreach (var c in w.passed) if (!Recrossable(c)) closed.Add(c);
+        closed.Remove(w.pos);
+        var start = (w.pos, w.heading, w.viaDoor);
+
+        // 1. every way out from the object, shortest first (parents kept, to read each road back)
+        var parent = new Dictionary<(Vector2Int, Dir, bool), ((Vector2Int, Dir, bool) from, Vector2Int cell)>();
+        var seen = new HashSet<(Vector2Int, Dir, bool)> { start };
+        var dist = new Dictionary<(Vector2Int, Dir, bool), int> { [start] = 0 };
+        int shortest = int.MaxValue;
+        var queue = new Queue<(Vector2Int, Dir, bool)>(); queue.Enqueue(start);
+        var arrivals = new List<(Vector2Int cell, (Vector2Int, Dir, bool) from)>(); // first time each candidate is entered from each side
+        var arrivedFrom = new HashSet<(Vector2Int, Dir)>();
+        bool ringReachable = false;
+        while (queue.Count > 0)
+        {
+            var s = queue.Dequeue();
+            var (next, entry, ok) = Next(l, s, w.ring, blocked);
+            if (next == w.ring && ok) { ringReachable = true; shortest = Math.Min(shortest, dist[s] + 1); continue; }
+            if (!ok || closed.Contains(next)) continue;
+            var t = tileAt(next);
+            if (t != null && !Tiles.Has(t.Value, entry)) continue;
+            if (t != null && candidates.Contains(next) && arrivedFrom.Add((next, entry))) arrivals.Add((next, s));
+            foreach (var to in Outs(l, next, entry, t))
+                if (seen.Add(to)) { parent[to] = (s, next); dist[to] = dist[s] + 1; queue.Enqueue(to); }
+        }
+        if (!ringReachable)
+        {
+            foreach (var kv in Ahead(l, w.pos, w.heading, w.viaDoor, tileAt, blocked, false))
+                if (candidates.Contains(kv.Key)) result[kv.Key] = Tier + kv.Value;
+            return result;
+        }
+
+        // 2. for each arrival: the road to it, then is the ring still reachable without using those squares again
+        foreach (var (cell, from) in arrivals)
+        {
+            var used = new HashSet<Vector2Int>();
+            for (var s = from; !s.Equals(start); s = parent[s].from) used.Add(parent[s].cell);
+            used.Add(w.pos);
+            int steps = dist[from] + 1; // squares walked to reach it
+            var (_, entry, _) = Next(l, from, w.ring, blocked);
+            var t = tileAt(cell).Value;
+            var seen2 = new HashSet<(Vector2Int, Dir, bool)>();
+            var dist2 = new Dictionary<(Vector2Int, Dir, bool), int>();
+            var q2 = new Queue<(Vector2Int, Dir, bool)>();
+            foreach (var to in Outs(l, cell, entry, t)) if (seen2.Add(to)) { dist2[to] = 0; q2.Enqueue(to); }
+            used.Add(cell);
+            int rest = -1; // squares from this one to the ring
+            while (q2.Count > 0)
+            {
+                var s = q2.Dequeue();
+                var (next, e2, ok) = Next(l, s, w.ring, blocked);
+                if (next == w.ring && ok) { rest = dist2[s] + 1; break; }
+                if (!ok || closed.Contains(next)) continue;
+                if (used.Contains(next) && !(Recrossable(next) && Straight(s, next))) continue;
+                var t2 = tileAt(next);
+                if (t2 != null && !Tiles.Has(t2.Value, e2)) continue;
+                foreach (var to in Outs(l, next, e2, t2)) if (seen2.Add(to)) { dist2[to] = dist2[s] + 1; q2.Enqueue(to); }
+            }
+            if (rest < 0) continue;
+            int value = Tier + Math.Max(0, steps + rest - shortest) * 1000 + steps;
+            if (!result.TryGetValue(cell, out var have) || value < have) result[cell] = value;
+        }
+        // must-pass: with the square closed, the object can't reach its ring at all
+        foreach (var cell in new List<Vector2Int>(result.Keys))
+            if (!ReachesRing(l, w, closed, cell, tileAt, blocked)) result[cell] -= Tier;
+        return result;
+    }
+
+    // Needed's values: must-pass tiles below Tier, the other needed ones from Tier up (Pick reads the tier first)
+    public const int Tier = 1000000;
+
+    // whether the object can still reach its ring with `shut` closed (empty squares as any tile, its passed squares closed)
+    static bool ReachesRing(LevelData l, Waiting w, HashSet<Vector2Int> closed, Vector2Int shut, Func<Vector2Int, TileType?> TileNow, Func<Vector2Int, bool> blocked)
+    {
+        var start = (w.pos, w.heading, w.viaDoor);
+        var seen = new HashSet<(Vector2Int, Dir, bool)> { start };
+        var queue = new Queue<(Vector2Int, Dir, bool)>(); queue.Enqueue(start);
+        while (queue.Count > 0)
+        {
+            var s = queue.Dequeue();
+            var (next, entry, ok) = Next(l, s, w.ring, blocked);
+            if (next == w.ring && ok) return true;
+            if (!ok || next == shut || closed.Contains(next)) continue;
+            var t = TileNow(next);
+            if (t != null && !Tiles.Has(t.Value, entry)) continue;
+            foreach (var to in Outs(l, next, entry, t)) if (seen.Add(to)) queue.Enqueue(to);
+        }
+        return false;
+    }
+
+    // the square a state steps into and the side it enters by; ok false: off the board, blocked, or across a door edge
+    // without teleporting. the ring counts as ok
+    static (Vector2Int next, Dir entry, bool ok) Next(LevelData l, (Vector2Int p, Dir h, bool via) s, Vector2Int ring, Func<Vector2Int, bool> blocked)
+    {
+        var next = s.p + DirUtil.Offset(s.h);
+        var entry = DirUtil.Opposite(s.h);
+        if (!s.via && l.DoorOnEdge(s.p, s.h) != null) return (next, entry, false);
+        if (next == ring) return (next, entry, true);
+        if (l.BoardOf(next) < 0 || blocked(next)) return (next, entry, false);
+        return (next, entry, true);
+    }
+
+    // the states leaving a square entered from `entry`: its tile's other openings (any side for an empty square), through doors
+    static IEnumerable<(Vector2Int, Dir, bool)> Outs(LevelData l, Vector2Int cell, Dir entry, TileType? t)
+    {
+        var exits = t != null ? Tiles.Exits(t.Value, entry) : OtherSides(entry);
+        foreach (var e in exits)
+        {
+            var door = l.DoorOnEdge(cell, e);
+            if (door == null) { yield return (cell, e, false); continue; }
+            var partner = l.Partner(door);
+            foreach (var into in Into(l, partner))
+                yield return (into == partner.side ? partner.cell : partner.Neighbor, into, true);
+        }
+    }
+
+    // a + or bridge is crossed again only straight through (the state's heading carries on)
+    static bool Straight((Vector2Int p, Dir h, bool via) s, Vector2Int next) => true;
+
     static IEnumerable<Dir> OtherSides(Dir entry)
     {
         foreach (var d in DirUtil.All) if (d != entry) yield return d;
@@ -66,25 +204,21 @@ public static class BreakRule
         return r;
     }
 
-    // the tile a delivered object breaks (path: every square it went through), given the objects still waiting: where
-    // each stands, the way it faces, and whether it just came out of a door. the game and the break preview both use
-    // this. neededBy: the waiting object (its place in waiting) that still had the tile ahead of it, or -1
-    public static Vector2Int? For(LevelData l, IList<Vector2Int> path, IList<(Vector2Int pos, Dir heading, bool viaDoor)> waiting,
+    // the tile a delivered object breaks (path: every square it went through), given the objects still waiting. the game
+    // and the break preview both use this. neededBy: the waiting object (its place in waiting) that still needed the tile, or -1
+    public static Vector2Int? For(LevelData l, IList<Vector2Int> path, IList<Waiting> waiting,
         Func<Vector2Int, TileType?> tileAt, Func<Vector2Int, bool> blocked, out int neededBy,
-        Func<int, bool, Dictionary<Vector2Int, int>> ahead = null) // the break preview: Ahead for waiting[i], from its cache
+        Func<int, ICollection<Vector2Int>, Dictionary<Vector2Int, int>> needed = null) // the break preview: Needed, from its cache
     {
-        ahead ??= (i, throughEmpty) => Ahead(l, waiting[i].pos, waiting[i].heading, waiting[i].viaDoor, tileAt, blocked, throughEmpty);
-        var stillNeeded = new Dictionary<Vector2Int, int>(); // tiles a waiting object can reach now: the fewest steps
-        var soonest = new Dictionary<Vector2Int, int>();     // the same with the gaps ahead counted as filled
+        needed ??= (i, cands) => Needed(l, waiting[i], cands, tileAt, blocked);
+        var candidates = new HashSet<Vector2Int>();
+        foreach (var c in path) if (tileAt(c) != null) candidates.Add(c);
+        var stillNeeded = new Dictionary<Vector2Int, int>(); // candidates a waiting object could still use: the fewest steps
         var who = new Dictionary<Vector2Int, int>();
         for (int i = 0; i < waiting.Count; i++)
-        {
-            foreach (var kv in ahead(i, false))
+            foreach (var kv in needed(i, candidates))
                 if (!stillNeeded.TryGetValue(kv.Key, out var s) || kv.Value < s) { stillNeeded[kv.Key] = kv.Value; who[kv.Key] = i; }
-            foreach (var kv in ahead(i, true))
-                if (!soonest.TryGetValue(kv.Key, out var s) || kv.Value < s) soonest[kv.Key] = kv.Value;
-        }
-        var pick = Pick(l, path, tileAt, stillNeeded, soonest);
+        var pick = Pick(l, path, tileAt, stillNeeded, new Dictionary<Vector2Int, int>());
         neededBy = pick != null && who.TryGetValue(pick.Value, out var n) ? n : -1;
         return pick;
     }
@@ -104,16 +238,18 @@ public static class BreakRule
         foreach (var c in lastPass.Keys) if (stillNeeded.ContainsKey(c)) { anyNeeded = true; break; }
 
         Vector2Int? best = null;
-        int bestRank = int.MaxValue, bestSteps = int.MaxValue, bestPass = -1;
+        int bestTier = int.MaxValue, bestRank = int.MaxValue, bestSteps = int.MaxValue, bestPass = -1;
         foreach (var kv in lastPass)
         {
             if (anyNeeded && !stillNeeded.ContainsKey(kv.Key)) continue;
             int rank = Rank(l, kv.Key, tileAt(kv.Key).Value);
             int steps = anyNeeded ? stillNeeded[kv.Key] : soonest.TryGetValue(kv.Key, out var s) ? s : int.MaxValue;
-            bool better = rank < bestRank
+            int tier = anyNeeded ? steps / Tier : 0; // must-pass first (Needed)
+            if (anyNeeded) steps %= Tier;
+            bool better = tier < bestTier || tier == bestTier && (rank < bestRank
                 || (rank == bestRank && steps < bestSteps)
-                || (rank == bestRank && steps == bestSteps && kv.Value > bestPass);
-            if (better) { best = kv.Key; bestRank = rank; bestSteps = steps; bestPass = kv.Value; }
+                || (rank == bestRank && steps == bestSteps && kv.Value > bestPass));
+            if (better) { best = kv.Key; bestTier = tier; bestRank = rank; bestSteps = steps; bestPass = kv.Value; }
         }
         return best;
     }

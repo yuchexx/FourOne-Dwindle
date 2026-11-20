@@ -75,11 +75,20 @@ static class Tricks
     {
         var known = found.GetValue(l, _ => new Dictionary<LevelTrick, Plan>());
         lock (known) if (known.TryGetValue(t, out var kept)) return kept;
-        var solver = new Solver2(l);
+        var solver = new Solver2(l, slack.TryGetValue(l, out var s) ? s.Value : 4);
         t.forbid(solver, l);
         var best = solver.Best();
         lock (known) known[t] = best;
         return best;
+    }
+
+    // levels whose best plan needs roads longer than the usual 4 extra squares (Gen.Verified): their trick checks use them too
+    static readonly ConditionalWeakTable<LevelData, StrongBox<int>> slack = new();
+    public static void UseSlack(LevelData l, int s)
+    {
+        var known = found.GetValue(l, _ => new Dictionary<LevelTrick, Plan>());
+        lock (known) known.Clear(); // answers worked out with the shorter roads
+        slack.AddOrUpdate(l, new StrongBox<int>(s));
     }
 
     // the level can't be finished without it

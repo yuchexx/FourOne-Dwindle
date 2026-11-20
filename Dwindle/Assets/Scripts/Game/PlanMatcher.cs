@@ -185,19 +185,16 @@ public static class PlanMatcher
     {
         TileType? TileAt(Vector2Int c) => st.tiles.TryGetValue(c, out var t) ? t : (TileType?)null;
         bool IsObstacle(Vector2Int c) => l.obstacles.Contains(c);
-        var stillNeeded = new Dictionary<Vector2Int, int>();
-        var soonest = new Dictionary<Vector2Int, int>();
         var done = new HashSet<string>(st.deliveries.SelectMany(d => d.objects));
+        var waiting = new List<BreakRule.Waiting>();
         foreach (var w in walker.OnTheWay.Where(x => !done.Contains(x) && !arrivedNow.Contains(x)))
         {
             var (pos, heading, via) = Where(l, st, walker, w);
-            foreach (var kv in BreakRule.Ahead(l, pos, heading, via, TileAt, IsObstacle, false))
-                if (!stillNeeded.TryGetValue(kv.Key, out var s) || kv.Value < s) stillNeeded[kv.Key] = kv.Value;
-            foreach (var kv in BreakRule.Ahead(l, pos, heading, via, TileAt, IsObstacle, true))
-                if (!soonest.TryGetValue(kv.Key, out var s) || kv.Value < s) soonest[kv.Key] = kv.Value;
+            var gone = st.passed.TryGetValue(w, out var g) ? g : new List<Vector2Int>();
+            waiting.Add(new BreakRule.Waiting(pos, heading, via, l.objects.First(o => o.name == w).dest, gone));
         }
         var path = st.passed.TryGetValue(delivered, out var p) ? p : new List<Vector2Int>();
-        return BreakRule.Pick(l, path, TileAt, stillNeeded, soonest);
+        return BreakRule.For(l, path, waiting, TileAt, IsObstacle, out _);
     }
 
     // where an object waits on its road: its square and the way it faces (just out of a door's partner after a door)

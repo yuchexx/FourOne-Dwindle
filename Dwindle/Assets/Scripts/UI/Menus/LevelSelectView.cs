@@ -21,8 +21,6 @@ public class LevelSelectView : MonoBehaviour
     public bool autoPartMap = true;
     [Tooltip("The made-in-code part map as a small board with a road, a walking ball and a ring (off: plain tiles)")]
     public bool autoBoardMap = true;
-    [Tooltip("Levels opens on the part last played (its level list); Back goes to the part map. Off: always the map")]
-    public bool reopenLastPart = true;
     [Tooltip("A part's name on the map and above its list: {n} its number (1, 2, 3...), {name} its name")]
     public string partText = "{n}. {name}";
     [Tooltip("The made-in-code part map: tile size, tiles per row, the first row's height")]
@@ -312,7 +310,7 @@ public class LevelSelectView : MonoBehaviour
     }
     string mapTitle; // partTitle's own text, shown on the part map
 
-    // a part's list, on the last opened level's page when it is in this part
+    // a part's list, on the last opened level's page when it is in this part (else its first page)
     public void ShowPart(int p)
     {
         if (parts.Count == 0) return;
@@ -324,7 +322,7 @@ public class LevelSelectView : MonoBehaviour
         page = 0;
         Layout();
         Refresh();
-        int level = Session.lastOpened >= 0 ? Session.lastOpened : Session.StartLevel(cards.Count);
+        int level = Session.lastOpened;
         ShowPage(level >= 0 && level < pageOf.Count && pageOf[level] >= 0 ? pageOf[level] : 0);
     }
 
@@ -370,17 +368,10 @@ public class LevelSelectView : MonoBehaviour
         h.alignment = TextAlignmentOptions.Left;
     }
 
-    // the Levels button: open on the last opened level's page (before any, the level to play next)
+    // the Levels button: the part map (a plain list: on the last opened level's page, before any the level to play next)
     public void Open()
     {
-        if (ByPart)
-        {
-            // back in the part last played (its level list, on that level's page); before any level: the part map
-            int last = Session.lastOpened;
-            if (reopenLastPart && last >= 0 && last < partOf.Count) { ShowMap(); ShowPart(parts.IndexOf(partOf[last])); }
-            else ShowMap();
-            return;
-        }
+        if (ByPart) { ShowMap(); return; }
         Refresh();
         int level = Session.lastOpened >= 0 ? Session.lastOpened : Session.StartLevel(cards.Count);
         ShowPage(level >= 0 && level < pageOf.Count ? pageOf[level] : 0);
