@@ -6,3 +6,14 @@ Toggle1 and Toggle 2: MECHSwtch_Switch_power_cord_on_off.wav by DBS_Sounds -- ht
 Place1: WoodBlock 3 by Geoff-Bremner-Audio -- https://freesound.org/s/870350/ -- License: Attribution NonCommercial 4.0
 TakeBack1: mug_wood1.wav by robbeman -- https://freesound.org/s/495645/ -- License: Creative Commons 0
 TileBreak: WoodBlock 1 by Geoff-Bremner-Audio -- https://freesound.org/s/843755/ -- License: Attribution NonCommercial 4.0
+Pick1: Hover, synth (Clay and Ceramic UI Sounds) by packsmithy -- https://freesound.org/s/879251/ -- License: Attribution 4.0
+Deliver1: Message Sent Swoosh by Qvantor -- https://freesound.org/s/879792/ -- License: Creative Commons 0
+Deliver2: Message Received Chime by Qvantor -- https://freesound.org/s/879791/ -- License: Creative Commons 0
+Deliver3: New Email Chime by Qvantor -- https://freesound.org/s/879793/ -- License: Creative Commons 0
+Star1: Notification Ding by Qvantor -- https://freesound.org/s/879783/ -- License: Creative Commons 0
+PlusEarned: Shine Chime by Qvantor -- https://freesound.org/s/879797/ -- License: Creative Commons 0
+LevelComplete: Confirm, synth (Timer & Sizzle Kitchen App UI Sounds) by packsmithy -- https://freesound.org/s/879930/ -- License: Attribution 4.0
+Hint1: Sparkling Quest Notifications by mikiko850 -- https://freesound.org/s/875761/ -- License: Attribution 4.0
+Stuck1: Warm jingle, synth (Cozy Winter Fireplace Sounds) by packsmithy -- https://freesound.org/s/876618/ -- License: Attribution 4.0
+Door1: Laser-Zap.wav by copyc4t -- https://freesound.org/s/480899/ -- License: Attribution 4.0
+Door2: Whoosh Laser Zap by Speedenza -- https://freesound.org/s/168042/ -- License: Attribution NonCommercial 4.0

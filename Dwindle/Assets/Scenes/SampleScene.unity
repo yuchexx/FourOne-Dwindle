@@ -1735,7 +1735,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73c2f991f8f32704e93d76183e97cef1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RestartButtonLayout
-  levelTitle: {fileID: 954906185}
   gap: 20
 --- !u!1 &132457030
 GameObject:
@@ -26678,27 +26677,34 @@ MonoBehaviour:
   musicVolume: 0.6
   crossfadeSeconds: 1
   click:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: c5240163764089e4281d0e456afc6faf, type: 3}
     volume: 0.6
     pitchVariation: 0
   toggle:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: e6f74ec36bf961047bb140ac93123681, type: 3}
+    - {fileID: 8300000, guid: 0554ab2489367a148a5ab657695d4a55, type: 3}
     volume: 0.6
     pitchVariation: 0
   pickTile:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 492e76eccb7c49446b9331454b8a1193, type: 3}
     volume: 0.5
     pitchVariation: 0
   placeTile:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 1bfa97ac2cdde0f4fbda27fa002d62e7, type: 3}
     volume: 0.7
     pitchVariation: 0.05
   takeBack:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 4caee4bd0fcb59a49ac8f94adc3579d9, type: 3}
     volume: 0.5
     pitchVariation: 0
   nope:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 3f46b8a43a3a42643a2bb9d69a3c524f, type: 3}
     volume: 0.5
     pitchVariation: 0
   step:
@@ -26714,36 +26720,46 @@ MonoBehaviour:
     volume: 0.6
     pitchVariation: 0
   door:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 7083732142ba5a642a1a215c79ae282f, type: 3}
     volume: 0.6
     pitchVariation: 0
   delivered:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 1c060ada9d38be04caec3faa7d75a326, type: 3}
+    - {fileID: 8300000, guid: caccfa4e6138a334e86cf3d168646e8c, type: 3}
+    - {fileID: 8300000, guid: 57d8c870ad98fed40bc9e22e6f187644, type: 3}
     volume: 0.8
     pitchVariation: 0
   tileBreak:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 109129555c28fb5468b44e5ae5975a2d, type: 3}
     volume: 0.7
     pitchVariation: 0.05
   plusEarned:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: a0b330d7f367c3d44a5375ab7bb7f8b0, type: 3}
     volume: 0.7
     pitchVariation: 0
   levelComplete:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 0f83634dad70def46bc748ff8063b0a9, type: 3}
     volume: 0.8
     pitchVariation: 0
   star:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 0dfd91588faf2d6459857f51734aff7f, type: 3}
     volume: 0.7
     pitchVariation: 0
   starGap: 0.18
   stuckNotice:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: 80967bcc54bf50d458087aa67debf72e, type: 3}
     volume: 0.6
     pitchVariation: 0
   hint:
-    clips: []
+    clips:
+    - {fileID: 8300000, guid: e88e3d40dd1089f4da692b66ea229ce8, type: 3}
     volume: 0.7
     pitchVariation: 0
   game: {fileID: 0}
