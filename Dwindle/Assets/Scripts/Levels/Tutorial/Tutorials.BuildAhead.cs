@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 
 // the "BuildAhead" tutorial (on the level with l.tutorial = "BuildAhead"): one step saying not to always aim for
-// everyone at once, then the player plays the level on their own (no coach, no recap)
+// everyone at once, then the player plays the level on their own (no coach, no level-end steps)
 public static partial class Tutorials
 {
     static List<TutorialStep> BuildAhead(GameManager game) => new()

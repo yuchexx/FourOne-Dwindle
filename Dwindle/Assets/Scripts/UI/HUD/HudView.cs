@@ -433,10 +433,10 @@ public class HudView : MonoBehaviour
         ShowScoreLog();
     }
 
-    // a copy, for an undo snapshot (and for the tutorial's score recap, which shows it again row by row)
+    // a copy, for an undo snapshot (and for the tutorial's level-end steps, which frame its rows)
     public List<ScoreEntry> GetScoreLog() => new List<ScoreEntry>(scoreLog);
 
-    // for the tutorial (its score recap): the score's history held open, as if pinned, or let go (closed). the
+    // for the tutorial (its level-end steps): the score's history held open, as if pinned, or let go (closed). the
     // HoverReveal that opens it is found once, by its target
     HoverReveal scoreReveal;
     public void HoldScoreHistory(bool hold)
@@ -459,6 +459,33 @@ public class HudView : MonoBehaviour
             if (index-- == 0) return (RectTransform)child;
         }
         return null;
+    }
+
+    // for the tutorial (Target.Settings frames it; TutorialStep.onShow holds its menu open): the Settings button in the
+    // "..." menu, found once as the button inside a HoverReveal's target whose click opens Settings (MenuView.ShowSettings),
+    // so the title screen's Settings button (in no HoverReveal) isn't it. null when there's none
+    Button moreSettingsButton;
+    HoverReveal moreReveal;
+    public RectTransform SettingsButton()
+    {
+        if (moreSettingsButton == null)
+            foreach (var r in FindObjectsByType<HoverReveal>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (r.target == null) continue;
+                foreach (var b in r.target.GetComponentsInChildren<Button>(true))
+                    for (int i = 0; i < b.onClick.GetPersistentEventCount(); i++)
+                        if (b.onClick.GetPersistentTarget(i) is MenuView && b.onClick.GetPersistentMethodName(i) == nameof(MenuView.ShowSettings))
+                        { moreSettingsButton = b; moreReveal = r; break; }
+                if (moreSettingsButton != null) break;
+            }
+        return moreSettingsButton != null ? (RectTransform)moreSettingsButton.transform : null;
+    }
+
+    // for the tutorial: the "..." menu (the one SettingsButton is in) held open, as if pinned, or let go (closed)
+    public void HoldMoreMenu(bool hold)
+    {
+        SettingsButton(); // finds the menu
+        if (moreReveal != null) moreReveal.Hold(hold);
     }
 
     public void SetScoreLog(List<ScoreEntry> entries)

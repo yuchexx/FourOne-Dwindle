@@ -140,6 +140,7 @@ public partial class GameManager
         else
         {
             var partner = level.Partner(door);
+            onDoorQuestion?.Invoke(o.spec.name, door.label); // for the tutorial (GameManager.Tutorial.cs): a step over these arrows
             yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), ways, HintArrow(o, door));
         }
         if (!redoingChoice) ClearRedo();

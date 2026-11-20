@@ -40,6 +40,7 @@ public static class Levels
             l.label = l.teach ? ((char)('A' + teach++)).ToString() : (++practice).ToString();
             l.title = "Level " + l.label; // lessons too: "Level A", like their cards
             if (l.teach && string.IsNullOrEmpty(l.group)) l.group = l.title; // a row heading until sections get names
+            if (l.teach) l.starsToPass = 3; // a lesson only unlocks the next level with all 3 stars (its tutorial says so)
         }
     }
 
@@ -53,6 +54,7 @@ public static class Levels
         l.section = "Tiles"; // a part on the Levels page's map
         l.group = "Straight (I)"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "Intro"; // for the tutorial (Tutorials.Intro.cs): the welcome, the object, its ring, the supply bar, the 3 stars, the removed tile and the score
         l.SetBoards((1, 1));
         l.inventory = Inv(h: 1);
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 1, 0);
@@ -60,16 +62,16 @@ public static class Levels
         return l;
     }
 
-    // Straights only: a two-tile road up to Red's ring. The sideways straight is a decoy.
+    // Straights only: a two-tile road up to Red's ring.
     // Solution:
     //   1. (0,1) I-v
     //   2. (0,0) I-v -> Red arrives
-    // Score 175 with 2 tiles (target).
+    // Score 100 with 2 tiles (target).
     static LevelData Level2()
     {
-        var l = new LevelData { title = "Level 2", targetScore = 175, bestTiles = 2, bestPlanHint = Tips.FewerTiles };
+        var l = new LevelData { title = "Level 2", targetScore = 100, bestTiles = 2, bestPlanHint = Tips.FewerTiles };
         l.SetBoards((2, 2));
-        l.inventory = Inv(h: 1, v: 2);
+        l.inventory = Inv(v: 2);
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, 0, 2);
         l.solution = Solutions.Level2();
         return l;
@@ -102,6 +104,7 @@ public static class Levels
         var l = new LevelData { title = "Level 4", targetScore = 175, bestTiles = 1, bestPlanHint = Tips.FewerTiles };
         l.group = "Corner (L)"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "Unused"; // for the tutorial (Tutorials.Unused.cs): no steps at the start; at the end, what the straight left unused scores
         l.SetBoards((1, 1));
         l.inventory = Inv(es: 1, h: 1);
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, 1, 0);
@@ -274,6 +277,7 @@ public static class Levels
         l.section = "Junctions"; // a part on the Levels page's map
         l.group = "The +"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "Junction"; // for the tutorial (Tutorials.Junction.cs): choosing a way at the +, a wrong way undone
         l.SetBoards((1, 1));
         l.inventory = Inv(cross: 1);
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 0, 1);
@@ -346,6 +350,7 @@ public static class Levels
             bestPlanHint = Tips.Routing };
         l.group = "The T"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "TJunction"; // for the tutorial (Tutorials.Junction.cs): the T's card, then a wrong way at it undone
         l.SetBoards((1, 1));
         l.inventory = Inv(tESW: 1);
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, 1, 0);
@@ -495,7 +500,7 @@ public static class Levels
         l.section = "Combos"; // a part on the Levels page's map
         l.group = "Combo on a +"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
-        l.starsToPass = 3; // stars that unlock the next level
+        l.tutorial = "Combo"; // for the tutorial (Tutorials.Combo.cs): the + placed last, slips undone or reset, then the combo's score
         l.SetBoards((2, 2));
         l.inventory = Inv(cross: 1, h: 1, v: 1);
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 2, 0);
@@ -577,6 +582,7 @@ public static class Levels
             finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.FewerTiles };
         l.group = "Combo on a T"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "TCombo"; // for the tutorial (Tutorials.Combo.cs): one step asking for a combo with T tiles only
         l.SetBoards((2, 2));
         l.inventory = Inv(tESW: 2);
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, 1, -1);
@@ -678,6 +684,7 @@ public static class Levels
             finishHint = Tips.Bridge, bestPlanHint = Tips.TogetherForScore };
         l.group = "Combo on a bridge"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "BridgeCombo"; // for the tutorial (Tutorials.Combo.cs): one step asking for a combo with the bridge
         l.SetBoards((2, 2));
         l.inventory = Inv(bridge: 1, h: 1, v: 1);
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 2, 0);
@@ -775,6 +782,7 @@ public static class Levels
         l.section = "Planning"; // a part on the Levels page's map
         l.group = "Deliver all"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "DeliverAll"; // for the tutorial (Tutorials.DeliverAll.cs): one step saying to deliver all three at one junction
         l.SetBoards((2, 2));
         l.inventory = Inv(cross: 2, h: 2);
         Obj(l, "Red", Red, 0, -1, 1, Dir.E, 0, 2, 0);
@@ -999,7 +1007,6 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 49", targetScore = 750, bestTiles = 7,
             finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.Pairs };
-        l.tutorial = "Pairs"; // for the tutorial (Tutorials.Pairs.cs): one step saying to deliver all four at one junction
         l.SetBoards((3, 3));
         l.inventory = Inv(wn: 1, h: 1, tNES: 1, tESW: 2, tSWN: 2, tWNE: 1);
         Obj(l, "Red", Red, 0, 3, 1, Dir.W, 0, 2, -1);
@@ -1047,6 +1054,7 @@ public static class Levels
             finishHint = Tips.OneRoute, bestPlanHint = Tips.TogetherForScore };
         l.group = "Build ahead"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "BuildAhead"; // for the tutorial (Tutorials.BuildAhead.cs): one step saying not to always deliver everyone at once
         l.SetBoards((2, 2));
         l.inventory = Inv(cross: 2, wn: 1, v: 2);
         Obj(l, "Red", Red, 0, 1, 2, Dir.S, 0, 2, 1);
@@ -1312,7 +1320,7 @@ public static class Levels
         return l;
     }
 
-    // The first level, with the Basics tutorial (Tutorials.Basics). Red goes straight up and Blue straight left, and
+    // With the UseEarned tutorial (Tutorials.UseEarned.cs). Red goes straight up and Blue straight left, and
     // both need the top-left square: a + there, placed last, delivers them together. Green then turns right on the +
     // that earns, in the bottom-right square. the + given goes to Red and Blue: given to Green, they'd block each other.
     // the two L's (the supply's 5th and 6th slots, open to the west) are spare: no object can use them.
@@ -1325,8 +1333,7 @@ public static class Levels
         l.section = "Earned +"; // a part on the Levels page's map
         l.group = "Earned + from a +"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
-        l.starsToPass = 3; // stars that unlock the next level
-        l.tutorial = "Basics";
+        l.tutorial = "UseEarned"; // for the tutorial (Tutorials.UseEarned.cs): Red and Blue together first, then Green on the + it earns
         l.SetBoards((2, 2));
         l.inventory = Inv(cross: 1, sw: 1, wn: 1, h: 1, v: 1);
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, 0, 2);    // ring above the top-left square
@@ -1414,6 +1421,7 @@ public static class Levels
             finishHint = Tips.EarnedPlus, bestPlanHint = Tips.FewerTiles };
         l.group = "Earned + from a T"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "UseEarnedT"; // for the tutorial (Tutorials.UseEarned.cs): one step asking for the + to be earned with T tiles
         l.SetBoards((2, 2));
         l.inventory = Inv(tESW: 2);
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, 1, -1);
@@ -1518,6 +1526,7 @@ public static class Levels
             finishHint = Tips.Bridge, bestPlanHint = Tips.FewerTiles };
         l.group = "Earned + from a bridge"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "UseEarnedBridge"; // for the tutorial (Tutorials.UseEarned.cs): one step asking for the + to be earned with the bridge
         l.SetBoards((2, 2));
         l.inventory = Inv(bridge: 1, h: 1, v: 1);
         Obj(l, "Red", Red, 0, -1, 0, Dir.E, 0, 2, 0);
@@ -1772,13 +1781,13 @@ public static class Levels
 
     // hand-made: N2
     // Solution:
-    //   1. b1(1,0) I-h
-    //   2. b2(0,0) I-h
-    //   3. b2(1,0) I-h
-    //   4. b1(0,0) I-h -> Red goes through door A; Red arrives
-    //   5. b1(1,1) I-h
-    //   6. b2(0,1) L N-E
-    //   7. b1(0,1) I-h -> Blue goes through door B, comes out facing W; Blue arrives
+    //   1. b1(1,1) I-h
+    //   2. b2(0,1) I-h
+    //   3. b2(1,1) I-h
+    //   4. b1(0,1) I-h -> Red goes through door A; Red arrives
+    //   5. b1(1,0) I-h
+    //   6. b2(0,0) L E-S
+    //   7. b1(0,0) I-h -> Blue goes through door B, comes out facing W; Blue arrives
     // Score 300 with 7 tiles (target).
     static LevelData Level84()
     {
@@ -1789,13 +1798,13 @@ public static class Levels
         l.teach = true; // a lettered lesson
         l.tutorial = "Doors";
         l.SetBoards((2, 2), (2, 2));
-        l.inventory = Inv(ne: 1, h: 6);
-        Door(l, "A", 0, 1, 0, Dir.E);
-        Door(l, "A", 1, 0, 0, Dir.W);
-        Door(l, "B", 0, 1, 1, Dir.E);
-        Door(l, "B", 1, 0, 1, Dir.E);
-        Obj(l, "Red", Red, 0, -1, 0, Dir.E, 1, 2, 0);
-        Obj(l, "Blue", Blue, 0, -1, 1, Dir.E, 1, 0, 2);
+        l.inventory = Inv(es: 1, h: 6);
+        Door(l, "A", 0, 1, 1, Dir.E);
+        Door(l, "A", 1, 0, 1, Dir.W);
+        Door(l, "B", 0, 1, 0, Dir.E);
+        Door(l, "B", 1, 0, 0, Dir.E);
+        Obj(l, "Red", Red, 0, -1, 1, Dir.E, 1, 2, 1);
+        Obj(l, "Blue", Blue, 0, -1, 0, Dir.E, 1, 0, -1);
         l.solution = Solutions.Level84();
         return l;
     }
@@ -2019,6 +2028,7 @@ public static class Levels
             finishHint = Tips.DetourToFinish, bestPlanHint = Tips.FewerTiles };
         l.group = "Detour"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
+        l.tutorial = "Detour"; // for the tutorial (Tutorials.Detour.cs): one step asking for a detour through the doors
         l.SetBoards((2, 2), (2, 1));
         l.inventory = Inv(ne: 1, sw: 1, h: 2);
         Door(l, "A", 0, 0, 0, Dir.S);
@@ -2682,7 +2692,6 @@ public static class Levels
     {
         var l = new LevelData { title = "Level 121", targetScore = 550, bestTiles = 5,
             finishHint = Tips.TogetherToFinish, bestPlanHint = Tips.OneRoute };
-        l.tutorial = "BuildAhead"; // for the tutorial (Tutorials.BuildAhead.cs): one step saying not to always deliver everyone at once
         l.SetBoards((3, 3));
         l.inventory = Inv(sw: 2, tESW: 1, tSWN: 2, tWNE: 1);
         Obj(l, "Red", Red, 0, 2, -1, Dir.N, 0, -1, 2);

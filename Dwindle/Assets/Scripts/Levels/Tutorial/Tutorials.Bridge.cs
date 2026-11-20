@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 
 // the "Bridge" tutorial (on the level with l.tutorial = "Bridge"): one step on the bridge, then the player plays the
-// level on their own (no coach, no recap)
+// level on their own (no coach, no level-end steps)
 public static partial class Tutorials
 {
     static List<TutorialStep> Bridge(GameManager game) => new()

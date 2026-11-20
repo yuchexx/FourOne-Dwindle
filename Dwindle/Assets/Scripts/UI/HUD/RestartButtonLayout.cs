@@ -1,40 +1,41 @@
 using TMPro;
 using UnityEngine;
 
-// Follow the visible title, after the existing Tutorial button has been positioned.
+// Keeps the Restart button just left of the score's visible text (top right), its middle level with the level title's
+// (where the Tutorial button's middle is too). The score's width changes with its digits, so this follows it every frame.
 [DefaultExecutionOrder(100)]
 [RequireComponent(typeof(RectTransform))]
 public class RestartButtonLayout : MonoBehaviour
 {
-    public TMP_Text levelTitle;
     [Min(0f)] public float gap = 20f;
 
-    readonly Vector3[] corners = new Vector3[4];
+    TMP_Text score, title; // HudView's score and level title texts, found once
 
     void LateUpdate()
     {
-        if (levelTitle == null || !levelTitle.gameObject.activeInHierarchy) return;
+        if (score == null)
+        {
+            var hud = FindAnyObjectByType<HudView>();
+            if (hud == null || hud.scoreText == null || hud.levelTitleText == null) return;
+            score = hud.scoreText;
+            title = hud.levelTitleText;
+        }
+        if (!score.gameObject.activeInHierarchy) return;
 
         var button = (RectTransform)transform;
         var parent = button.parent;
-        var title = levelTitle.rectTransform;
-        levelTitle.ForceMeshUpdate();
+        var text = score.rectTransform;
+        score.ForceMeshUpdate();
 
-        var edge = parent.InverseTransformPoint(title.TransformPoint(
-            new Vector3(levelTitle.textBounds.max.x, title.rect.center.y, 0f)));
-
-        // GameManager creates this button at runtime on tutorial levels.
-        var tutorial = title.parent.Find("TutorialButton") as RectTransform;
-        if (tutorial != null && tutorial.gameObject.activeInHierarchy)
-        {
-            tutorial.GetWorldCorners(corners);
-            edge.x = Mathf.Max(edge.x, parent.InverseTransformPoint(corners[2]).x);
-        }
+        // the left end of the score's text, and the middle of the title's box (the Tutorial button's), in the button's parent
+        float left = score.textBounds.size.x > 0 ? score.textBounds.min.x : text.rect.xMin; // no text yet: its box
+        var edge = parent.InverseTransformPoint(text.TransformPoint(new Vector3(left, 0f, 0f)));
+        edge.y = parent.InverseTransformPoint(title.rectTransform.TransformPoint(title.rectTransform.rect.center)).y;
 
         var size = button.rect.size;
         var scale = button.localScale;
         button.localPosition = new Vector3(
-            edge.x + gap + button.pivot.x * size.x * scale.x,
+            edge.x - gap - (1f - button.pivot.x) * size.x * scale.x,
             edge.y + (button.pivot.y - 0.5f) * size.y * scale.y,
             button.localPosition.z);
     }

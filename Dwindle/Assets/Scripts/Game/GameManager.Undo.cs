@@ -51,6 +51,10 @@ public partial class GameManager
     // for the tutorial (a coach undoing a wrong move): always the whole placement
     public void UndoPlacement() => UndoBy(false);
 
+    // for the tutorial (a coach undoing a wrong way, TutorialCoach.undoToChoice): back to the last arrow question,
+    // which shows again (the tile stays), whatever undo by step is set to
+    public void UndoChoiceStep() => UndoBy(true);
+
     void UndoBy(bool byStep)
     {
         if (levelOver || !history.CanUndo || redoingChoice) return;

@@ -64,7 +64,7 @@ public class HoverReveal : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (hideAt >= 0f && Time.unscaledTime >= hideAt) Hide();
     }
 
-    // for the tutorial (its score recap, through HudView.HoldScoreHistory): Target stays open whatever the mouse
+    // for the tutorial (its level-end steps, through HudView.HoldScoreHistory; the "..." menu, through HudView.HoldMoreMenu): Target stays open whatever the mouse
     // does, as if pinned, until let go (which closes it)
     public void Hold(bool hold)
     {
