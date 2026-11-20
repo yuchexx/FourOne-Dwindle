@@ -46,7 +46,6 @@ public class TutorialController : MonoBehaviour
     // how far over what scored them the points float: clear of the frame over a ring or a slot
     const float PopAbove = 14f;
 
-    public bool Running => running != null;
 
     // starts the level's tutorial, unless it has none or it was already finished since the game started.
     // the steps get the game, so they can check it or set it up (e.g. GameManager.ShowRoadLine).
@@ -64,16 +63,20 @@ public class TutorialController : MonoBehaviour
         if (recapOwed.Contains(levelIndex)) WatchForRecap(game, levelIndex); // a restart doesn't lose it
         if (finished.Contains(levelIndex)) return;
         var steps = Tutorials.For(Levels.All[levelIndex], game); // the level names its tutorial (LevelData.tutorial)
-        if (steps == null || steps.Count == 0) return;
+        if (steps == null) return;
         if (canvas == null) { Debug.LogError("TutorialController needs its Canvas set."); return; }
-        if (overlay == null) overlay = TutorialOverlay.Create(canvas, style);
+        if (overlay == null) overlay = TutorialOverlay.Create(canvas, style); // made even with no steps: a coach's or level-end steps need it
+        if (steps.Count == 0) { AfterSteps(levelIndex, game); return; } // no steps at the start: what comes after them starts now
         this.game = game;
-        running = StartCoroutine(Run(steps, g =>
-        {
-            finished.Add(levelIndex);
-            // its coach takes over; with none, its recap (if any) waits for the level's end from now
-            if (!StartCoach(levelIndex, g) && Tutorials.RecapFor(Levels.All[levelIndex]) != null) WatchForRecap(g, levelIndex);
-        }));
+        running = StartCoroutine(Run(steps, g => AfterSteps(levelIndex, g)));
+    }
+
+    // the tutorial's steps ended (or it has none at the start): it counts as seen, and its coach takes over; with none,
+    // its level-end steps (if any) wait for the level's end from now
+    void AfterSteps(int levelIndex, GameManager g)
+    {
+        finished.Add(levelIndex);
+        if (!StartCoach(levelIndex, g) && Tutorials.HasEnd(Levels.All[levelIndex])) WatchForRecap(g, levelIndex);
     }
 
     // the Tutorial button (GameManager.ReplayTutorial): the level's tutorial counts as never seen, and its coach and
@@ -122,6 +125,7 @@ public class TutorialController : MonoBehaviour
             }
             cameBack = false;
             step.onShow?.Invoke();
+            if (step.pops != null) foreach (var p in step.pops) overlay.ShowPop(p.text, PopAbove, p.near);
             bool canSkip = SkipFrom(steps, i);
             bool canBack = step.backable && i > 0;
             overlay.Show(step, canSkip, canBack);
@@ -134,6 +138,7 @@ public class TutorialController : MonoBehaviour
                 yield return null;
             }
             step.onDone?.Invoke(); // what it set up goes either way: Back shows the step before from its own onShow
+            if (step.pops != null) overlay.ClearPops();
             if (back)
             {
                 i -= 2; // the loop's i++ lands on the step before
@@ -230,9 +235,8 @@ public class TutorialController : MonoBehaviour
                 var g = coachGame;
                 g.onRemoval = null; // taught: tiles break without a word from now on
                 var after = coach.doneSteps;
-                if (Tutorials.RecapFor(Levels.All[coachLevel]) != null) WatchForRecap(g, coachLevel);
+                if (Tutorials.HasEnd(Levels.All[coachLevel])) WatchForRecap(g, coachLevel);
                 overlay.HideNotes();
-                coach.onDone?.Invoke();
                 if (after != null && after.Count > 0) // its steps, shown as the tutorial's are
                 {
                     game = g;
@@ -271,10 +275,15 @@ public class TutorialController : MonoBehaviour
         g.HoldLevelEnd(false);
         // the coach's first undo: its steps in the middle of the screen in place of the note, once the placement is
         // undone (so nothing moves under them). `undoing` stays set till they end, so no other reset or undo starts
-        var first = coach != null && !coach.firstUndoShown ? coach.firstUndoSteps : null;
+        // a slip of its own kind (TutorialCoach.firstUndoStepsFor) has its own first steps, apart from the usual ones
+        var own = coach?.firstUndoStepsFor?.Invoke(action);
+        var first = coach == null ? null
+            : own != null ? (coach.firstUndoShownFor.Contains(own) ? null : own)
+            : !coach.firstUndoShown ? coach.firstUndoSteps : null;
         if (first != null && first.Count > 0)
         {
-            coach.firstUndoShown = true;
+            if (own != null) coach.firstUndoShownFor.Add(own);
+            else coach.firstUndoShown = true;
             if (running != null) StopCoroutine(running);
             game = g;
             running = StartCoroutine(Run(first, done => undoing = null));
@@ -311,8 +320,8 @@ public class TutorialController : MonoBehaviour
         recapPlaying = null;
     }
 
-    // the level ended: with everyone delivered, the recap's steps show while the end window waits, with the score's
-    // history held open in full
+    // the level ended: with everyone delivered, the tutorial's level-end steps (Tutorials.EndStepsFor), then its
+    // recap's, show while the end window waits, with the score's history held open in full
     void OnRecapAction(GameAction action)
     {
         if (action.kind != GameActionKind.LevelEnd) return;
@@ -325,10 +334,13 @@ public class TutorialController : MonoBehaviour
             return;
         }
         recapOwed.Remove(levelIndex); // it plays now, once
-        var recap = Tutorials.RecapFor(Levels.All[levelIndex]);
-        if (recap == null) return;
-        var steps = RecapSteps(g, recap);
+        var level = Levels.All[levelIndex];
+        var steps = Tutorials.EndStepsFor(level, g) ?? new List<TutorialStep>(); // made now, so they can use the end's state
+        var recap = Tutorials.RecapFor(level);
+        if (recap != null) steps.AddRange(RecapSteps(g, recap));
         if (steps.Count == 0) return;
+        if (steps[0].delay <= 0) steps[0].delay = RecapStart;
+        steps[steps.Count - 1].buttonText ??= "End"; // the end window comes next
         g.HoldEndWindow(true);
         g.hud.HoldScoreHistory(true);
         recapPlaying = g;
@@ -342,8 +354,7 @@ public class TutorialController : MonoBehaviour
         }));
     }
 
-    // the score: first the recap's intro in the middle of the screen (if it has one), then a step for each beat it
-    // shows, in the order it scored, each framing what scored (rings, the doors gone through, the supply's slots) with
+    // the score: a step for each beat it shows, in the order it scored, each framing what scored (rings, the doors gone through, the supply's slots) with
     // its points over it, and its rows in the history, and naming it over Next; End on the last
     List<TutorialStep> RecapSteps(GameManager g, TutorialRecap recap)
     {
@@ -378,16 +389,7 @@ public class TutorialController : MonoBehaviour
                 onDone = overlay.ClearPops,
             });
         }
-        if (steps.Count == 0) return steps; // nothing it shows scored: no recap
-        if (!string.IsNullOrEmpty(recap.intro))
-            steps.Insert(0, new TutorialStep
-            {
-                text = recap.intro,
-                skippable = true, // Skip: straight to the end window
-                // nothing framed: everything is dimmed and the bubble sits in the middle of the screen
-            });
-        steps[0].delay = RecapStart;
-        steps[steps.Count - 1].buttonText = "End"; // the end window comes next
+        // the first step's delay and End on the last: set by OnRecapAction, as level-end steps can come before these
         for (int i = 1; i < steps.Count; i++) steps[i].backable = true; // from the second on, Back to the one before
         return steps;
     }
