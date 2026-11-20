@@ -3,7 +3,7 @@ using System.Linq;
 
 // the "UseEarned" tutorial (on the level with l.tutorial = "UseEarned"): two steps saying the + a combo earns can be
 // the key, and to deliver Red and Blue together first; then its coach keeps Green's square closed until they are, so
-// the one + goes where their roads cross, and shows the + it earns as the one to deliver Green with (no recap).
+// the one + goes where their roads cross, and shows the + it earns as the one to deliver Green with.
 // the "UseEarnedT" and "UseEarnedBridge" tutorials are here too: one step each, the + earned with T tiles / a bridge
 public static partial class Tutorials
 {

@@ -31,7 +31,7 @@ public static partial class Tutorials
             {
                 text = $"Congrats!\nEach tile left unused\nscores {game.pointsPerUnusedTile} points.",
                 targets = slots.ToArray(),
-                bubbleBy = new[] { row }, // left of the row, out of the board's way (as the recap's)
+                bubbleBy = new[] { row }, // left of the row, out of the board's way
                 bubble = BubbleSide.Left,
                 pops = pops.ToArray(),
                 buttonText = "End",

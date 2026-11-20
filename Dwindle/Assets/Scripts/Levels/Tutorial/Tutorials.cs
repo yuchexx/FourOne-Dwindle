@@ -24,7 +24,7 @@ public class TutorialStep
     public TutorialPop[] pops;   // floating points (e.g. "+100") over game elements while the step shows; null = none
 }
 
-// floating points on a step (TutorialStep.pops), as the score recap shows them: in the tutorial's yellow, centered over
+// floating points on a step (TutorialStep.pops): in the tutorial's yellow, centered over
 // `near` (see Target), gone when the step ends
 public class TutorialPop
 {
@@ -71,6 +71,13 @@ public static class Target
         return hintButton != null && hintButton.button != null ? (RectTransform)hintButton.button.transform : null;
     };
 
+    // the Settings button in the "..." menu. the menu is closed till hovered, so a step framing it holds it open
+    // (game.hud.HoldMoreMenu in onShow, let go in onDone)
+    public static Func<RectTransform> Settings(GameManager game) => () => game.hud.SettingsButton();
+
+    // the arrow for one way, while an object's arrows show (at a junction, or coming out of a door); missing otherwise
+    public static Func<RectTransform> Arrow(GameManager game, Dir way) => () => game.board.ArrowRect(way);
+
     // the Undo button (next to Restart, in the bottom-right corner)
     public static Func<RectTransform> Undo(GameManager game) =>
         () => game.hud.undoButton != null ? (RectTransform)game.hud.undoButton.transform : null;
@@ -111,20 +118,15 @@ public static partial class Tutorials
         { "Doors", DoorsCoach },
     };
 
-    // a tutorial's name -> its score recap, for tutorials that have one (see TutorialRecap)
-    static readonly Dictionary<string, TutorialRecap> RecapByName = new()
-    {
-        { "Doors", DoorsRecap },
-    };
-
-    // a tutorial's name -> its level-end steps: written by hand, shown once the level ends with everyone delivered,
-    // with the end window held till they end (before its recap's, if it has one too). made at the level's end, so
-    // they can read the game as it is then
+    // a tutorial's name -> its level-end steps: shown once the level ends with everyone delivered, with the end window
+    // held till they end. made at the level's end, so they can read the game as it is then (e.g. the score's history).
+    // they wait for that level end from when the coach is Done, or from when the steps end if the tutorial has no coach
     static readonly Dictionary<string, Func<GameManager, List<TutorialStep>>> EndStepsByName = new()
     {
         { "Intro", IntroEnd },
         { "Unused", UnusedEnd },
         { "Combo", ComboEnd },
+        { "Doors", DoorsEnd },
     };
 
     // on start: a level whose l.tutorial names no tutorial here (a typo, or one renamed) would just get none, so say so
@@ -144,26 +146,13 @@ public static partial class Tutorials
     public static TutorialCoach CoachFor(LevelData level, GameManager game) =>
         !string.IsNullOrEmpty(level.tutorial) && CoachByName.TryGetValue(level.tutorial, out var make) ? make(game) : null;
 
-    // null when the level's tutorial has no recap
-    public static TutorialRecap RecapFor(LevelData level) =>
-        !string.IsNullOrEmpty(level.tutorial) && RecapByName.TryGetValue(level.tutorial, out var recap) ? recap : null;
-
     // null when the level's tutorial has no level-end steps
     public static List<TutorialStep> EndStepsFor(LevelData level, GameManager game) =>
         !string.IsNullOrEmpty(level.tutorial) && EndStepsByName.TryGetValue(level.tutorial, out var make) ? make(game) : null;
 
-    // whether anything waits for the level's end: level-end steps, a recap, or both (TutorialController holds the
-    // end window for them)
+    // whether level-end steps wait for the level's end (TutorialController holds the end window for them)
     public static bool HasEnd(LevelData level) =>
-        !string.IsNullOrEmpty(level.tutorial) && (EndStepsByName.ContainsKey(level.tutorial) || RecapByName.ContainsKey(level.tutorial));
-}
-
-// the score played back before the end window, once the level ends with everyone delivered (TutorialController): a
-// step for each thing that scored, framing what scored and its rows in the score's history. it waits for that level
-// end from when the coach is Done, or from when the steps end if the tutorial has no coach
-public class TutorialRecap
-{
-    public Func<ScoreEntry, bool> which; // the score's entries it shows; null = all of them
+        !string.IsNullOrEmpty(level.tutorial) && EndStepsByName.ContainsKey(level.tutorial);
 }
 
 // what a coach makes of a player action
@@ -203,4 +192,7 @@ public class TutorialCoach
     // until Done: as each delivered object's tile breaks (the delivered object, everyone delivered with it), steps to
     // show it before the next one breaks; null = carry on (GameManager.onRemoval)
     public Func<Arrival, string[], List<TutorialStep>> removalSteps;
+    // until Done: as an object coming out of a door gets its arrows (the object's name, the door's letter), steps to
+    // show over them; null = none. the arrows wait for a click anyway, so nothing is held (GameManager.onDoorQuestion)
+    public Func<string, string, List<TutorialStep>> doorSteps;
 }

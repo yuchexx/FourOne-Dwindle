@@ -413,7 +413,7 @@ public partial class GameManager : MonoBehaviour
         yield return new WaitForSeconds(endPopupDelay);
         while (endWindowHeld) yield return null; // for the tutorial (see HoldEndWindow)
         ShowMenu(true);
-        EarnTutorialButton(); // for the tutorial: with the end window up (after any score recap), the level's Tutorial button shows from now on
+        EarnTutorialButton(); // for the tutorial: with the end window up (after any level-end steps), the level's Tutorial button shows from now on
     }
 
     // for the tutorial (Tutorials.cs): while held, a finished level waits to show its end window, so a step can

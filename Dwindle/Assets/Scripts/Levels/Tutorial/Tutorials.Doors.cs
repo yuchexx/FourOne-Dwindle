@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-// the "Doors" tutorial (on the level with l.tutorial = "Doors"): one step on the doors, then the player plays the level
-// with its coach undoing slips; once it's done, its recap shows the points the door earned
+// the "Doors" tutorial (on the level with l.tutorial = "Doors"): one step framing both pairs of doors; then the player
+// plays the level, and its coach shows, once, that Blue coming out of the right board's door B (not on the board's
+// edge) can go either way; at the level's end, a step on what using doors scored
 public static partial class Tutorials
 {
     static List<TutorialStep> Doors(GameManager game) => new()
@@ -10,35 +12,59 @@ public static partial class Tutorials
         new TutorialStep
         {
             text = "Doors teleport objects.",
-            targets = Target.Door(game, "A", 0).Concat(Target.Door(game, "A", 1)).ToArray(), // door A on each board
+            targets = Target.Door(game, "A", 0).Concat(Target.Door(game, "A", 1))
+                .Concat(Target.Door(game, "B", 0)).Concat(Target.Door(game, "B", 1)).ToArray(), // both ends of A and of B
             buttonText = "End",
         },
     };
 
-    // the only squares Red can walk through: the left board's left square (into door A) and the right board's right
-    // one (out of door A, to the ring). the door is a wall, so the two in between are no use
-    static readonly (int board, int x, int y)[] DoorsSquares = { (0, 0, 0), (1, 1, 0) };
-
-    // Red's road dotted on both boards (into door A, and out of its partner to the ring), and slips undone, with a note
-    // on each: a tile on a square Red can't use, and the wrong way coming out of the door (left leads off the board,
-    // which would end the level). Red's delivery is Done: on to the recap
+    // no guides and no slips undone: just the step on Blue's way out of door B, as its arrows come up. Blue's only
+    // arrows on this level are there, so its choice is Done (the step won't show again)
     static TutorialCoach DoorsCoach(GameManager game) => new()
     {
-        onLoaded = () => game.ShowRoadLine("Red", (0, 0, 0), (1, 1, 0)), // the two squares on either side of the doors
-        onAction = a =>
+        onAction = a => a.kind == GameActionKind.ChooseDirection && a.objectName == "Blue" ? CoachReply.Done : CoachReply.None,
+        doorSteps = (name, door) => name != "Blue" || door != "B" ? null : new List<TutorialStep>
         {
-            if (a.kind == GameActionKind.PlaceTile && !DoorsSquares.Contains((a.board, a.square.x, a.square.y)))
-                return CoachReply.Undo;
-            if (a.kind == GameActionKind.ChooseDirection && a.objectName == "Red" && a.direction != Dir.E)
-                return CoachReply.Undo;
-            if (a.kind == GameActionKind.Delivered) return CoachReply.Done;
-            return CoachReply.None;
+            new TutorialStep
+            {
+                text = "This door isn't on the board's edge,\nso you can choose which way to come out.",
+                targets = new[] { Target.Object(game, "Blue"), Target.Arrow(game, Dir.W), Target.Arrow(game, Dir.E) },
+                buttonText = "End",
+            },
         },
-        undoNote = "Please choose the right direction.",
-        undoNoteFor = a => a.kind == GameActionKind.PlaceTile ? "Red can't walk through that square. Try another one." : null,
-        noteAbove = new[] { Target.Supply(game), Target.Undo(game) }, // the supply bar, and Undo and Restart beside it
     };
 
-    // the delivery that went through the door: its row, "100 + 50 ="
-    static TutorialRecap DoorsRecap => new() { which = e => e.door };
+    // once everyone is delivered and the level ends: each delivery that used doors, framed on its ring, the door it came
+    // out of (its "+50" over it) and its row in the score's history, before the end window shows
+    static List<TutorialStep> DoorsEnd(GameManager game)
+    {
+        var log = game.hud.GetScoreLog(); // newest first, as the history shows it: an entry's index is its row's
+        var targets = new List<Func<UnityEngine.RectTransform>>();
+        var rows = new List<Func<UnityEngine.RectTransform>>();
+        var pops = new List<TutorialPop>();
+        for (int i = 0; i < log.Count; i++)
+        {
+            var e = log[i];
+            if (!e.door || e.objects == null || e.objects.Length == 0) continue; // not a delivery that used doors
+            var color = e.objects[0]; // the rows know objects by color
+            var door = new Func<UnityEngine.RectTransform>[] { () => game.DoorOutRect(color, false), () => game.DoorOutRect(color, true) };
+            targets.Add(() => game.RingRectOf(color));
+            targets.AddRange(door);
+            rows.Add(Target.ScoreRow(game, i));
+            pops.Add(new TutorialPop { text = $"+{game.pointsPerTeleport}", near = door });
+        }
+        targets.AddRange(rows);
+        return new List<TutorialStep>
+        {
+            new TutorialStep
+            {
+                text = $"Congrats!\nDelivering an object using doors\nscores {game.pointsPerTeleport} extra,\nhowever many doors it goes through.",
+                targets = targets.ToArray(),
+                bubbleBy = rows.ToArray(), // left of the rows, out of the board's way (as IntroEnd's)
+                bubble = BubbleSide.Left,
+                pops = pops.ToArray(),
+                buttonText = "End",
+            },
+        };
+    }
 }

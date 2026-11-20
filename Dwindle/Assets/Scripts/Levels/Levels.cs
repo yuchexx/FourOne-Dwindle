@@ -40,6 +40,7 @@ public static class Levels
             l.label = l.teach ? ((char)('A' + teach++)).ToString() : (++practice).ToString();
             l.title = "Level " + l.label; // lessons too: "Level A", like their cards
             if (l.teach && string.IsNullOrEmpty(l.group)) l.group = l.title; // a row heading until sections get names
+            if (l.teach) l.starsToPass = 3; // a lesson only unlocks the next level with all 3 stars (its tutorial says so)
         }
     }
 
@@ -499,7 +500,6 @@ public static class Levels
         l.section = "Combos"; // a part on the Levels page's map
         l.group = "Combo on a +"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
-        l.starsToPass = 3; // stars that unlock the next level
         l.tutorial = "Combo"; // for the tutorial (Tutorials.Combo.cs): the + placed last, slips undone or reset, then the combo's score
         l.SetBoards((2, 2));
         l.inventory = Inv(cross: 1, h: 1, v: 1);
@@ -1333,7 +1333,6 @@ public static class Levels
         l.section = "Earned +"; // a part on the Levels page's map
         l.group = "Earned + from a +"; // a section row on the Levels page
         l.teach = true; // a lettered lesson
-        l.starsToPass = 3; // stars that unlock the next level
         l.tutorial = "UseEarned"; // for the tutorial (Tutorials.UseEarned.cs): Red and Blue together first, then Green on the + it earns
         l.SetBoards((2, 2));
         l.inventory = Inv(cross: 1, sw: 1, wn: 1, h: 1, v: 1);

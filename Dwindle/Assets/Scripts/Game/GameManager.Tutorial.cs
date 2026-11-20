@@ -30,14 +30,6 @@ public partial class GameManager
         return o != null ? (RectTransform)o.dest.transform : null;
     }
 
-    // the letters of the doors the object with this color went through, each once (the score history's rows know
-    // objects by color); empty when none
-    public List<string> DoorsUsedBy(Color color)
-    {
-        var o = objects?.Find(x => x.spec.color == color);
-        return o != null ? o.doorsUsed.Select(d => d.door).Distinct().ToList() : new List<string>();
-    }
-
     // the door the object with this color last came out of: its bar, or its letter's badge; null when it used none
     public RectTransform DoorOutRect(Color color, bool badge)
     {
@@ -130,6 +122,11 @@ public partial class GameManager
     bool removalHeld;
     public void ReleaseRemoval() => removalHeld = false;
 
+    // called as an object coming out of a door gets its arrows (AskDirectionWithRedo), with its name and the door's
+    // letter, so a step can show over them. nothing is held: the arrows wait for a click anyway (not when a redo
+    // answers them: then no arrows show, and this isn't called)
+    public System.Action<string, string> onDoorQuestion;
+
     // while held, delivering together doesn't flash the + slot (the earned flash) right away: the tutorial plays it
     // later with FlashEarnedPlus, once a step frames the slot. LoadLevel lets go
     bool earnedFlashHeld;
@@ -189,7 +186,7 @@ public partial class GameManager
     }
 
     // levels with a tutorial that have earned their button (with tutorials off in Settings it shows without this, see
-    // TutorialButtonFor): once one's end window has come up (after its score recap, if any) or it has been restarted
+    // TutorialButtonFor): once one's end window has come up (after its level-end steps, if any) or it has been restarted
     // (the Restart button, not a coach's reset) this launch, its button stays
     readonly HashSet<int> tutorialButtonEarned = new HashSet<int>();
 

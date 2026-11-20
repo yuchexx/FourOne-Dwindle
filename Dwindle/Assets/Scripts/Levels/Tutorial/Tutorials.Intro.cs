@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 // the "Intro" tutorial (on the level with l.tutorial = "Intro"): the welcome, the object, its ring (the goal), the
 // supply bar and the 3 stars a tutorial level needs, a line each; then the player plays the level, and its coach
-// shows the tile Red's delivery removes; at the level's end, a step on what the delivery scored (no recap).
+// shows the tile Red's delivery removes; at the level's end, a step on what the delivery scored.
 // written for a level with one object, Red
 public static partial class Tutorials
 {
@@ -32,7 +32,7 @@ public static partial class Tutorials
         new TutorialStep
         {
             text = "Tutorial levels need 3 stars to go on.\nUse Hint if needed.",
-            // nothing framed: everything is dimmed and the bubble sits in the middle of the screen
+            targets = new[] { Target.Hint(game) },
             buttonText = "End",
         },
     };
@@ -54,7 +54,9 @@ public static partial class Tutorials
             new TutorialStep
             {
                 text = "You can choose in Settings\nwhether to preview which tiles will be removed.",
-                // nothing framed: everything is dimmed and the bubble sits in the middle of the screen
+                targets = new[] { Target.Settings(game) },
+                onShow = () => game.hud.HoldMoreMenu(true), // the "..." menu opened, so its Settings button shows
+                onDone = () => game.hud.HoldMoreMenu(false),
             },
         },
     };
@@ -67,7 +69,7 @@ public static partial class Tutorials
         {
             text = "Congrats!\nThis is the score for\ndelivering an object.",
             targets = new[] { Target.Ring(game, "Red"), Target.ScoreRow(game, 0) }, // the only row: the newest
-            bubbleBy = new[] { Target.ScoreRow(game, 0) }, // left of the row, out of the board's way (as the recap's)
+            bubbleBy = new[] { Target.ScoreRow(game, 0) }, // left of the row, out of the board's way
             bubble = BubbleSide.Left,
             pops = new[] { new TutorialPop { text = $"+{game.pointsPerDelivery}", near = new[] { Target.Ring(game, "Red") } } },
             buttonText = "End",

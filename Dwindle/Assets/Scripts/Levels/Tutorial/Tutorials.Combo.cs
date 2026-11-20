@@ -126,7 +126,7 @@ public static partial class Tutorials
             {
                 text = $"Congrats!\nDelivering together scores\na combo bonus of {game.comboPointsPerObject} each.",
                 targets = targets.ToArray(),
-                bubbleBy = new[] { row }, // left of the row, out of the board's way (as the recap's)
+                bubbleBy = new[] { row }, // left of the row, out of the board's way
                 bubble = BubbleSide.Left,
                 pops = pops.ToArray(),
                 buttonText = "End",

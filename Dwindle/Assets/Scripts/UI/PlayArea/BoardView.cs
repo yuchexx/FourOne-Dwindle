@@ -843,6 +843,9 @@ public partial class BoardView : MonoBehaviour
 
     // the arrows showing now, by way, and their color (the object's)
     readonly Dictionary<Dir, Graphic> arrowGraphics = new Dictionary<Dir, Graphic>();
+
+    // for the tutorial (Target.Arrow frames it): the arrow for that way while the arrows show; null otherwise
+    public RectTransform ArrowRect(Dir way) => arrowGraphics.TryGetValue(way, out var g) && g != null ? g.rectTransform : null;
     Color arrowColor;
 
     // a hint used while the arrows show (stage 3, or hidden or shown again): the arrow it points to now pulses
