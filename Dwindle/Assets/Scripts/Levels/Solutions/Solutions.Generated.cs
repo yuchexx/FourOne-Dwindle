@@ -46,7 +46,7 @@ public static partial class Solutions
     // ---- Level 2 (2 best plans, 1 tile layouts, 1 road family) ----
     public static LevelSolution Level2() => new LevelSolution
     {
-        target = 175, bestTiles = 2,
+        target = 100, bestTiles = 2,
         tricks = new[]
         {
             TrickOf("Delivered together", TrickNeed.NotUsed),
@@ -5053,8 +5053,8 @@ public static partial class Solutions
             {
                 roads = new[]
                 {
-                    RoadOf("Red", new[] { (0, 0, 0), (0, 1, 0), (1, 0, 0), (1, 1, 0) }),
-                    RoadOf("Blue", new[] { (0, 0, 1), (0, 1, 1), (1, 0, 1) },
+                    RoadOf("Red", new[] { (0, 0, 1), (0, 1, 1), (1, 0, 1), (1, 1, 1) }),
+                    RoadOf("Blue", new[] { (0, 0, 0), (0, 1, 0), (1, 0, 0) },
                         OutOf("B", Dir.W)),
                 },
                 squares = new[]
@@ -5063,9 +5063,9 @@ public static partial class Solutions
                     Allow(0, 0, 1, TileType.StraightH),
                     Allow(0, 1, 0, TileType.StraightH),
                     Allow(0, 1, 1, TileType.StraightH),
-                    Allow(1, 0, 0, TileType.StraightH),
-                    Allow(1, 0, 1, TileType.CornerNE),
-                    Allow(1, 1, 0, TileType.StraightH),
+                    Allow(1, 0, 0, TileType.CornerES),
+                    Allow(1, 0, 1, TileType.StraightH),
+                    Allow(1, 1, 1, TileType.StraightH),
                 },
                 orders = new[]
                 {
@@ -5073,16 +5073,16 @@ public static partial class Solutions
                     {
                         deliveries = new[]
                         {
-                            Deliver(new[] { "Red" }, At(0, 0, 0), At(0, 1, 0), At(1, 0, 0), At(1, 1, 0)),
-                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 1, 1), At(1, 0, 1)),
+                            Deliver(new[] { "Red" }, At(0, 0, 1), At(0, 1, 1), At(1, 0, 1), At(1, 1, 1)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 0), At(0, 1, 0), At(1, 0, 0)),
                         },
                     },
                     new DeliveryOrder
                     {
                         deliveries = new[]
                         {
-                            Deliver(new[] { "Blue" }, At(0, 0, 1), At(0, 1, 1), At(1, 0, 1)),
-                            Deliver(new[] { "Red" }, At(0, 0, 0), At(0, 1, 0), At(1, 0, 0), At(1, 1, 0)),
+                            Deliver(new[] { "Blue" }, At(0, 0, 0), At(0, 1, 0), At(1, 0, 0)),
+                            Deliver(new[] { "Red" }, At(0, 0, 1), At(0, 1, 1), At(1, 0, 1), At(1, 1, 1)),
                         },
                     },
                 },

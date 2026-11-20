@@ -125,7 +125,7 @@ public class PartBoardMap : PartMapView
         ball.name = "Ball";
         ball.Setup(ballColor, cellSize * ballSize);
         foreach (var g in ball.GetComponentsInChildren<Graphic>()) g.raycastTarget = false;
-        PlaceBall(walk ? PlayerPrefs.GetInt(saveKey, -1) : -1);
+        PlaceBall(walk ? PlayerPrefs.GetInt(Session.SaveKey(saveKey), -1) : -1);
     }
 
     Vector2Int Cell(int i) => Vector2Int.RoundToInt(new Vector2((squares[i].rect.anchoredPosition.x / (cellSize + cellGap)) + 1,
@@ -235,7 +235,7 @@ public class PartBoardMap : PartMapView
     void GoToTarget()
     {
         bool onLocked = ballAt >= 0 && ballAt < squares.Count && !squares[ballAt].open || ballAt == squares.Count && target < ballAt;
-        if (onLocked) { if (walking != null) { StopCoroutine(walking); walking = null; } PlaceBall(target); PlayerPrefs.SetInt(saveKey, ballAt); }
+        if (onLocked) { if (walking != null) { StopCoroutine(walking); walking = null; } PlaceBall(target); PlayerPrefs.SetInt(Session.SaveKey(saveKey), ballAt); }
         else if (target > ballAt && isActiveAndEnabled) WalkTo(target, null);
     }
 
@@ -254,7 +254,7 @@ public class PartBoardMap : PartMapView
         if (Mathf.Abs(to - ballAt) > maxWalkSquares)
         {
             PlaceBall(to);
-            PlayerPrefs.SetInt(saveKey, ballAt);
+            PlayerPrefs.SetInt(Session.SaveKey(saveKey), ballAt);
             then?.Invoke();
             return;
         }
@@ -275,7 +275,7 @@ public class PartBoardMap : PartMapView
             }
             PlaceBall(ballAt + step);
         }
-        PlayerPrefs.SetInt(saveKey, ballAt);
+        PlayerPrefs.SetInt(Session.SaveKey(saveKey), ballAt);
         walking = null;
         then?.Invoke();
     }
@@ -317,7 +317,7 @@ public class PartBoardMap : PartMapView
     // Reset progress: back to the start, nothing traveled
     public override void Forget()
     {
-        PlayerPrefs.DeleteKey(saveKey);
+        PlayerPrefs.DeleteKey(Session.SaveKey(saveKey));
         if (walking != null) { StopCoroutine(walking); walking = null; }
         target = -1;
         if (ball != null) PlaceBall(-1); else Recolor(-1);

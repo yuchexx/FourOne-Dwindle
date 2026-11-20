@@ -6,7 +6,10 @@ using UnityEngine;
 // and try counts. saved in the browser (PlayerPrefs), so a reload keeps it; Reset progress clears it
 public static class Session
 {
-    const string Key = "dwindle."; // every saved value starts with this
+    // every saved value starts with this. each build has its own id (Unity makes a new one per build), so builds
+    // never share progress and a new build starts clear. the editor keeps one save
+    static readonly string Key = "dwindle." + (string.IsNullOrEmpty(Application.buildGUID) ? "editor" : Application.buildGUID) + ".";
+    public static string SaveKey(string name) => Key + name; // for other saved values (the part map's object)
 
     // Settings: every level can be played, whatever the stars
     static bool unlockAllValue;
@@ -107,9 +110,13 @@ public static class Session
     }
 
     // Settings > Reset progress: stars, settings, the player id and try counts all go back to a first visit
+    // only this build's values go (other builds on the same site keep theirs)
     public static void ResetAll()
     {
-        PlayerPrefs.DeleteAll();
+        ForgetLevels();
+        foreach (var k in new[] { "unlockAll", "placement", "compactSupply", "showTutorials", "showHintTips", "animateUndo",
+                     "undoByStep", "showBreaks", "musicVolume", "effectsVolume", "playerId", "levelOrder" })
+            PlayerPrefs.DeleteKey(Key + k);
         PlayerPrefs.Save();
         Load();
     }

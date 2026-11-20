@@ -94,6 +94,17 @@ public class TutorialController : MonoBehaviour
         CancelEnd();
     }
 
+    // Reset progress: every tutorial counts as never seen, with its coach and level-end steps from the start
+    public void ForgetAll()
+    {
+        Stop();
+        if (coach != null) EndCoach();
+        finished.Clear();
+        parked.Clear();
+        endOwed.Clear();
+        CancelEnd();
+    }
+
     // leaving the level (or loading it again): the tutorial goes away and counts as not finished; a coach pauses, and
     // so does the level-end steps' wait (TryStart picks it up again on the level's next load)
     public void Stop()
