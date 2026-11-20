@@ -130,6 +130,7 @@ static class LevelMaker
             pr.solved++;
             var checkClock = System.Diagnostics.Stopwatch.StartNew();
             bool fits = Check(s, l, p);
+            if (fits) { var v = Gen.Verified(l, p); if (v != p) { p = v; fits = Check(s, l, p); } } // a better plan with longer roads: check that one
             Gen.Trace?.Invoke($"  checks {(fits ? "passed" : "failed")} in {checkClock.ElapsedMilliseconds} ms");
             if (!fits) continue;
             l.targetScore = p.score; l.bestTiles = p.tiles; (l.finishHint, l.bestPlanHint) = Export.Hints(p, l);
@@ -145,7 +146,7 @@ static class LevelMaker
     public static void Solve(LevelData level, MakerProgress pr, bool full = true) => Background(pr, clock =>
     {
         var l = LB.Copy(level);
-        var p = Gen.Analyze(l);
+        var p = Gen.Verified(l, Gen.Analyze(l));
         if (p == null) { pr.error = $"{l.title} has no solution within the solver's limits."; return; }
         pr.result = Finish(l, p, full);
         pr.result.seconds = (float)clock.Elapsed.TotalSeconds;

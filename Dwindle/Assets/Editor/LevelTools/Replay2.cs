@@ -140,16 +140,8 @@ class Replay2
         var d = st.objs[now[k]];
         TileType? TileAt(Vector2Int c) => st.board.TryGetValue(c, out var t) ? t : (TileType?)null;
         bool IsObstacle(Vector2Int c) => L.obstacles.Contains(c);
-        var stillNeeded = new Dictionary<Vector2Int, int>(); // as the game (GameManager.PickRemoval)
-        var soonest = new Dictionary<Vector2Int, int>();
-        foreach (var w in st.objs.Where(w => !w.done))
-        {
-            foreach (var kv in BreakRule.Ahead(L, w.pos, w.h, w.via, TileAt, IsObstacle, false))
-                if (!stillNeeded.TryGetValue(kv.Key, out var s) || kv.Value < s) stillNeeded[kv.Key] = kv.Value;
-            foreach (var kv in BreakRule.Ahead(L, w.pos, w.h, w.via, TileAt, IsObstacle, true))
-                if (!soonest.TryGetValue(kv.Key, out var s) || kv.Value < s) soonest[kv.Key] = kv.Value;
-        }
-        var pick = BreakRule.Pick(L, d.path, TileAt, stillNeeded, soonest);
+        var waiting = st.objs.Where(w => !w.done).Select(w => new BreakRule.Waiting(w.pos, w.h, w.via, w.s.dest, w.path)).ToList(); // as the game
+        var pick = BreakRule.For(L, d.path, waiting, TileAt, IsObstacle, out _);
         if (pick == null) return Break(st, i, now, k + 1, ev, broken, finished);
         var c = pick.Value;
         if (!finished)

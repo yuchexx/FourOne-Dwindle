@@ -80,7 +80,7 @@ public static class BreakPreview
         int n = ends.Count, mixes = 0;
         var pick = new int[n];
         bool first = true;
-        var cache = new Dictionary<(Vector2Int, Dir, bool, bool, string), Dictionary<Vector2Int, int>>(); // Ahead, per waiting state and tiles gone
+        var cache = new Dictionary<string, Dictionary<Vector2Int, int>>(); // Needed, per waiting state, tiles gone and candidates
         while (true)
         {
             var objs = ends.Select((e, i) => e[pick[i]]).ToList();
@@ -102,29 +102,29 @@ public static class BreakPreview
 
     // GameManager.HandleDeliveries: each delivered object breaks one tile, in order. objs aren't changed
     static List<Vector2Int> Breaks(LevelData l, Dictionary<Vector2Int, TileType> tiles, Func<Vector2Int, bool> obstacle,
-        List<Obj> objs, List<int> delivered, Dictionary<(Vector2Int, Dir, bool, bool, string), Dictionary<Vector2Int, int>> cache = null)
+        List<Obj> objs, List<int> delivered, Dictionary<string, Dictionary<Vector2Int, int>> cache = null)
     {
         var broken = new List<Vector2Int>();
         if (delivered.Count == 0) return broken;
         var left = new Dictionary<Vector2Int, TileType>(tiles);
         TileType? TileAt(Vector2Int c) => left.TryGetValue(c, out var t) ? t : (TileType?)null;
         bool Blocked(Vector2Int c) => l.BoardOf(c) < 0 || obstacle(c);
-        var waiting = objs.Where(w => !w.completed).Select(w => (w.pos, w.heading, w.viaDoor)).ToList();
+        var waiting = objs.Where(w => !w.completed).Select(w => new BreakRule.Waiting(w.pos, w.heading, w.viaDoor, w.dest, w.path)).ToList();
         foreach (var i in delivered)
         {
             string gone = string.Join(";", broken.OrderBy(c => c.x).ThenBy(c => c.y));
-            Dictionary<Vector2Int, int> Ahead(int w, bool throughEmpty)
+            Dictionary<Vector2Int, int> Needed(int w, ICollection<Vector2Int> cands)
             {
-                var (pos, heading, viaDoor) = waiting[w];
-                var key = (pos, heading, viaDoor, throughEmpty, gone);
+                var o = waiting[w];
+                var key = $"{o.pos}{o.heading}{o.viaDoor}{o.ring}|{string.Join(";", o.passed)}|{gone}|{string.Join(";", cands.OrderBy(c => c.x).ThenBy(c => c.y))}";
                 if (cache == null || !cache.TryGetValue(key, out var found))
                 {
-                    found = BreakRule.Ahead(l, pos, heading, viaDoor, TileAt, Blocked, throughEmpty);
+                    found = BreakRule.Needed(l, o, cands, TileAt, Blocked);
                     if (cache != null) cache[key] = found;
                 }
                 return found;
             }
-            var pick = BreakRule.For(l, objs[i].path, waiting, TileAt, Blocked, out _, Ahead);
+            var pick = BreakRule.For(l, objs[i].path, waiting, TileAt, Blocked, out _, Needed);
             if (pick == null) continue;
             left.Remove(pick.Value);
             broken.Add(pick.Value);

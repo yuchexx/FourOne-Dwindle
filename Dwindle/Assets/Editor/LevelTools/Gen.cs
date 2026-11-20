@@ -105,6 +105,12 @@ static class Gen
     public static Props Analyze(LevelData l, bool full = true, int slack = 4, bool quick = false)
     {
         var s = new Solver2(l, slack) { quick = quick }; var p = s.Best();
+        return PropsOf(l, p, full);
+    }
+
+    // the props of one plan (Analyze's best, or Verified's better one)
+    static Props PropsOf(LevelData l, Plan p, bool full)
+    {
         if (p == null) return null;
         var pr = new Props { best = p, score = p.score, tiles = p.cells, groups = p.events.Select(g => g.Count).ToList() };
         pr.earnedCrossUsed = Tricks.EarnedPlus.uses(l, p);
@@ -123,6 +129,20 @@ static class Gen
             if (pr.pairTrap) { var rep = new Solver2(l) { requireSafe = false }.Best(); pr.pairTrap = rep == null || rep.score <= p.score; }
         }
         return pr;
+    }
+
+    // Analyze only tries roads up to 4 squares longer than each object's shortest, so a plan with longer roads (a loop,
+    // a long way round) can still score more. this looks for one with the solution export's longer roads, and switches
+    // to it (the level's trick checks then use the longer roads too)
+    public static Props Verified(LevelData l, Props p, bool full = true)
+    {
+        if (p == null) return null;
+        var check = new Solver2(l, SolutionExport.Slack) { every = new List<Plan>(), floor = p.score + 1, maxReplays = 5000000, maxLeaves = 100000000 };
+        check.Best();
+        var better = check.every.OrderByDescending(x => x.score).ThenBy(x => x.cells).FirstOrDefault();
+        if (better == null) return p;
+        Tricks.UseSlack(l, SolutionExport.Slack);
+        return PropsOf(l, better, full);
     }
 
     // a random layout, its supply set to its best plan's tiles plus some spares, then re-checked

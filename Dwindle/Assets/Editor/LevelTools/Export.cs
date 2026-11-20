@@ -34,9 +34,9 @@ static class Export
             pairsToFinish ? Tips.Pairs
             : bridgeToFinish && detourToFinish ? Tips.BridgeAndDetour
             : detourToFinish ? Tips.DetourToFinish
-            : bridgeToFinish ? Tips.Bridge
             : aheadToFinish ? (two ? Tips.TwoRoutes : Tips.OneRoute)
             : earnedToFinish ? Tips.EarnedPlus
+            : bridgeToFinish ? Tips.Bridge // after build ahead and earned +: the bridge is taught before both
             : togetherToFinish ? Tips.TogetherToFinish
             : null;
 

@@ -1260,7 +1260,7 @@ public static class Levels
     static LevelData Level60()
     {
         var l = new LevelData { title = "Level 60", targetScore = 825, bestTiles = 8,
-            bestPlanHint = Tips.TogetherForScore };
+            bestPlanHint = Tips.TwoRoutes };
         l.SetBoards((3, 3));
         l.inventory = Inv(cross: 1, ne: 1, sw: 1, h: 2, tNES: 2, tSWN: 2);
         Obj(l, "Red", Red, 0, -1, 2, Dir.E, 0, 1, -1);
@@ -2763,12 +2763,13 @@ public static class Levels
         return l;
     }
 
-    // Pairs trap and build ahead: Red goes first, Blue's road is built ahead, then Blue, Green and Orange arrive together.
-    // Score 850 with 12 tiles (target).
+    // Two pairs: Blue and Orange arrive together on the right first, then Green loops around the top-left corner
+    // (through the + at (1,3) twice) to arrive with Red on (0,3). Bringing 3 together and 1 alone only scores 850.
+    // Score 900 with 13 tiles (target).
     static LevelData Level125()
     {
-        var l = new LevelData { title = "Level 125", targetScore = 850, bestTiles = 12,
-            bestPlanHint = Tips.Pairs };
+        var l = new LevelData { title = "Level 125", targetScore = 900, bestTiles = 13,
+            bestPlanHint = Tips.TogetherForScore };
         l.SetBoards((5, 4));
         l.inventory = Inv(cross: 1, ne: 1, wn: 2, h: 3, v: 1, tNES: 1, tESW: 3, tSWN: 1, tWNE: 2);
         Obj(l, "Red", Red, 0, 1, 4, Dir.S, 0, -1, 3);
