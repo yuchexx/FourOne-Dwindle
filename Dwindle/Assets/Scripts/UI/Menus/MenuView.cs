@@ -87,7 +87,7 @@ public class MenuView : MonoBehaviour
         CloseOverlays();
         startScreen.SetActive(false);
         levelsScreen.SetActive(true);
-        levelSelect.Open(); // refresh, and open on the last opened level's page
+        levelSelect.Open(); // refresh, and open on the part map
     }
 
     // the Levels page's Back button
