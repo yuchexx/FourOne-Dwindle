@@ -69,7 +69,7 @@ public partial class BoardView
         foreach (var (p, tile, number, state) in ghosts)
         {
             if (state == StepState.ToDo) GhostInSquare(p, tile);
-            if (state == StepState.Done) Badge(CellPos(p) + upperLeft, number, UIPalette.Current.accent, pulse: false);
+            if (state == StepState.Done) Badge(CellPos(p) + upperLeft, number, UIPalette.Current.hintAccent, pulse: false);
             else Badge(CellPos(p) + upperLeft, number);
         }
     }

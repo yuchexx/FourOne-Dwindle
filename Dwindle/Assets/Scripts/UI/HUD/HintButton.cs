@@ -75,7 +75,7 @@ public class HintButton : MonoBehaviour
         bool hidden = game.HintHidden;
         var palette = UIPalette.Current;
         for (int i = 0; i < dots.Length; i++)
-            if (dots[i] != null) dots[i].color = i < stage ? palette.accent : palette.mutedText;
+            if (dots[i] != null) dots[i].color = i < stage ? palette.hintAccent : palette.mutedText;
         if (tilesLine != null)
         {
             (tilesBox != null ? tilesBox : tilesLine.gameObject).SetActive(stage >= 1 && !hidden);
