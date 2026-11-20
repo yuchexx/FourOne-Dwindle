@@ -118,7 +118,7 @@ public static partial class Tutorials
         {
             new TutorialStep
             {
-                text = "Delivering together earned you\nan extra + tile!",
+                text = "Delivering together earned you\nan extra + tile\nto be counted towards unused tiles\nin the score!",
                 targets = new[] { Target.Slot(game, TileType.Cross) }, // now x1 again: the + used, plus the one earned
                 onShow = () => game.FlashEarnedPlus(0.4f), // the + slot's flash, a moment after the step is up
             },

@@ -13,7 +13,7 @@ public static partial class Tutorials
     {
         new TutorialStep
         {
-            text = "Doors teleport objects.",
+            text = "Doors teleport objects.\nHover over a door to see\nwhich door it links to.",
             targets = Target.Door(game, "A", 0).Concat(Target.Door(game, "A", 1))
                 .Concat(Target.Door(game, "B", 0)).Concat(Target.Door(game, "B", 1)).ToArray(), // both ends of A and of B
             buttonText = "End",
