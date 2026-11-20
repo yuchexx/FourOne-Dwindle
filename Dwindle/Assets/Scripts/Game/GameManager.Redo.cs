@@ -88,10 +88,10 @@ public partial class GameManager
             redoSteps.Pop();
             redoingChoice = true;
             hud.SetRedoAvailable(false);
+            Report(new GameAction { kind = GameActionKind.Redo, undid = GameActionKind.ChooseDirection }); // for analytics
             return;
         }
 
-        redoSteps.Pop();
         board.FinishUndo();
         DropPickedUp();
         board.HideGhost();
@@ -101,6 +101,7 @@ public partial class GameManager
         var snapshot = step.placement;
         var action = snapshot.action;
         var at = level.At(action.board, action.square.x, action.square.y);
+        var before = history.CanUndo ? history.Peek() : null;
         redoingPlacement = true;
         try
         {
@@ -116,8 +117,25 @@ public partial class GameManager
         {
             redoingPlacement = false;
         }
+        // the step goes only once it was replayed (it recorded a new snapshot); refused, it stays for another try
+        bool replayed = history.CanUndo && history.Peek() != before;
+        if (replayed)
+        {
+            if (redoSteps.Count > 0 && redoSteps.Peek() == step) redoSteps.Pop();
+            // for analytics: what it put back (the placement itself was reported as usual)
+            Report(new GameAction { kind = GameActionKind.Redo, undid = action.kind, tile = action.tile, board = action.board, square = action.square });
+        }
+        else redoAnswers.Clear();
         selected = null;
         RefreshAll();
+    }
+
+    // a redone placement answers this question itself (AskDirectionWithRedo): no arrows show, so no arrow sound or tints
+    bool RedoAnswers(MovingObject o, List<Dir> ways, DoorSpec door)
+    {
+        if (redoAnswers.Count == 0) return false;
+        var answer = redoAnswers.Peek();
+        return objects[answer.obj] == o && answer.door == door && ways.Contains(answer.direction);
     }
 
     // Replaying a whole placement also restores the directions the player chose during that placement.

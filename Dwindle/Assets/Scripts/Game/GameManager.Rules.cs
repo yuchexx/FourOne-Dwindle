@@ -122,8 +122,11 @@ public partial class GameManager
         else
         {
             var choice = SaveChoice(o, ways, null); // undo by step comes back here
-            MarkQuestion(o, null, ways); // show tile breaks: what these arrows could break
-            AudioManager.Play(AudioManager.Sfx.ArrowsAppear);
+            if (!RedoAnswers(o, ways, null)) // a redo answers it with no arrows
+            {
+                MarkQuestion(o, null, ways); // show tile breaks: what these arrows could break
+                AudioManager.Play(AudioManager.Sfx.ArrowsAppear);
+            }
             HintsChanged?.Invoke(); // stage 3: the junction just placed shows how it stands while the arrow is picked
             yield return AskDirectionWithRedo(o, ways, null); // sets o.heading from the arrow the player clicks
             MarkPicked(o);
@@ -171,8 +174,11 @@ public partial class GameManager
         else
         {
             var choice = SaveChoice(o, into, door); // undo by step comes back here
-            MarkQuestion(o, door, into);
-            AudioManager.Play(AudioManager.Sfx.ArrowsAppear);
+            if (!RedoAnswers(o, into, door)) // a redo answers it with no arrows
+            {
+                MarkQuestion(o, door, into);
+                AudioManager.Play(AudioManager.Sfx.ArrowsAppear);
+            }
             HintsChanged?.Invoke(); // stage 3: the board as it stands while the way out is picked
             yield return AskDirectionWithRedo(o, into, door);
             MarkPicked(o);

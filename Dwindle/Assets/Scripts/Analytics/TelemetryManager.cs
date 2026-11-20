@@ -30,6 +30,10 @@ public class TelemetryManager : MonoBehaviour
     [SerializeField]
     private int LEVEL_COUNT = Levels.All.Count; // Just some overshooting so new levels don't break the array
 
+    [Tooltip("The level form's entry id for the redo count (e.g. entry.123456789). Empty: not sent, until the form has that question")]
+    [SerializeField]
+    private string redoCountEntry = "";
+
     [Header("Testing")]
     [Tooltip("Also send from the Unity editor. Keep off, or test plays land in the sheet")]
     [SerializeField]
@@ -54,6 +58,7 @@ public class TelemetryManager : MonoBehaviour
     private bool counted; // To account for quits or closes even after one tile
     private bool ended;
     private string firstTile; // "board,x,y,tile" formatting
+    private int redoCount; // Redo presses this try
 
     private Dictionary<Vector3Int, List<TileType>> tilePlacements = new Dictionary<Vector3Int, List<TileType>>();
     private List<Step> steps = new List<Step>(); // Mirrors undo history
@@ -118,6 +123,7 @@ public class TelemetryManager : MonoBehaviour
         counted = false;
         ended = false;
         firstTile = null;
+        redoCount = 0;
         tilePlacements.Clear();
         steps.Clear();
         deliveries.Clear();
@@ -342,6 +348,7 @@ public class TelemetryManager : MonoBehaviour
                     ended = false;
                     counted = false;
                     firstTile = null; // this attempt's first tile is the next one placed
+                    redoCount = 0;
                     passedAlready = Session.Passed(currLevel - 1);
                     levelStartTime = Time.realtimeSinceStartup; // each try timed on its own
                     CountAttempt();
@@ -359,6 +366,10 @@ public class TelemetryManager : MonoBehaviour
                 else if (lastStep.kind == GameActionKind.PlaceTile) Remove(lastStep.at);
                 else Add(lastStep.at, lastStep.tile); // undoing a take-back puts the tile back
                 deliveries.RemoveAll(d => d.step > steps.Count); // deliveries that step caused are undone too
+                break;
+
+            case GameActionKind.Redo:
+                redoCount++; // what it put back was reported as a placement, take-back or arrow as usual
                 break;
 
             case GameActionKind.Delivered:
@@ -404,6 +415,8 @@ public class TelemetryManager : MonoBehaviour
             { "entry.1405356587", string.Join(";", tilePlacements.Where(c => c.Value.Count > 0).Select(c => MakeEntry(c.Key, c.Value[c.Value.Count - 1])))},
             { "entry.452493634",  firstTile ?? ""}
         };
+
+        if (!string.IsNullOrEmpty(redoCountEntry)) form[redoCountEntry] = redoCount.ToString();
 
         StartCoroutine(Send(levelCompletionForm, form));
 

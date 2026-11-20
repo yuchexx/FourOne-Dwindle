@@ -82,7 +82,8 @@ public partial class GameManager : MonoBehaviour
         board.ghostChanged = OnGhostChanged; // show tile breaks (GameManager.Preview.cs)
         board.arrowHovered = OnArrowHovered;
         // boards with several parts fit between the top bar and the dock
-        board.keepBelow = new[] { hud.levelTitleText ? hud.levelTitleText.rectTransform : null, hud.scoreText ? hud.scoreText.rectTransform : null };
+        board.keepBelow = new[] { hud.levelTitleText ? hud.levelTitleText.rectTransform : null, hud.scoreText ? hud.scoreText.rectTransform : null,
+            hud.redoButton ? (RectTransform)hud.redoButton.transform : null }; // Redo sits above Undo, right of the board
         board.keepAbove = new[] { hud.supplyDock };
         HintsChanged += DrawHints;
         board.animateUndo = Session.animateUndo; // the saved setting
