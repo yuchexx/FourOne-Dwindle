@@ -820,6 +820,16 @@ public partial class BoardView : MonoBehaviour
         UIBuilder.Clear(choicesRoot);
         arrowHovered?.Invoke(null);
         o.heading = pickedDirection.Value;
+        arrowGraphics.Clear();
+    }
+
+    public bool TryChooseDirection(Dir direction)
+    {
+        if (pickedDirection != null || !arrowGraphics.ContainsKey(direction))
+            return false;
+
+        pickedDirection = direction;
+        return true;
     }
 
     public void ClearChoices()

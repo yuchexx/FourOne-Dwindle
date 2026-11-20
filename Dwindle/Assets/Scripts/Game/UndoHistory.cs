@@ -15,6 +15,7 @@ public class Snapshot
     public List<ScoreEntry> scoreLog; // the score history
     public bool takeBack; // the action after this snapshot was a right-click take-back, not a placement
     public bool move;     // or a board tile dragged to another square (taken back and placed in one go)
+    public Vector2Int? movedFrom; // Original square of a moved tile, for Redo.
     public GameAction action; // that placement or take-back, as ActionDone reported it (for analytics: what an undo takes back)
     public BoardView.Rewind rewind; // the moves the placement after this snapshot caused, for undo to play backwards
     public List<ChoicePoint> choices = new List<ChoicePoint>(); // the arrow questions its round asked, oldest first (undo by step)
@@ -30,6 +31,7 @@ public class ChoicePoint
     public DoorSpec door;      // the door it came through, or null at a + or T
     public int[] delivered;    // objects this round had already delivered
     public int rewindSteps;    // how much of the placement's recording came before it
+    public Dir direction; // Previously chosen direction, for Redo.
     public bool answered;      // false while its arrows are showing
 }
 
