@@ -124,6 +124,7 @@ public partial class GameManager : MonoBehaviour
         hud.SetScoreLog(null);
         deliveryPoints = comboPoints = teleportPoints = unusedPoints = 0;
         history.Clear();
+        ClearRedo();
         roundSnapshot = null;
         asking = null; roundMarks = null; // show tile breaks
         endWindowHeld = false; // for the tutorial: a held end window never outlives its level
@@ -183,7 +184,7 @@ public partial class GameManager : MonoBehaviour
         var snapshot = Capture(); // the only point undo saves at
         snapshot.rewind = board.StartRecording(p, t); // this tile and the moves it causes, so undo can play them backwards
         snapshot.action = OnSquare(GameActionKind.PlaceTile, p, t); // what an undo of it reports
-        history.Record(snapshot);
+        RecordAction(snapshot);
         roundSnapshot = snapshot; // its round's arrow questions go in it (undo by step)
         inventory[t]--;
         board.SetTile(p, t);
@@ -311,9 +312,10 @@ public partial class GameManager : MonoBehaviour
         var t = a.tile.Value;
         var snapshot = Capture();
         snapshot.move = true;
+        snapshot.movedFrom = from;
         snapshot.rewind = board.StartRecording(to, t);
         snapshot.action = OnSquare(GameActionKind.PlaceTile, to, t); // what an undo of it reports
-        history.Record(snapshot);
+        RecordAction(snapshot);
         roundSnapshot = snapshot;
         board.TakeBackTile(from);
         board.SetTile(to, t);
@@ -355,7 +357,7 @@ public partial class GameManager : MonoBehaviour
         var snapshot = Capture(); // undo can bring it back
         snapshot.takeBack = true;
         snapshot.action = OnSquare(GameActionKind.TakeBack, p, t); // what an undo of it reports
-        history.Record(snapshot);
+        RecordAction(snapshot);
         board.StopRecording(); // nothing moves on a take-back
         board.TakeBackTile(p);
         inventory[t]++;
@@ -422,6 +424,7 @@ public partial class GameManager : MonoBehaviour
     // the wait, while stuck and the notice isn't up yet
     void Update()
     {
+        hud.SetRedoAvailable(CanRedo);
         if (hintQueued && (!busy || asking != null)) UseHint(); // a hint pressed during a move: once it stops, or the arrows show
         CancelPickUpOffBoard();
         ShakeIfNotUsable();
@@ -447,6 +450,8 @@ public partial class GameManager : MonoBehaviour
 
     public void ShowStartScreen()
     {
+        ClearRedo();
+        hud.SetRedoAvailable(false);
         ReportLevel(); // Home from a level: a finished last level has no Next, so this is its only report
         // for the tutorial: leaving a level midway (Leave, Levels, Main Menu) shows its Tutorial button from now on,
         // like a restart. does nothing on the first start screen (no level yet) or for a level with no tutorial
@@ -506,6 +511,7 @@ public partial class GameManager : MonoBehaviour
         hud.RefreshInventory(inventory, selected);
         hud.RefreshInfo(level, inventory.Values.Sum(), history.TilesUsed, Score);
         hud.SetUndoAvailable(!levelOver && history.CanUndo);
+        hud.SetRedoAvailable(CanRedo);
     }
 
 }

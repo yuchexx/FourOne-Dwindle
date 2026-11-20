@@ -53,13 +53,14 @@ public partial class GameManager
 
     void UndoBy(bool byStep)
     {
-        if (levelOver || !history.CanUndo) return;
+        if (levelOver || !history.CanUndo || redoingChoice) return;
 
         // a question whose arrows are showing now: going back means the one before it
         var top = history.Peek();
         while (top.choices.Count > 0 && !top.choices[top.choices.Count - 1].answered) top.choices.RemoveAt(top.choices.Count - 1);
         if (byStep && top.choices.Count > 0) { UndoChoice(top); return; }
 
+        RememberRedoPlacement(top);
         var snapshot = history.Pop();
         board.BeginUndo(objects, snapshot.rewind); // where everything is now, to rewind from (see BoardView.animateUndo)
         StopAllCoroutines(); // the round, with the slides, teleports and choices it is waiting on
@@ -88,6 +89,7 @@ public partial class GameManager
     void UndoChoice(Snapshot placement)
     {
         var choice = placement.choices[placement.choices.Count - 1];
+        RememberRedoChoice(choice);
         placement.choices.RemoveAt(placement.choices.Count - 1);
         roundSnapshot = placement; // the round's questions from here on go in it again
         board.BeginUndo(objects, board.PartOf(placement.rewind, choice.rewindSteps));

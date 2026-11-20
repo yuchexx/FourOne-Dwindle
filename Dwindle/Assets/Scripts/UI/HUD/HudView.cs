@@ -91,8 +91,9 @@ public class HudView : MonoBehaviour
     public Color pointsColor = new Color32(0x61, 0xC9, 0x8B, 0xFF);
     public Color comboPointsColor = new Color32(0x7C, 0x83, 0xF7, 0xFF);
 
-    [Header("Undo")]
+    [Header("Undo / Redo")]
     public Button undoButton;
+    public Button redoButton;
 
     [Header("Stuck notice (nobody left can be delivered)")]
     public StuckBanner stuckNotice;
@@ -114,6 +115,7 @@ public class HudView : MonoBehaviour
 
     void Awake()
     {
+        SetRedoAvailable(false);
         ShowScoreLog();
         if (supplyUsedText != null) usedHome = supplyUsedText.rectTransform.anchoredPosition;
         if (supplyLeftText != null) leftHome = supplyLeftText.rectTransform.anchoredPosition;
@@ -402,6 +404,11 @@ public class HudView : MonoBehaviour
     public void SetUndoAvailable(bool available)
     {
         if (undoButton != null) undoButton.interactable = available;
+    }
+
+    public void SetRedoAvailable(bool available)
+    {
+        if (redoButton != null) redoButton.interactable = available;
     }
 
     // ---- the score history (hover the score): one row per thing that scored, newest first

@@ -39,6 +39,7 @@ public partial class GameManager
         if (roundDelivered.Count > 0) yield return HandleDeliveries(roundDelivered);
         ClearRoundMarks(); // tints of tiles that didn't break
 
+        redoAnswers.Clear();
         busy = false;
         RefreshAll();
         HintsChanged?.Invoke(); // the placed tile's ghost goes, or stays if it came at the wrong moment
@@ -124,9 +125,13 @@ public partial class GameManager
             MarkQuestion(o, null, ways); // show tile breaks: what these arrows could break
             AudioManager.Play(AudioManager.Sfx.ArrowsAppear);
             HintsChanged?.Invoke(); // stage 3: the junction just placed shows how it stands while the arrow is picked
-            yield return board.AskDirection(o, ways, HintArrow(o)); // sets o.heading from the arrow the player clicks
+            yield return AskDirectionWithRedo(o, ways, null); // sets o.heading from the arrow the player clicks
             MarkPicked(o);
-            if (choice != null) choice.answered = true;
+            if (choice != null)
+            {
+                choice.direction = o.heading;
+                choice.answered = true;
+            }
             ReportChoice(o); // for the tutorial
             HintsChanged?.Invoke(); // a wrong way shows at once
         }
@@ -169,9 +174,13 @@ public partial class GameManager
             MarkQuestion(o, door, into);
             AudioManager.Play(AudioManager.Sfx.ArrowsAppear);
             HintsChanged?.Invoke(); // stage 3: the board as it stands while the way out is picked
-            yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), into, HintArrow(o, door));
+            yield return AskDirectionWithRedo(o, into, door);
             MarkPicked(o);
-            if (choice != null) choice.answered = true;
+            if (choice != null)
+            {
+                choice.direction = o.heading;
+                choice.answered = true;
+            }
             ReportChoice(o, door.label); // for the tutorial and the hints
             HintsChanged?.Invoke(); // a wrong way shows at once
         }
