@@ -26673,7 +26673,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   menuMusic: {fileID: 0}
-  levelMusic: {fileID: 0}
+  levelMusic: {fileID: 8300000, guid: 8de07651b222a9543b3bda93a3562b8f, type: 3}
   musicVolume: 0.6
   crossfadeSeconds: 1
   click:
