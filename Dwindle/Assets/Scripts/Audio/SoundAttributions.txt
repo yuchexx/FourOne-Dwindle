@@ -1,0 +1,8 @@
+LevelMusic: Ambient, Meditation - In Eternity by Andrewkn -- https://freesound.org/s/531506/ -- License: Attribution NonCommercial 4.0
+Nope: ink pen cap open close click sound effect by Garuda1982 -- https://freesound.org/s/543181/ -- License: Attribution 4.0
+Click 1: UI Click Soft Tap by Qvantor -- https://freesound.org/s/878237/ -- License: Creative Commons 0
+Click 2:
+Toggle1 and Toggle 2: MECHSwtch_Switch_power_cord_on_off.wav by DBS_Sounds -- https://freesound.org/s/613659/ -- License: Attribution 4.0
+Place1: WoodBlock 3 by Geoff-Bremner-Audio -- https://freesound.org/s/870350/ -- License: Attribution NonCommercial 4.0
+TakeBack1: mug_wood1.wav by robbeman -- https://freesound.org/s/495645/ -- License: Creative Commons 0
+TileBreak: WoodBlock 1 by Geoff-Bremner-Audio -- https://freesound.org/s/843755/ -- License: Attribution NonCommercial 4.0
