@@ -21,6 +21,15 @@ public class TutorialStep
     public bool backable;        // a Back button left of Next (never on the first step): the step before shows again
     public Action onShow;        // runs as the step shows, to set the game up for what the step teaches
     public Action onDone;        // runs as the step ends, e.g. to undo what onShow changed
+    public TutorialPop[] pops;   // floating points (e.g. "+100") over game elements while the step shows; null = none
+}
+
+// floating points on a step (TutorialStep.pops): in the tutorial's yellow, centered over
+// `near` (see Target), gone when the step ends
+public class TutorialPop
+{
+    public string text;
+    public Func<RectTransform>[] near;
 }
 
 // game elements for TutorialStep.targets. each is looked up again every frame, so it can move, and it can be
@@ -62,39 +71,71 @@ public static class Target
         return hintButton != null && hintButton.button != null ? (RectTransform)hintButton.button.transform : null;
     };
 
+    // the Settings button in the "..." menu. the menu is closed till hovered, so a step framing it holds it open
+    // (game.hud.HoldMoreMenu in onShow, let go in onDone)
+    public static Func<RectTransform> Settings(GameManager game) => () => game.hud.SettingsButton();
+
+    // the arrow for one way, while an object's arrows show (at a junction, or coming out of a door); missing otherwise
+    public static Func<RectTransform> Arrow(GameManager game, Dir way) => () => game.board.ArrowRect(way);
+
     // the Undo button (next to Restart, in the bottom-right corner)
     public static Func<RectTransform> Undo(GameManager game) =>
         () => game.hud.undoButton != null ? (RectTransform)game.hud.undoButton.transform : null;
 }
 
-// tutorials by name, one file each (Tutorials.Basics.cs, Tutorials.Doors.cs, Tutorials.Bridge.cs, Tutorials.Routing.cs, Tutorials.Pairs.cs, Tutorials.BuildAhead.cs); a level picks one with LevelData.tutorial
+// tutorials by name, one file each (Tutorials.Intro.cs, Tutorials.Unused.cs, Tutorials.Junction.cs, Tutorials.Combo.cs, Tutorials.UseEarned.cs, Tutorials.Doors.cs, Tutorials.Detour.cs, Tutorials.Bridge.cs, Tutorials.DeliverAll.cs, Tutorials.BuildAhead.cs); a level picks one with LevelData.tutorial
 public static partial class Tutorials
 {
     // a tutorial's name -> its steps, made with the running game so steps can check it or set it up. a level picks its
     // tutorial by name (LevelData.tutorial, set in Levels.cs), so it stays with its level when levels are inserted or moved
     static readonly Dictionary<string, Func<GameManager, List<TutorialStep>>> ByName = new()
     {
-        { "Basics", Basics },
+        { "Intro", Intro },
+        { "Unused", Unused },
+        { "Junction", Junction },
+        { "TJunction", TJunction }, // in Tutorials.Junction.cs
+        { "Combo", Combo },
+        { "TCombo", TCombo }, // in Tutorials.Combo.cs
+        { "BridgeCombo", BridgeCombo }, // in Tutorials.Combo.cs
+        { "UseEarned", UseEarned },
+        { "UseEarnedT", UseEarnedT }, // in Tutorials.UseEarned.cs
+        { "UseEarnedBridge", UseEarnedBridge }, // in Tutorials.UseEarned.cs
         { "Doors", Doors },
+        { "Detour", Detour },
         { "Bridge", Bridge },
-        { "Routing", Routing },
-        { "Pairs", Pairs },
+        { "DeliverAll", DeliverAll },
         { "BuildAhead", BuildAhead },
     };
 
     // a tutorial's name -> its coach, for tutorials that have one (it takes over once the steps end)
     static readonly Dictionary<string, Func<GameManager, TutorialCoach>> CoachByName = new()
     {
-        { "Basics", BasicsCoach },
+        { "Intro", IntroCoach },
+        { "Junction", JunctionCoach },
+        { "TJunction", TJunctionCoach },
+        { "Combo", ComboCoach },
+        { "UseEarned", UseEarnedCoach },
         { "Doors", DoorsCoach },
     };
 
-    // a tutorial's name -> its score recap, for tutorials that have one (see TutorialRecap)
-    static readonly Dictionary<string, TutorialRecap> RecapByName = new()
+    // a tutorial's name -> its level-end steps: shown once the level ends with everyone delivered, with the end window
+    // held till they end. made at the level's end, so they can read the game as it is then (e.g. the score's history).
+    // they wait for that level end from when the coach is Done, or from when the steps end if the tutorial has no coach
+    static readonly Dictionary<string, Func<GameManager, List<TutorialStep>>> EndStepsByName = new()
     {
-        { "Basics", BasicsRecap },
-        { "Doors", DoorsRecap },
+        { "Intro", IntroEnd },
+        { "Unused", UnusedEnd },
+        { "Combo", ComboEnd },
     };
+
+    // on start: a level whose l.tutorial names no tutorial here (a typo, or one renamed) would just get none, so say so
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void CheckNames()
+    {
+        foreach (var l in Levels.All)
+            if (!string.IsNullOrEmpty(l.tutorial) && !ByName.ContainsKey(l.tutorial))
+                Debug.LogWarning($"{l.title} asks for the \"{l.tutorial}\" tutorial, but Tutorials.ByName has none by that name.");
+    }
 
     // null when the level has no tutorial
     public static List<TutorialStep> For(LevelData level, GameManager game) =>
@@ -104,18 +145,17 @@ public static partial class Tutorials
     public static TutorialCoach CoachFor(LevelData level, GameManager game) =>
         !string.IsNullOrEmpty(level.tutorial) && CoachByName.TryGetValue(level.tutorial, out var make) ? make(game) : null;
 
-    // null when the level's tutorial has no recap
-    public static TutorialRecap RecapFor(LevelData level) =>
-        !string.IsNullOrEmpty(level.tutorial) && RecapByName.TryGetValue(level.tutorial, out var recap) ? recap : null;
-}
+    // null when the level's tutorial has no level-end steps
+    public static List<TutorialStep> EndStepsFor(LevelData level, GameManager game) =>
+        !string.IsNullOrEmpty(level.tutorial) && EndStepsByName.TryGetValue(level.tutorial, out var make) ? make(game) : null;
 
-// the score played back before the end window, once the level ends with everyone delivered (TutorialController): a
-// step for each thing that scored, framing what scored and its rows in the score's history. it waits for that level
-// end from when the coach is Done, or from when the steps end if the tutorial has no coach
-public class TutorialRecap
-{
-    public string intro;                 // a first step in the middle of the screen, with Skip; null = none
-    public Func<ScoreEntry, bool> which; // the score's entries it shows; null = all of them
+    // whether the level's tutorial is its opening steps and nothing else: no coach, no level-end steps
+    public static bool StepsOnly(LevelData level) =>
+        !string.IsNullOrEmpty(level.tutorial) && !CoachByName.ContainsKey(level.tutorial) && !HasEnd(level);
+
+    // whether level-end steps wait for the level's end (TutorialController holds the end window for them)
+    public static bool HasEnd(LevelData level) =>
+        !string.IsNullOrEmpty(level.tutorial) && EndStepsByName.ContainsKey(level.tutorial);
 }
 
 // what a coach makes of a player action
@@ -137,6 +177,7 @@ public class TutorialCoach
     public Func<GameAction, CoachReply> onAction; // each player action, once it has taken effect (GameManager.ActionDone)
     public string resetNote;                      // shown in the corner after a Reset
     public string undoNote;                       // shown in the corner after an Undo
+    public bool undoToChoice;                     // an Undo for a wrong way (ChooseDirection) goes back only to its arrow question (it shows again, the tile stays); false, or any other slip = the whole placement
     public Func<GameAction, string> undoNoteFor;  // the note for the action that called for the Undo; null (or null back) = undoNote
     public Func<RectTransform>[] noteAbove;       // what the note stays above, so it covers none of it (see Target)
     // the first Reset / the first Undo only: steps in place of resetNote / undoNote (the level loads again once the
@@ -146,9 +187,18 @@ public class TutorialCoach
     // set by TutorialController as each is shown. a coach is made for each run of its tutorial (the Tutorial button
     // makes a new one), and kept across restarts and leaving the level, so each shows once per run
     public bool firstResetShown, firstUndoShown;
-    public Action onDone;                         // on Done: take the guides down
+    // an Undo of another kind than the usual (e.g. a wrong tile, besides a wrong way): for the action that called for
+    // it, that kind's own first steps, in place of firstUndoSteps; null (or null back) = firstUndoSteps. return the
+    // same list each time for a kind: each list shows once per run (firstUndoShownFor, set by TutorialController)
+    public Func<GameAction, List<TutorialStep>> firstUndoStepsFor;
+    public readonly HashSet<List<TutorialStep>> firstUndoShownFor = new();
     public List<TutorialStep> doneSteps;          // shown after Done, like the tutorial's steps (e.g. what the player just earned)
     // until Done: as each delivered object's tile breaks (the delivered object, everyone delivered with it), steps to
     // show it before the next one breaks; null = carry on (GameManager.onRemoval)
     public Func<Arrival, string[], List<TutorialStep>> removalSteps;
+    // until Done: as an object comes out of a door (the object's name, the door's letter), steps to show; null = none.
+    // a door with two ways shows its arrows, and the steps show over them (nothing held: the arrows wait for a click
+    // anyway, GameManager.onDoorQuestion); a door on the board's edge has one way, and the object waits at it, facing
+    // in, till the steps end (GameManager.onDoorExit). an Undo back to the arrows asks again, so show each once
+    public Func<string, string, List<TutorialStep>> doorSteps;
 }

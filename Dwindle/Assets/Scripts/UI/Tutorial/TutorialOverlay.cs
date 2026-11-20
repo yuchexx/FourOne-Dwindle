@@ -265,7 +265,7 @@ public class TutorialOverlay : MonoBehaviour
 
     // floating points, e.g. "+100": centered over all of `near` together (missing or hidden ones don't count;
     // none found: not shown), its bottom `above` over their top once it has risen. nothing blocked by it, and over
-    // the dim. stays until RemovePop, ClearPops or Hide
+    // the dim. stays until ClearPops or Hide
     public Pop ShowPop(string message, float above, params Func<RectTransform>[] near)
     {
         var t = MakeText("Pop", root);
@@ -287,13 +287,6 @@ public class TutorialOverlay : MonoBehaviour
         gameObject.SetActive(true);
         PlacePops();
         return pop;
-    }
-
-    public void RemovePop(Pop pop)
-    {
-        if (pop == null) return;
-        if (pop.badge != null) Destroy(pop.badge.gameObject);
-        pops.Remove(pop);
     }
 
     public void ClearPops()

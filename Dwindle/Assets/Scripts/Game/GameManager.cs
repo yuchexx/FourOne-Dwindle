@@ -131,6 +131,7 @@ public partial class GameManager : MonoBehaviour
         levelEndHeld = false;  // for the tutorial: nor a held level end (GameManager.Tutorial.cs)
         earnedFlashHeld = false; // for the tutorial: nor a held earned flash (GameManager.Tutorial.cs)
         removalHeld = false;     // for the tutorial: nor a held tile removal (GameManager.Tutorial.cs)
+        doorExitHeld = false;    // for the tutorial: nor an object held at a door it just came out of (GameManager.Tutorial.cs)
         ShowTutorialButton(TutorialButtonFor(index)); // for the tutorial: its button by the title, once it's earned
 
         // every tile type (x0 for the ones this level doesn't hand out), or only its own with Compact supply
@@ -413,7 +414,7 @@ public partial class GameManager : MonoBehaviour
         yield return new WaitForSeconds(endPopupDelay);
         while (endWindowHeld) yield return null; // for the tutorial (see HoldEndWindow)
         ShowMenu(true);
-        EarnTutorialButton(); // for the tutorial: with the end window up (after any score recap), the level's Tutorial button shows from now on
+        EarnTutorialButton(); // for the tutorial: with the end window up (after any level-end steps), the level's Tutorial button shows from now on
     }
 
     // for the tutorial (Tutorials.cs): while held, a finished level waits to show its end window, so a step can

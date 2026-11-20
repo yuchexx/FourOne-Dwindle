@@ -53,7 +53,7 @@ public class LevelData
     public List<ObjectSpec> objects = new();
     public string tutorial;        // the name of its tutorial in Tutorials.cs
     public bool teach;             // a trick's teach level: purple on the Levels page, like the tutorial levels
-    public int starsToPass = 1;    // stars that unlock the next level (2 on teach levels where the trick is needed for 2 stars)
+    public int starsToPass = 1;    // stars that unlock the next level (3 on every teach level: set by Levels)
     public string section;         // set on a part's first level: a tile on the Levels page's part map
     public string group;           // set on a section's first level (a lesson and its practice): a row heading inside its part
     public string label;           // A, B... on teach levels, 1, 2... on the rest (set by Levels)
