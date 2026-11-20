@@ -11,7 +11,7 @@ public static partial class Tutorials
     {
         new TutorialStep
         {
-            text = "Let's look at how to make a combo!",
+            text = "Let's look at how to make a combo!\nA combo scores more points.",
             // nothing framed: everything is dimmed and the bubble sits in the middle of the screen
         },
         new TutorialStep

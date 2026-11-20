@@ -67,7 +67,12 @@ public class TutorialController : MonoBehaviour
         if (overlay == null) overlay = TutorialOverlay.Create(canvas, style); // made even with no steps: a coach's or level-end steps need it
         if (steps.Count == 0) { AfterSteps(levelIndex, game); return; } // no steps at the start: what comes after them starts now
         this.game = game;
-        running = StartCoroutine(Run(steps, g => AfterSteps(levelIndex, g)));
+        running = StartCoroutine(Run(steps, g =>
+        {
+            // a tutorial that's only one popup (no coach, no level-end steps): once it's closed, the button can bring it back
+            if (steps.Count == 1 && Tutorials.StepsOnly(Levels.All[levelIndex])) g.EarnTutorialButton();
+            AfterSteps(levelIndex, g);
+        }));
     }
 
     // the tutorial's steps ended (or it has none at the start): it counts as seen, and its coach takes over; with none,
@@ -187,7 +192,7 @@ public class TutorialController : MonoBehaviour
         g.ActionDone += OnCoachAction;
         if (!coachTaught) coach.onLoaded?.Invoke();
         if (!coachTaught && coach.removalSteps != null) g.onRemoval = OnRemoval;
-        if (!coachTaught && coach.doorSteps != null) g.onDoorQuestion = OnDoorQuestion;
+        if (!coachTaught && coach.doorSteps != null) { g.onDoorQuestion = OnDoorQuestion; g.onDoorExit = OnDoorExit; }
         if (noteOnResume && !string.IsNullOrEmpty(coach.resetNote)) overlay.ShowNote(coach.resetNote, noteSeconds, coach.noteAbove);
         noteOnResume = false;
     }
@@ -200,6 +205,7 @@ public class TutorialController : MonoBehaviour
             coachGame.ActionDone -= OnCoachAction;
             coachGame.onRemoval = null;
             coachGame.onDoorQuestion = null;
+            coachGame.onDoorExit = null;
         }
         coachGame = null;
         if (resetting != null) StopCoroutine(resetting); // a reset cut short by leaving (LoadLevel lets the level end go)
@@ -236,6 +242,7 @@ public class TutorialController : MonoBehaviour
                 var g = coachGame;
                 g.onRemoval = null; // taught: tiles break without a word from now on
                 g.onDoorQuestion = null; // and doors' arrows show without one
+                g.onDoorExit = null;
                 var after = coach.doneSteps;
                 if (Tutorials.HasEnd(Levels.All[coachLevel])) WatchForEnd(g, coachLevel);
                 overlay.HideNotes();
@@ -272,8 +279,21 @@ public class TutorialController : MonoBehaviour
         running = StartCoroutine(Run(steps, null));
     }
 
+    // an object just came out of a door with one way to go (no arrows): the coach's steps for it, if it has any, show
+    // now, and it goes on when they end (true: hold it there till then)
+    bool OnDoorExit(string objectName, string door)
+    {
+        var steps = coach?.doorSteps?.Invoke(objectName, door);
+        if (steps == null || steps.Count == 0) return false;
+        if (running != null) StopCoroutine(running);
+        game = coachGame;
+        running = StartCoroutine(Run(steps, done => done.ReleaseDoorExit()));
+        return true;
+    }
+
     // the slip (a wrong way, a tile in the wrong spot) shows for Undo Delay, with the level held from ending (a wrong
-    // way can leave everyone blocked) and nothing clickable; then the placement is undone, as with the Undo button,
+    // way can leave everyone blocked) and nothing clickable; then the placement is undone, as with the Undo button
+    // (or, for a wrong way with TutorialCoach.undoToChoice, only back to its arrow question),
     // and the coach's note for it shows (over any note already there), or, the first time, its firstUndoSteps. Undo is
     // called from here, not from inside the round that reported the action
     IEnumerator UndoWrongWay(GameAction action)
@@ -284,7 +304,9 @@ public class TutorialController : MonoBehaviour
         g.HoldLevelEnd(true);
         overlay.Block();
         yield return new WaitForSecondsRealtime(undoDelay);
-        g.UndoPlacement(); // the whole placement, whatever undo by step is set to
+        if (coach != null && coach.undoToChoice && action.kind == GameActionKind.ChooseDirection)
+            g.UndoChoiceStep(); // back to the arrows, the tile stays
+        else g.UndoPlacement(); // the whole placement, whatever undo by step is set to
         g.HoldLevelEnd(false);
         // the coach's first undo: its steps in the middle of the screen in place of the note, once the placement is
         // undone (so nothing moves under them). `undoing` stays set till they end, so no other reset or undo starts

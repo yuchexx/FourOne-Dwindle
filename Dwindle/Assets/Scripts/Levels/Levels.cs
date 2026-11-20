@@ -62,16 +62,16 @@ public static class Levels
         return l;
     }
 
-    // Straights only: a two-tile road up to Red's ring. The sideways straight is a decoy.
+    // Straights only: a two-tile road up to Red's ring.
     // Solution:
     //   1. (0,1) I-v
     //   2. (0,0) I-v -> Red arrives
-    // Score 175 with 2 tiles (target).
+    // Score 100 with 2 tiles (target).
     static LevelData Level2()
     {
-        var l = new LevelData { title = "Level 2", targetScore = 175, bestTiles = 2, bestPlanHint = Tips.FewerTiles };
+        var l = new LevelData { title = "Level 2", targetScore = 100, bestTiles = 2, bestPlanHint = Tips.FewerTiles };
         l.SetBoards((2, 2));
-        l.inventory = Inv(h: 1, v: 2);
+        l.inventory = Inv(v: 2);
         Obj(l, "Red", Red, 0, 0, -1, Dir.N, 0, 0, 2);
         l.solution = Solutions.Level2();
         return l;
@@ -1781,13 +1781,13 @@ public static class Levels
 
     // hand-made: N2
     // Solution:
-    //   1. b1(1,0) I-h
-    //   2. b2(0,0) I-h
-    //   3. b2(1,0) I-h
-    //   4. b1(0,0) I-h -> Red goes through door A; Red arrives
-    //   5. b1(1,1) I-h
-    //   6. b2(0,1) L N-E
-    //   7. b1(0,1) I-h -> Blue goes through door B, comes out facing W; Blue arrives
+    //   1. b1(1,1) I-h
+    //   2. b2(0,1) I-h
+    //   3. b2(1,1) I-h
+    //   4. b1(0,1) I-h -> Red goes through door A; Red arrives
+    //   5. b1(1,0) I-h
+    //   6. b2(0,0) L E-S
+    //   7. b1(0,0) I-h -> Blue goes through door B, comes out facing W; Blue arrives
     // Score 300 with 7 tiles (target).
     static LevelData Level84()
     {
@@ -1798,13 +1798,13 @@ public static class Levels
         l.teach = true; // a lettered lesson
         l.tutorial = "Doors";
         l.SetBoards((2, 2), (2, 2));
-        l.inventory = Inv(ne: 1, h: 6);
-        Door(l, "A", 0, 1, 0, Dir.E);
-        Door(l, "A", 1, 0, 0, Dir.W);
-        Door(l, "B", 0, 1, 1, Dir.E);
-        Door(l, "B", 1, 0, 1, Dir.E);
-        Obj(l, "Red", Red, 0, -1, 0, Dir.E, 1, 2, 0);
-        Obj(l, "Blue", Blue, 0, -1, 1, Dir.E, 1, 0, 2);
+        l.inventory = Inv(es: 1, h: 6);
+        Door(l, "A", 0, 1, 1, Dir.E);
+        Door(l, "A", 1, 0, 1, Dir.W);
+        Door(l, "B", 0, 1, 0, Dir.E);
+        Door(l, "B", 1, 0, 0, Dir.E);
+        Obj(l, "Red", Red, 0, -1, 1, Dir.E, 1, 2, 1);
+        Obj(l, "Blue", Blue, 0, -1, 0, Dir.E, 1, 0, -1);
         l.solution = Solutions.Level84();
         return l;
     }

@@ -55,6 +55,8 @@ public static partial class Tutorials
             {
                 text = "You can choose in Settings\nwhether to preview which tiles will be removed.",
                 targets = new[] { Target.Settings(game) },
+                // right of it: the menu opens upward from the bottom-left corner, so above it (Auto) would cover its top item
+                bubble = BubbleSide.Right,
                 onShow = () => game.hud.HoldMoreMenu(true), // the "..." menu opened, so its Settings button shows
                 onDone = () => game.hud.HoldMoreMenu(false),
             },

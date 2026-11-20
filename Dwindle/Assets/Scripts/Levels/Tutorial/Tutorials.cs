@@ -126,7 +126,6 @@ public static partial class Tutorials
         { "Intro", IntroEnd },
         { "Unused", UnusedEnd },
         { "Combo", ComboEnd },
-        { "Doors", DoorsEnd },
     };
 
     // on start: a level whose l.tutorial names no tutorial here (a typo, or one renamed) would just get none, so say so
@@ -149,6 +148,10 @@ public static partial class Tutorials
     // null when the level's tutorial has no level-end steps
     public static List<TutorialStep> EndStepsFor(LevelData level, GameManager game) =>
         !string.IsNullOrEmpty(level.tutorial) && EndStepsByName.TryGetValue(level.tutorial, out var make) ? make(game) : null;
+
+    // whether the level's tutorial is its opening steps and nothing else: no coach, no level-end steps
+    public static bool StepsOnly(LevelData level) =>
+        !string.IsNullOrEmpty(level.tutorial) && !CoachByName.ContainsKey(level.tutorial) && !HasEnd(level);
 
     // whether level-end steps wait for the level's end (TutorialController holds the end window for them)
     public static bool HasEnd(LevelData level) =>
@@ -174,6 +177,7 @@ public class TutorialCoach
     public Func<GameAction, CoachReply> onAction; // each player action, once it has taken effect (GameManager.ActionDone)
     public string resetNote;                      // shown in the corner after a Reset
     public string undoNote;                       // shown in the corner after an Undo
+    public bool undoToChoice;                     // an Undo for a wrong way (ChooseDirection) goes back only to its arrow question (it shows again, the tile stays); false, or any other slip = the whole placement
     public Func<GameAction, string> undoNoteFor;  // the note for the action that called for the Undo; null (or null back) = undoNote
     public Func<RectTransform>[] noteAbove;       // what the note stays above, so it covers none of it (see Target)
     // the first Reset / the first Undo only: steps in place of resetNote / undoNote (the level loads again once the
@@ -192,7 +196,9 @@ public class TutorialCoach
     // until Done: as each delivered object's tile breaks (the delivered object, everyone delivered with it), steps to
     // show it before the next one breaks; null = carry on (GameManager.onRemoval)
     public Func<Arrival, string[], List<TutorialStep>> removalSteps;
-    // until Done: as an object coming out of a door gets its arrows (the object's name, the door's letter), steps to
-    // show over them; null = none. the arrows wait for a click anyway, so nothing is held (GameManager.onDoorQuestion)
+    // until Done: as an object comes out of a door (the object's name, the door's letter), steps to show; null = none.
+    // a door with two ways shows its arrows, and the steps show over them (nothing held: the arrows wait for a click
+    // anyway, GameManager.onDoorQuestion); a door on the board's edge has one way, and the object waits at it, facing
+    // in, till the steps end (GameManager.onDoorExit). an Undo back to the arrows asks again, so show each once
     public Func<string, string, List<TutorialStep>> doorSteps;
 }

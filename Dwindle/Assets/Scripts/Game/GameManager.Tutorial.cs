@@ -127,6 +127,13 @@ public partial class GameManager
     // answers them: then no arrows show, and this isn't called)
     public System.Action<string, string> onDoorQuestion;
 
+    // called as an object comes out of a door with one way to go (the door on the board's edge: no arrows), with its
+    // name and the door's letter; true holds it there, facing in, until ReleaseDoorExit, so a step can show it.
+    // LoadLevel lets go of a hold
+    public System.Func<string, string, bool> onDoorExit;
+    bool doorExitHeld;
+    public void ReleaseDoorExit() => doorExitHeld = false;
+
     // while held, delivering together doesn't flash the + slot (the earned flash) right away: the tutorial plays it
     // later with FlashEarnedPlus, once a step frames the slot. LoadLevel lets go
     bool earnedFlashHeld;
@@ -186,12 +193,14 @@ public partial class GameManager
     }
 
     // levels with a tutorial that have earned their button (with tutorials off in Settings it shows without this, see
-    // TutorialButtonFor): once one's end window has come up (after its level-end steps, if any) or it has been restarted
-    // (the Restart button, not a coach's reset) this launch, its button stays
+    // TutorialButtonFor): once one's end window has come up (after its level-end steps, if any), it has been restarted
+    // (the Restart button, not a coach's reset), or its tutorial, only one opening step, has been closed (TutorialController) this
+    // launch, its button stays
     readonly HashSet<int> tutorialButtonEarned = new HashSet<int>();
 
-    // the level's end window just came up, or it's being restarted: from now on its Tutorial button shows (see LoadLevel)
-    void EarnTutorialButton()
+    // the level's end window just came up, it's being restarted, or its tutorial (only one opening step) just closed (public
+    // for TutorialController): from now on its Tutorial button shows (see LoadLevel)
+    public void EarnTutorialButton()
     {
         if (tutorial == null || level == null || string.IsNullOrEmpty(level.tutorial)) return;
         tutorialButtonEarned.Add(levelIndex);

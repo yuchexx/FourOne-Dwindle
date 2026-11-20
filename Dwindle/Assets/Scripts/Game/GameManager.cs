@@ -131,6 +131,7 @@ public partial class GameManager : MonoBehaviour
         levelEndHeld = false;  // for the tutorial: nor a held level end (GameManager.Tutorial.cs)
         earnedFlashHeld = false; // for the tutorial: nor a held earned flash (GameManager.Tutorial.cs)
         removalHeld = false;     // for the tutorial: nor a held tile removal (GameManager.Tutorial.cs)
+        doorExitHeld = false;    // for the tutorial: nor an object held at a door it just came out of (GameManager.Tutorial.cs)
         ShowTutorialButton(TutorialButtonFor(index)); // for the tutorial: its button by the title, once it's earned
 
         // every tile type (x0 for the ones this level doesn't hand out), or only its own with Compact supply

@@ -189,6 +189,14 @@ public partial class GameManager
         o.pos = o.heading == partner.side ? partner.cell : partner.Neighbor;
         o.viaDoor = true;
         o.view.Face(o.heading);
+
+        // for the tutorial (GameManager.Tutorial.cs, onDoorExit): out of a door with one way to go (no arrows), it
+        // may wait here so a step can show it, until ReleaseDoorExit
+        if (into.Count == 1 && onDoorExit != null && onDoorExit(o.spec.name, door.label))
+        {
+            doorExitHeld = true;
+            while (doorExitHeld) yield return null;
+        }
     }
 
     // the ways an object can face coming out of a door
