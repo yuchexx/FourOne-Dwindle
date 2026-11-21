@@ -138,10 +138,12 @@ public class MenuView : MonoBehaviour
         for (int i = 0; i < rulesPages.Length; i++)
             rulesPages[i].SetActive(i == currentRulesPage);
 
-        previousRulesButton.gameObject.SetActive(currentRulesPage > 0);
-        nextRulesButton.gameObject.SetActive(
-            currentRulesPage < rulesPages.Length - 1
-        );
+        // as the Levels page's arrows: both show (with more than one page), greyed at the ends
+        bool several = rulesPages.Length > 1;
+        previousRulesButton.gameObject.SetActive(several);
+        previousRulesButton.interactable = currentRulesPage > 0;
+        nextRulesButton.gameObject.SetActive(several);
+        nextRulesButton.interactable = currentRulesPage < rulesPages.Length - 1;
 
         rulesPageIndicator.text =
             $"{currentRulesPage + 1} / {rulesPages.Length}";
