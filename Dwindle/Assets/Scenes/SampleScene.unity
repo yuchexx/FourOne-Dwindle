@@ -549,7 +549,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -1756,7 +1756,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -3131,7 +3131,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -4709,7 +4709,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -6110,7 +6110,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -7051,6 +7051,7 @@ MonoBehaviour:
   levelTitleText: {fileID: 954906185}
   scoreText: {fileID: 1393047460}
   targetSize: 0.6
+  targetAccent: 1
   targetColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   supplyLeftText: {fileID: 1280007995}
   supplyUsedText: {fileID: 236360172}
@@ -7677,6 +7678,7 @@ GameObject:
   - component: {fileID: 494952290}
   - component: {fileID: 494952289}
   - component: {fileID: 494952288}
+  - component: {fileID: 494952291}
   m_Layer: 5
   m_Name: Subtitle
   m_TagString: Untagged
@@ -7818,6 +7820,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 494952286}
   m_CullTransparentMesh: 1
+--- !u!114 &494952291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 494952286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4571742e2d7ee1649ad08f72880ecf64, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PaletteTextColor
+  role: 5
+  match: '#7C83F7'
 --- !u!1 &510626165
 GameObject:
   m_ObjectHideFlags: 0
@@ -7967,7 +7983,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -8735,7 +8751,7 @@ MonoBehaviour:
   icon: {fileID: 1476681011}
   label: {fileID: 968902813}
   zoom: {fileID: 1758693366}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -8884,7 +8900,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -10215,7 +10231,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -11997,7 +12013,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -15973,7 +15989,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -16539,7 +16555,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -16831,7 +16847,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -18896,7 +18912,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -19412,7 +19428,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -20368,7 +20384,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -21946,7 +21962,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -22627,7 +22643,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -22886,6 +22902,7 @@ GameObject:
   - component: {fileID: 1567478483}
   - component: {fileID: 1567478482}
   - component: {fileID: 1567478481}
+  - component: {fileID: 1567478484}
   m_Layer: 5
   m_Name: Message
   m_TagString: Untagged
@@ -23029,6 +23046,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1567478479}
   m_CullTransparentMesh: 1
+--- !u!114 &1567478484
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1567478479}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4571742e2d7ee1649ad08f72880ecf64, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PaletteTextColor
+  role: 5
+  match: '#7C83F7'
 --- !u!1 &1580930828
 GameObject:
   m_ObjectHideFlags: 0
@@ -23178,6 +23209,7 @@ GameObject:
   - component: {fileID: 1586550750}
   - component: {fileID: 1586550749}
   - component: {fileID: 1586550748}
+  - component: {fileID: 1586550751}
   m_Layer: 5
   m_Name: Message
   m_TagString: Untagged
@@ -23321,6 +23353,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1586550746}
   m_CullTransparentMesh: 1
+--- !u!114 &1586550751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586550746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4571742e2d7ee1649ad08f72880ecf64, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PaletteTextColor
+  role: 5
+  match: '#7C83F7'
 --- !u!1 &1593861840
 GameObject:
   m_ObjectHideFlags: 0
@@ -24378,7 +24424,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -24857,7 +24903,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -25297,7 +25343,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -27306,7 +27352,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -28146,7 +28192,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -30818,7 +30864,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08
@@ -31501,7 +31547,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   label: {fileID: 0}
   zoom: {fileID: 0}
-  accentHover: 1
+  paletteHover: 1
   hoverColor: {r: 0.4862745, g: 0.5137255, b: 0.96862745, a: 1}
   hoverScale: 1.1
   growSeconds: 0.08

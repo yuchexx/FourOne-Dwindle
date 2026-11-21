@@ -56,6 +56,8 @@ public class HudView : MonoBehaviour
     public TMP_Text scoreText;        // "Score 420", then "/ 550" under it; hovering it shows the history
     [Tooltip("The target line's size, as a share of the score's")]
     [Range(0.2f, 1f)] public float targetSize = 0.6f;
+    [Tooltip("On: the target takes the palette's accent. Off: Target Color")]
+    public bool targetAccent = true;
     public Color targetColor = new Color32(0x7C, 0x83, 0xF7, 0xFF);
     public TMP_Text supplyLeftText;   // "6 Left"
     public TMP_Text supplyUsedText;   // "Used 3"
@@ -381,7 +383,7 @@ public class HudView : MonoBehaviour
         if (levelTitleText != null) levelTitleText.text = level.title;
         if (scoreText != null)
             scoreText.text = level.targetScore <= 0 ? $"Score {score}" // no target (Level 1): no "/ 0"
-                : $"Score {score}\n<size={targetSize * 100f:0}%><color=#{ColorUtility.ToHtmlStringRGB(targetColor)}>/ {level.targetScore}</color></size>";
+                : $"Score {score}\n<size={targetSize * 100f:0}%><color=#{ColorUtility.ToHtmlStringRGB(targetAccent ? UIPalette.Current.accent : targetColor)}>/ {level.targetScore}</color></size>";
         if (supplyLeftText != null)
             supplyLeftText.text = $"{tilesLeft} Left";
         if (supplyUsedText != null) supplyUsedText.text = $"Used {tilesUsed}";

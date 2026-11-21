@@ -63,7 +63,7 @@ public class HintNote : MonoBehaviour
         else if (stage >= 2)
         {
             Row(pressText);
-            Square(Row(doneText), p.accent, false); // still, like the board's
+            Square(Row(doneText), p.hintAccent, false); // still, like the board's
         }
     }
 

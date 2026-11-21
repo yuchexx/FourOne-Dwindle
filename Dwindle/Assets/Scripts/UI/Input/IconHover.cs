@@ -16,8 +16,9 @@ public class IconHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     public Transform zoom;
 
     [Header("Hover")]
-    [Tooltip("On: the hover color is the palette's accent. Off: Hover Color")]
-    public bool accentHover = true;
+    [Tooltip("On: the hover color is the palette's Hover. Off: Hover Color")]
+    [UnityEngine.Serialization.FormerlySerializedAs("accentHover")]
+    public bool paletteHover = true;
     public Color hoverColor = new Color32(0x7C, 0x83, 0xF7, 0xFF);
     [Tooltip("How much bigger under the mouse (1 = no change)")]
     [Range(1f, 1.5f)] public float hoverScale = 1.1f;
@@ -31,7 +32,7 @@ public class IconHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     Look look = Look.Normal;
     Color iconColor, labelColor; // their own colors, kept while another look shows
     Vector3 baseScale;
-    bool hovered, ready;
+    bool hovered, ready, repaint;
 
     void Awake()
     {
@@ -47,8 +48,12 @@ public class IconHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     public void OnPointerEnter(PointerEventData e) => hovered = true;
     public void OnPointerExit(PointerEventData e) => hovered = false;
 
+    void OnEnable() => UIPalette.Changed += Repaint;
+    void Repaint() => repaint = true; // the palette changed: redo the look in Update, after PaletteColor has run
+
     void OnDisable()
     {
+        UIPalette.Changed -= Repaint;
         hovered = false;
         if (!ready) return;
         SetLook(Look.Normal);
@@ -58,6 +63,7 @@ public class IconHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     void Update()
     {
         bool usable = button.IsInteractable();
+        if (repaint) { repaint = false; SetLook(Look.Normal); } // back to its own (new) colors, then the look again
         SetLook(!usable ? Look.Disabled : hovered ? Look.Hover : Look.Normal);
         var target = usable && hovered ? baseScale * hoverScale : baseScale;
         if (zoom.localScale == target) return;
@@ -74,9 +80,18 @@ public class IconHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
             if (label != null) labelColor = label.color;
         }
         look = next;
-        var hover = accentHover && UIPalette.Current != null ? UIPalette.Current.accent : hoverColor;
+        if (look == Look.Normal) { Restore(icon, iconColor); Restore(label, labelColor); return; }
+        var hover = paletteHover && UIPalette.Current != null ? UIPalette.Current.hover : hoverColor;
         if (icon != null) icon.color = Pick(iconColor, hover);
         if (label != null) label.color = Pick(labelColor, hover);
+    }
+
+    // its own color: the palette's current one if a PaletteColor sets it, else the one kept
+    static void Restore(Graphic g, Color own)
+    {
+        if (g == null) return;
+        if (g.TryGetComponent(out PaletteColor pc)) pc.Apply();
+        else g.color = own;
     }
 
     Color Pick(Color own, Color hover) => look switch
