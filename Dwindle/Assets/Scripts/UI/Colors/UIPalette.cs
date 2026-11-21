@@ -7,7 +7,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Dwindle/UI Palette", fileName = "UIPalette")]
 public class UIPalette : ScriptableObject
 {
-    public enum Role { Background, Panel, Button, Text, MutedText, Accent, Star, StarEmpty, Success, Danger, Dim, Hint, Tutorial }
+    public enum Role { Background, Panel, Button, Text, MutedText, Accent, Star, StarEmpty, Success, Danger, Dim, Hint, Tutorial, PurpleStar, HintAccent }
 
     [Header("Surfaces")]
     [Tooltip("Behind everything: the title screen, the Levels page")]
@@ -24,8 +24,15 @@ public class UIPalette : ScriptableObject
     public Color mutedText = Hex("#B3B3B3");
 
     [Header("Meaning")]
-    [Tooltip("Hints and best plans: purple stars, tutorial levels, the chosen setting, switches that are on")]
+    [Tooltip("Customizable UI highlight: selected controls, active tabs, enabled switches")]
     public Color accent = Hex("#7C83F7");
+
+    [Header("Fixed Gameplay Colors")]
+    [Tooltip("Purple achievement stars. Not affected by theme selection.")]
+    public Color purpleStar = Hex("#7C83F7");
+    [Tooltip("Completed hint stages and hint badges. Not affected by theme selection.")]
+    public Color hintAccent = Hex("#7C83F7");
+
     [Tooltip("The tutorial's frames and its Next button (TutorialOverlay)")]
     public Color tutorial = Hex("#F2C740");
     public Color star = Hex("#FFD133");
@@ -52,6 +59,8 @@ public class UIPalette : ScriptableObject
         Role.Danger => danger,
         Role.Hint => hint,
         Role.Tutorial => tutorial,
+        Role.PurpleStar => purpleStar,
+        Role.HintAccent => hintAccent,
         _ => dim,
     };
 

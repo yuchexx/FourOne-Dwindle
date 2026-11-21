@@ -415,7 +415,9 @@ public class LevelSelectView : MonoBehaviour
             {
                 bool earned = s < record.stars;
                 card.stars[s].gameObject.SetActive(open);
-                card.stars[s].color = earned ? (record.purple ? palette.accent : palette.star) : palette.starEmpty;
+                card.stars[s].color = earned
+    ? (record.purple ? palette.purpleStar : palette.star)
+    : palette.starEmpty;
             }
         }
         if (!ByPart) return;
