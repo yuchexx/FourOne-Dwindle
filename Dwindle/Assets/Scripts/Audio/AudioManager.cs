@@ -54,6 +54,7 @@ public class AudioManager : MonoBehaviour
     public Slot door = new Slot { volume = 0.6f };
     [Tooltip("An object reaches its ring. Several in one move: each next one plays higher (up the major scale)")]
     public Slot delivered = new Slot { volume = 0.8f };
+    private int successiveDeliveries = 0;
     [Tooltip("A delivery breaks a tile")]
     public Slot tileBreak = new Slot { volume = 0.7f, pitchVariation = 0.05f };
     [Tooltip("Delivering together earns a + tile")]
@@ -138,11 +139,24 @@ public class AudioManager : MonoBehaviour
 
     Slot SlotFor(Sfx id) => id switch
     {
-        Sfx.Click => click, Sfx.Toggle => toggle.Empty ? click : toggle, Sfx.PickTile => pickTile, Sfx.PlaceTile => placeTile,
-        Sfx.TakeBack => takeBack, Sfx.Nope => nope, Sfx.Step => step, Sfx.ArrowsAppear => arrowsAppear,
-        Sfx.ArrowPicked => arrowPicked.Empty ? click : arrowPicked, Sfx.Door => door, Sfx.Delivered => delivered,
-        Sfx.TileBreak => tileBreak, Sfx.PlusEarned => plusEarned, Sfx.LevelComplete => levelComplete, Sfx.Star => star,
-        Sfx.StuckNotice => stuckNotice, Sfx.Hint => hint.Empty ? click : hint, _ => null,
+        Sfx.Click => click,
+        Sfx.Toggle => toggle.Empty ? click : toggle,
+        Sfx.PickTile => pickTile,
+        Sfx.PlaceTile => placeTile,
+        Sfx.TakeBack => takeBack,
+        Sfx.Nope => nope,
+        Sfx.Step => step,
+        Sfx.ArrowsAppear => arrowsAppear,
+        Sfx.ArrowPicked => arrowPicked.Empty ? click : arrowPicked,
+        Sfx.Door => door,
+        Sfx.Delivered => delivered,
+        Sfx.TileBreak => tileBreak,
+        Sfx.PlusEarned => plusEarned,
+        Sfx.LevelComplete => levelComplete,
+        Sfx.Star => star,
+        Sfx.StuckNotice => stuckNotice,
+        Sfx.Hint => hint.Empty ? click : hint,
+        _ => null,
     };
 
     // a sound by name; pitch: 1 = as recorded (see Note for a musical step up)
@@ -178,6 +192,18 @@ public class AudioManager : MonoBehaviour
     {
         if (s == null || s.Empty) return;
         var clip = s.clips[Random.Range(0, s.clips.Length)];
+        if (s == delivered)
+        {
+            clip = s.clips[successiveDeliveries];
+            successiveDeliveries++;
+        }
+        else if (s == tileBreak)
+        {
+            // This is guaranteed to happen after delivery chain is done so
+            // reset combo here
+            successiveDeliveries = 0;
+        }
+
         if (clip == null) return;
         var src = pool[next];
         next = (next + 1) % pool.Count;
