@@ -26,6 +26,14 @@ public class PaletteColor : MonoBehaviour
         var graphic = GetComponent<Graphic>();
         if (graphic == null) return;
         var c = UIPalette.Current.Get(role);
+        if (role == UIPalette.Role.Accent && graphic is TMPro.TMP_Text)
+            c = UIPalette.Current.ReadableAccent;
+        if (graphic is Image && (role == UIPalette.Role.Button || role == UIPalette.Role.Panel))
+        {
+            var border = GetComponent<Outline>();
+            if (UIPalette.HighContrast && border == null) border = gameObject.AddComponent<Outline>();
+            if (border != null) { border.enabled = UIPalette.HighContrast; border.effectColor = UIPalette.Current.outline; border.effectDistance = Vector2.one * 2f; }
+        }
         c.a *= alpha;
         graphic.color = c;
     }

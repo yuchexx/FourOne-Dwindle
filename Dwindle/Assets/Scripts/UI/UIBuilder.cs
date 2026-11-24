@@ -24,6 +24,19 @@ public static class UIBuilder
         return img;
     }
 
+    public static Image NewImage(string name, Transform parent, UIPalette.Role role)
+    {
+        var image = NewImage(name, parent, UIPalette.Current.Get(role));
+        var binding = image.gameObject.AddComponent<PaletteColor>();
+        binding.role = role; binding.Apply(); return image;
+    }
+    public static TextMeshProUGUI NewText(string name, Transform parent, string text, float size, UIPalette.Role role, TMP_FontAsset font = null)
+    {
+        var label = NewText(name, parent, text, size, UIPalette.Current.Get(role), font);
+        var binding = label.gameObject.AddComponent<PaletteColor>();
+        binding.role = role; binding.Apply(); return label;
+    }
+
     // one line, never wrapped. font null: TextMeshPro's default
     public static TextMeshProUGUI NewText(string name, Transform parent, string text, float size, Color color, TMP_FontAsset font = null)
     {

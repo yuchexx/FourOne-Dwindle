@@ -24,7 +24,7 @@ public class HintTooltip : MonoBehaviour
             shown = parts;
             UIBuilder.Clear(transform);
             foreach (var (text, color) in parts)
-                if (text != null) UIBuilder.NewText("Text", transform, text, fontSize, UIPalette.Current.text, font);
+                if (text != null) UIBuilder.NewText("Text", transform, text, fontSize, UIPalette.Role.Text, font);
                 else Icon(color, objectPrefab);
         }
         Place(screenPos);

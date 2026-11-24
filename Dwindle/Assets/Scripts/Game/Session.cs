@@ -20,6 +20,47 @@ public static class Session
     static Placement placementValue;
     public static Placement placement { get => placementValue; set { placementValue = value; SetInt("placement", (int)value); } }
 
+    // Settings: the player's preferred UI accent theme.
+    public enum ThemeColor
+    {
+        Purple = 0,
+        Blue = 1,
+        Teal = 2,
+        Rose = 3
+    }
+
+    static ThemeColor themeColorValue = ThemeColor.Purple;
+
+    public static ThemeColor themeColor
+    {
+        get => themeColorValue;
+        set
+        {
+            themeColorValue = value;
+            SetInt("themeColor", (int)value);
+            ApplyThemeColor();
+        }
+    }
+
+    static void ApplyThemeColor()
+    {
+        Color color = themeColorValue switch
+        {
+            ThemeColor.Blue => new Color32(0x39, 0x77, 0xC7, 0xFF),
+            ThemeColor.Teal => new Color32(0x24, 0x7E, 0x78, 0xFF),
+            ThemeColor.Rose => new Color32(0xAF, 0x4D, 0x79, 0xFF),
+            _ => UIPalette.Current.defaultAccent
+        };
+
+        UIPalette.SetThemeColor(color);
+    }
+
+    public static bool lightMode { get => lightModeValue; set { lightModeValue = value; SetBool("lightMode", value); ApplyAppearance(); } }
+    public static bool highContrast { get => highContrastValue; set { highContrastValue = value; SetBool("highContrast", value); ApplyAppearance(); } }
+    public static bool objectSymbols { get => objectSymbolsValue; set { objectSymbolsValue = value; SetBool("objectSymbols", value); ApplyAppearance(); } }
+    static bool lightModeValue, highContrastValue, objectSymbolsValue;
+    static void ApplyAppearance() => UIPalette.SetAppearance(lightModeValue, highContrastValue);
+
     // Settings: the supply shows only the tiles this level hands out (the + always, since it can be earned)
     static bool compactSupplyValue;
     public static bool compactSupply { get => compactSupplyValue; set { compactSupplyValue = value; SetBool("compactSupply", value); } }
@@ -114,8 +155,12 @@ public static class Session
     public static void ResetAll()
     {
         ForgetLevels();
-        foreach (var k in new[] { "unlockAll", "placement", "compactSupply", "showTutorials", "showHintTips", "animateUndo",
-                     "undoByStep", "showBreaks", "musicVolume", "effectsVolume", "playerId", "levelOrder" })
+        foreach (var k in new[] {
+    "unlockAll", "placement", "themeColor", "lightMode", "highContrast", "objectSymbols", "compactSupply",
+    "showTutorials", "showHintTips", "animateUndo",
+    "undoByStep", "showBreaks", "musicVolume",
+    "effectsVolume", "playerId", "levelOrder"
+})
             PlayerPrefs.DeleteKey(Key + k);
         PlayerPrefs.Save();
         Load();
@@ -146,6 +191,21 @@ public static class Session
     {
         unlockAllValue = GetBool("unlockAll", false);
         placementValue = (Placement)PlayerPrefs.GetInt(Key + "placement", (int)Placement.Both);
+        int savedTheme = PlayerPrefs.GetInt(
+    Key + "themeColor",
+    (int)ThemeColor.Purple
+);
+
+        themeColorValue = Enum.IsDefined(typeof(ThemeColor), savedTheme)
+            ? (ThemeColor)savedTheme
+            : ThemeColor.Purple;
+
+        lightModeValue = GetBool("lightMode", false);
+        highContrastValue = GetBool("highContrast", false);
+        objectSymbolsValue = GetBool("objectSymbols", false);
+        ApplyAppearance();
+        ApplyThemeColor();
+
         compactSupplyValue = GetBool("compactSupply", false);
         showTutorialsValue = GetBool("showTutorials", true);
         showHintTipsValue = GetBool("showHintTips", true);

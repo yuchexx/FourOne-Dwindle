@@ -112,6 +112,7 @@ public class HudView : MonoBehaviour
     readonly Dictionary<TileType, TileCard> slots = new Dictionary<TileType, TileCard>();
     readonly HashSet<TileType> flashingSlots = new HashSet<TileType>();
     TileType? lastSelected;
+    Dictionary<TileType, int> lastInventory;
 
     Vector2 usedHome, leftHome; // where Used and Left sit when there's room
 
@@ -221,7 +222,19 @@ public class HudView : MonoBehaviour
         if (countBadgeTemplate == null) return;
         var badge = Instantiate(countBadgeTemplate, slot.iconRoot);
         badge.SetActive(true);
+        ((RectTransform)badge.transform).sizeDelta = Vector2.one * 32f;
         PlaceBadge((RectTransform)badge.transform);
+        var countText = badge.GetComponentInChildren<TMP_Text>(true);
+        if (countText != null)
+        {
+            countText.enableAutoSizing = false;
+            countText.fontSize = 22f;
+            countText.overflowMode = TextOverflowModes.Overflow;
+            countText.textWrappingMode = TextWrappingModes.NoWrap;
+            countText.fontStyle = FontStyles.Bold;
+            countText.alignment = TextAlignmentOptions.Center;
+            countText.margin = Vector4.zero;
+        }
         badges[t] = (badge, badge.GetComponent<Graphic>(), badge.GetComponentInChildren<TMP_Text>(true));
     }
 
@@ -250,6 +263,10 @@ public class HudView : MonoBehaviour
         historyChanged = true;
     }
 
+    void OnEnable() => UIPalette.Changed += RefreshPalette;
+    void OnDisable() => UIPalette.Changed -= RefreshPalette;
+    void RefreshPalette() => historyChanged = true;
+
     bool historyChanged;
     void Update()
     {
@@ -257,6 +274,9 @@ public class HudView : MonoBehaviour
         historyChanged = false;
         ShowScoreLog();
         if (lastLevel != null) RefreshInfo(lastLevel, lastLeft, lastUsed, lastScore);
+        if (lastInventory != null && slots.Keys.All(lastInventory.ContainsKey)) RefreshInventory(lastInventory, lastSelected);
+        foreach (var badge in badges.Values)
+            if (badge.circle != null && badge.text != null) badge.text.color = UIPalette.BestText(badge.circle.color);
     }
 
     // the prefab's width, or less if that many slots plus the gaps would overflow the dock
@@ -322,6 +342,7 @@ public class HudView : MonoBehaviour
 
     public void RefreshInventory(Dictionary<TileType, int> inventory, TileType? selected)
     {
+        lastInventory = inventory;
         lastSelected = selected;
         foreach (var t in slots.Keys)
         {
@@ -332,12 +353,15 @@ public class HudView : MonoBehaviour
                 if (b.text != null)
                 {
                     b.text.text = inventory[t].ToString();
-                    b.text.color = inventory[t] > 0 ? badgeTextColor : emptyBadgeTextColor;
+                    var fill = inventory[t] > 0 ? badgeColor : emptyBadgeColor;
+                    b.text.color = UIPalette.BestText(fill);
                 }
                 if (b.circle != null) b.circle.color = inventory[t] > 0 ? badgeColor : emptyBadgeColor; // a 0 is quieter
             }
             slots[t].SetAvailable(inventory[t] > 0);
-            slots[t].ShowDimmed(inventory[t] <= 0, emptyTileBackColor, emptyTilePathColor);
+            slots[t].ShowDimmed(inventory[t] <= 0,
+                UIPalette.LightMode ? UIPalette.Current.button : emptyTileBackColor,
+                UIPalette.LightMode ? UIPalette.Current.mutedText : emptyTilePathColor);
             if (flashingSlots.Contains(t)) continue;
             slots[t].SetBackground(SlotColor(t));
         }

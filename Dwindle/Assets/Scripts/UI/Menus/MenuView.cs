@@ -154,8 +154,7 @@ public class MenuView : MonoBehaviour
             bool selected = currentRulesPage >= tab.firstPage && currentRulesPage < tab.firstPage + tab.pageCount;
             Color selectedColor = tab.greenSelection ? RulesDemoUI.LightGreen : Color.Lerp(palette.button, palette.accent, .45f);
             tab.button.targetGraphic.color = selected ? selectedColor : palette.button;
-            if (tab.greenSelection)
-                tab.button.GetComponentInChildren<TMP_Text>(true).color = selected ? palette.background : palette.text;
+            tab.button.GetComponentInChildren<TMP_Text>(true).color = UIPalette.BestText(selected ? selectedColor : palette.button);
             if (tab.selectedWidth > 0f)
             {
                 var rect = (RectTransform)tab.button.transform;
@@ -177,5 +176,31 @@ public class MenuView : MonoBehaviour
     {
         if (leaveDialog != null) leaveDialog.Close();
         if (endWindow != null) endWindow.Close();
+    }
+
+    void OnEnable()
+    {
+        UIPalette.Changed += RefreshTheme;
+    }
+
+    void OnDisable()
+    {
+        UIPalette.Changed -= RefreshTheme;
+    }
+
+    bool themeDirty;
+    void LateUpdate()
+    {
+        if (!themeDirty) return;
+        themeDirty = false;
+        RefreshThemeNow();
+    }
+    void RefreshTheme() => themeDirty = true;
+    void RefreshThemeNow()
+    {
+        if (rulesPopup != null && rulesPopup.activeInHierarchy)
+        {
+            ShowRulesPage(currentRulesPage);
+        }
     }
 }
