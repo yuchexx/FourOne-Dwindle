@@ -193,6 +193,11 @@ public class PartBoardMap : PartMapView
             if (s.part != part) continue;
             s.open = open;
             s.bg.color = SquareColor(open);
+            var border = s.bg.GetComponent<Outline>();
+            if (border == null) border = s.bg.gameObject.AddComponent<Outline>();
+            border.enabled = UIPalette.LightMode || UIPalette.HighContrast;
+            border.effectColor = UIPalette.Current.outline;
+            border.effectDistance = Vector2.one * (open ? 2f : 1f);
             if (s.name != null) s.name.color = TextColor(nameColor, open);
             if (s.stars != null) s.stars.color = TextColor(starsColor, open);
             if (!s.main) continue;
@@ -209,6 +214,9 @@ public class PartBoardMap : PartMapView
         for (int i = 0; i < squares.Count; i++)
             if (squares[i].part < part) done = i;
         target = done >= squares.Count - 1 ? squares.Count : done;
+        ballColor = traveledColor = UIPalette.Current.accent;
+        if (ball != null) ball.body.color = ballColor;
+        if (ringView != null) { ringView.ring.color = ballColor; ringView.hole.color = UIPalette.Current.background; }
         if (ringView != null) ringView.SetDelivered(target == squares.Count); // filled once every part is done
         if (ball == null) { Recolor(done); return; }
         if (!walk) PlaceBall(target);
@@ -352,8 +360,19 @@ public class PartBoardMap : PartMapView
     }
 
     // a locked square: its color mixed toward the background, solid
-    Color SquareColor(bool open) { var c = open ? cellColor : Color.Lerp(UIPalette.Current.background, cellColor, lockedAlpha); c.a = 1f; return c; }
-    Color TextColor(Color c, bool open) => open ? c : Color.Lerp(UIPalette.Current.background, c, lockedTextAlpha);
+    Color SquareColor(bool open)
+    {
+        var p = UIPalette.Current;
+        var c = UIPalette.LightMode ? (open ? p.button : Color.Lerp(p.panel, p.button, .65f))
+            : open ? cellColor : Color.Lerp(p.background, cellColor, lockedAlpha);
+        c.a = 1f; return c;
+    }
+    Color TextColor(Color c, bool open)
+    {
+        var ink = UIPalette.LightMode ? (open ? UIPalette.Current.text : UIPalette.Current.mutedText)
+            : open ? c : Color.Lerp(UIPalette.Current.background, c, lockedTextAlpha);
+        return UIPalette.EnsureContrast(ink, SquareColor(open), UIPalette.HighContrast ? 7f : 4.5f);
+    }
 
     // the whole board scaled around its middle, and moved
     void ApplyScale()

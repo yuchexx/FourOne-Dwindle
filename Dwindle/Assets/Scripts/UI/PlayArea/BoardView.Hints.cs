@@ -221,7 +221,7 @@ public partial class BoardView
         if (pulse)
         {
             pulsing.Add((back, Pulse.Fade));
-            pulsing.Add((text, Pulse.Fade));
+            // keep the hint number opaque while its purple badge pulses
         }
         return rt;
     }

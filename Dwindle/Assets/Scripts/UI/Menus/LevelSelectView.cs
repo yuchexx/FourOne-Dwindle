@@ -398,8 +398,15 @@ public class LevelSelectView : MonoBehaviour
     }
 
     // locks and stars, from this session's results
+    bool paletteDirty;
+    void OnEnable() => UIPalette.Changed += RefreshLater;
+    void OnDisable() => UIPalette.Changed -= RefreshLater;
+    void RefreshLater() => paletteDirty = true;
+    void LateUpdate() { if (paletteDirty) { paletteDirty = false; Refresh(); } }
+
     public void Refresh()
     {
+        if (cards.Count == 0) return;
         var palette = UIPalette.Current;
         for (int i = 0; i < cards.Count; i++)
         {
@@ -407,7 +414,9 @@ public class LevelSelectView : MonoBehaviour
             var record = Session.Get(i);
             bool open = Session.IsUnlocked(i);
             card.button.interactable = open;
-            if (card.button.targetGraphic != null) card.button.targetGraphic.color = open && hasTutorial[i] ? tutorialCardColor : cardColor;
+            var fill = open && hasTutorial[i] ? tutorialCardColor : palette.button;
+            if (card.button.targetGraphic != null) card.button.targetGraphic.color = fill;
+            card.label.color = UIPalette.BestText(fill);
             card.label.text = open ? names[i] : lockedText;
             PlaceLabel(card.label, open);
             if (card.tutorialFrame != null) DrawFrame(card, !open && hasTutorial[i], frameColor);

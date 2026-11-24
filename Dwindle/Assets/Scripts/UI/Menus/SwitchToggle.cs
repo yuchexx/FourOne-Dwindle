@@ -11,6 +11,7 @@ public class SwitchToggle : MonoBehaviour
     [Min(0f)] public float slideSeconds = 0.12f;
 
     Toggle toggle;
+    Outline border;
     float at = -1; // 0 = off, 1 = on; -1 = not placed yet
 
     void Awake() => toggle = GetComponent<Toggle>();
@@ -23,6 +24,10 @@ public class SwitchToggle : MonoBehaviour
         at = at < 0 || slideSeconds <= 0 ? target : Mathf.MoveTowards(at, target, Time.unscaledDeltaTime / slideSeconds);
         float travel = (((RectTransform)track.transform).rect.width - knob.rect.width) / 2f - 4f;
         knob.anchoredPosition = new Vector2(Mathf.Lerp(-travel, travel, at), 0);
+        if (UIPalette.HighContrast && border == null) border = track.gameObject.GetComponent<Outline>() ?? track.gameObject.AddComponent<Outline>();
+        if (border != null) { border.enabled = UIPalette.HighContrast; border.effectColor = UIPalette.Current.outline; border.effectDistance = Vector2.one * 2f; }
+        var knobGraphic = knob.GetComponent<Graphic>();
+        if (knobGraphic != null) knobGraphic.color = UIPalette.BestText(Color.Lerp(UIPalette.Current.button, UIPalette.Current.accent, at));
         track.color = Color.Lerp(UIPalette.Current.button, UIPalette.Current.accent, at); // the palette's Button off, Accent on
     }
 }

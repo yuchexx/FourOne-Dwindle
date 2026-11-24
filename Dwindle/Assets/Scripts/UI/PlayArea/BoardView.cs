@@ -150,6 +150,7 @@ public partial class BoardView : MonoBehaviour
             }
 
         var objects = new List<MovingObject>();
+        int symbolIndex = 0;
         foreach (var spec in level.objects)
         {
             var dest = Instantiate(destinationPrefab, markersRoot);
@@ -159,6 +160,9 @@ public partial class BoardView : MonoBehaviour
             var view = Instantiate(objectPrefab, objectsRoot);
             view.Setup(spec.color, CellSize * objectSize);
             view.Face(spec.heading);
+            ObjectIdentity.Attach(view.gameObject, symbolIndex);
+            ObjectIdentity.Attach(dest.gameObject, symbolIndex);
+            symbolIndex++;
 
             // objects and rings don't take the mouse, so a door under one can still be hovered and clicked
             foreach (var g in view.GetComponentsInChildren<Graphic>(true)) g.raycastTarget = false;
@@ -240,7 +244,7 @@ public partial class BoardView : MonoBehaviour
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = (low + high) / 2f;
         rt.sizeDelta = high - low + Vector2.one * CellSize * 2f * framePadding;
-        frame.color = boardFrameColor;
+        frame.color = UIPalette.Current.boardFrame;
     }
 
     void OnValidate()

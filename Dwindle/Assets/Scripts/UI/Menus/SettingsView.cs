@@ -38,6 +38,15 @@ public class SettingsView : MonoBehaviour
     [Header("Tabs: each button shows its page; opens on the first. without a label the chosen button is filled Accent, the others see-through")]
     public Tab[] tabs = new Tab[0];
 
+    void OnEnable()
+    {
+        UIPalette.Changed += RefreshTheme;
+    }
+
+    void OnDisable()
+    {
+        UIPalette.Changed -= RefreshTheme;
+    }
     void Start()
     {
         for (int i = 0; i < tabs.Length; i++)
@@ -88,7 +97,8 @@ public class SettingsView : MonoBehaviour
     // the chosen way is highlighted
     void ShowPlacement()
     {
-        void Mark(Button b, Session.Placement p) { if (b != null && b.targetGraphic != null) b.targetGraphic.color = Session.placement == p ? UIPalette.Current.accent : UIPalette.Current.button; }
+        void Mark(Button b, Session.Placement p) { if (b != null && b.targetGraphic != null) { b.targetGraphic.color = Session.placement == p ? UIPalette.Current.accent : UIPalette.Current.button;
+            foreach (var label in b.GetComponentsInChildren<TMP_Text>(true)) label.color = Session.placement == p ? UIPalette.Current.accentText : UIPalette.Current.text; } }
         Mark(clickButton, Session.Placement.Click);
         Mark(dragButton, Session.Placement.Drag);
         Mark(bothButton, Session.Placement.Both);
@@ -110,25 +120,65 @@ public class SettingsView : MonoBehaviour
         panel.SetActive(true);
         ShowTab(0); // after the panel is on, so nothing recolors the tabs after it
     }
-
+    private int currentTabIndex = 0;
     // the chosen tab's page shows, the others hide
     void ShowTab(int i)
     {
+        currentTabIndex = i;
+        themeDirty = true; // repaint after the page labels finish enabling
         for (int k = 0; k < tabs.Length; k++)
         {
-            if (tabs[k].page != null) tabs[k].page.SetActive(k == i);
+            if (tabs[k].page != null)
+                tabs[k].page.SetActive(k == i);
+
             var p = UIPalette.Current;
-            if (tabs[k].marker != null) tabs[k].marker.SetActive(k == i);
-            if (tabs[k].label != null) tabs[k].label.color = k == i ? p.text : p.mutedText;
-            else if (tabs[k].button != null && tabs[k].button.targetGraphic != null)
-                tabs[k].button.targetGraphic.color = k == i ? p.accent : Color.clear; // the others see-through (still clickable)
+
+            if (tabs[k].marker != null)
+                tabs[k].marker.SetActive(k == i);
+
+            if (tabs[k].label != null)
+                tabs[k].label.color = k == i ? p.text : p.mutedText;
+            else if (tabs[k].button != null &&
+                     tabs[k].button.targetGraphic != null)
+                tabs[k].button.targetGraphic.color =
+                    k == i ? p.accent : Color.clear;
+            if (tabs[k].label == null && tabs[k].button != null)
+                foreach (var label in tabs[k].button.GetComponentsInChildren<TMP_Text>(true))
+                    label.color = k == i ? p.accentText : p.text;
         }
     }
-
     public void Close()
     {
         CloseResetConfirm();
         panel.SetActive(false);
         Session.SaveNow(); // the volume sliders
+    }
+
+    bool themeDirty;
+    void LateUpdate()
+    {
+        if (!themeDirty) return;
+        RefreshThemeNow();
+        themeDirty = false;
+    }
+
+    void RefreshTheme() => themeDirty = true;
+
+    void RefreshThemeNow()
+    {
+        if (panel == null || !panel.activeInHierarchy) return;
+        if (currentTabIndex >= 0 && currentTabIndex < tabs.Length && tabs[currentTabIndex].page != null)
+        {
+            // refresh older page labels while leaving theme controls to their own view
+            var page = tabs[currentTabIndex].page;
+            if (page.GetComponent<ThemePageView>() == null)
+                foreach (var label in page.GetComponentsInChildren<TMP_Text>(true))
+                {
+                    if (label.TryGetComponent(out PaletteColor binding)) binding.Apply();
+                    else label.color = UIPalette.Current.text;
+                }
+        }
+        ShowPlacement();
+        ShowTab(currentTabIndex);
     }
 }

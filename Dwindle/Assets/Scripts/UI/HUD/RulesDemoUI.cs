@@ -50,6 +50,7 @@ public static class RulesDemoUI
         var label = UIBuilder.NewText(name, parent, text, fontSize, Text, font);
         Place(label.rectTransform, position, size);
         label.alignment = alignment;
+        if (!name.EndsWith(" label")) label.gameObject.AddComponent<ReadableRulesText>();
         return label;
     }
 

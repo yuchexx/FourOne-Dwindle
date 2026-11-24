@@ -52,7 +52,9 @@ public class HintNote : MonoBehaviour
         {
             // like the tile count's box under the supply: the hint purple behind white text that pulses
             var row = Row(tilesText);
-            row.GetComponentInChildren<TextMeshProUGUI>().color = p.text;
+            var highlightedText = row.GetComponentInChildren<TextMeshProUGUI>();
+            highlightedText.color = UIPalette.BestText(p.hint);
+            pulsing.Remove(highlightedText); // keep text readable while hint marks pulse
             row.gameObject.AddComponent<Image>().color = p.hint;
             row.GetComponent<HorizontalLayoutGroup>().padding = new RectOffset(8, 8, 2, 2);
             var order = Row(orderText);
