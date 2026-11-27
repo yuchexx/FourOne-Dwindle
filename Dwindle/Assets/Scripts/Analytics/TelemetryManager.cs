@@ -48,7 +48,7 @@ public class TelemetryManager : MonoBehaviour
     private string sessionID => Session.PlayerId; // saved, so the same player keeps one id between visits
     private float levelStartTime = 0.0f;
     private int currLevel = 0;
-    private int finalPiecesUsed = 0;
+    // private int finalPiecesUsed = 0; // only used by the commented-out code below
     private List<int> levelAttemptsPreCompletion; // Holds for each level until they beat it
     private List<int> levelAttemptsPostCompletion; // Holds for each level until they get 3 Stars
     private List<bool> levelCompletion;
