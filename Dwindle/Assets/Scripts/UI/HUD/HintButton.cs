@@ -119,19 +119,6 @@ public class HintButton : MonoBehaviour
     [Tooltip("From one drop-down button to the next (the More menu's: 84)")]
      [System.NonSerialized] public float slotStep = 84f;
 
-    // the note above Hide / Show: its left edge in line with the button's icon, the same gap as between the drop-down's
-    // buttons (its bottom where the next slot's would be); it grows upward
-    void PlaceNote(RectTransform hide)
-    {
-        if (stageNote == null) return;
-        var nrt = (RectTransform)stageNote.transform;
-        var icon = hide.Find("Icon") as RectTransform;
-        float iconLeft = icon != null ? icon.anchoredPosition.x - icon.sizeDelta.x / 2f : -20f;
-        nrt.anchorMin = nrt.anchorMax = new Vector2(0.5f, 0.5f);
-        nrt.pivot = new Vector2(0f, 0f);
-        nrt.anchoredPosition = new Vector2(iconLeft, hideSlotY + slotStep - hide.sizeDelta.y / 2f);
-    }
-
     // "Guide": a copy of the Hide / Show button in the next slot up, the rules icon; GuideClicked says it was pressed
     // (nothing listens yet: the hint guide is still to be designed). it replaces the note above Hide / Show
     public event System.Action GuideClicked;

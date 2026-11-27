@@ -34,18 +34,17 @@ class Replay2
     public List<List<int>> stepArrivals = new();      // the objects delivered by each placement
     public List<List<(int obj, Dir dir)>> stepChoices = new(); // the ways objects were sent after each placement (junctions, then coming out of doors)
     public int score; public bool ok; public string problem = "";
-    public int maxBranches = 20000; // removal sequences followed before giving up (and calling the plan unsafe)
 
-    Plan plan; bool any, recorded; int branches; int cellCount;
+    Plan plan; bool recorded; int cellCount;
 
     public Replay2(LevelData l) { L = l; }
     bool InGrid(Vector2Int c) => L.BoardOf(c) >= 0;
     List<Dir> Into(DoorSpec p) { var r = new List<Dir>(); if (InGrid(p.cell)) r.Add(DirUtil.Opposite(p.side)); if (InGrid(p.Neighbor)) r.Add(p.side); return r; }
 
     // order: the cells in the order they're placed (every cell of the plan once); left out, each event's new cells
-    public Replay2 Run(Plan plan, bool any = false, IList<Vector2Int> order = null)
+    public Replay2 Run(Plan plan, IList<Vector2Int> order = null)
     {
-        this.plan = plan; this.any = any;
+        this.plan = plan;
         var objsSpec = L.objects; int n = objsSpec.Count;
         // the placement order: each event's new cells, its delivering cell last
         var placed = new HashSet<Vector2Int>();

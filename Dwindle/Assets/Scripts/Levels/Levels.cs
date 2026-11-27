@@ -175,7 +175,6 @@ public static partial class Levels
         Obj(l, "Blue", Blue, 0, 1, 3, Dir.S, 0, 1, -1);
         Obj(l, "Green", Green, 0, 3, 0, Dir.W, 0, -1, 1);
         l.colorGroup = 2;
-        l.teach = true; // needs all 3 stars to unlock the next level
         l.trick = "build ahead";
         l.solution = Solutions.Level6();
         return l;
@@ -201,7 +200,6 @@ public static partial class Levels
         Obj(l, "Blue", Blue, 0, 2, -1, Dir.N, 0, 1, 3);
         Obj(l, "Green", Green, 0, 2, 3, Dir.S, 0, 3, 1);
         l.colorGroup = 2;
-        l.teach = true; // needs all 3 stars to unlock the next level
         l.trick = "deliver all";
         l.solution = Solutions.Level7();
         return l;
@@ -309,7 +307,6 @@ public static partial class Levels
         Obj(l, "Green", Green, 0, 0, -1, Dir.N, 0, 2, 3);
         Obj(l, "Orange", Orange, 0, 1, -1, Dir.N, 0, -1, 0);
         l.colorGroup = 3;
-        l.teach = true; // needs all 3 stars to unlock the next level
         l.trick = "pairs trap";
         l.solution = Solutions.Level12();
         return l;
@@ -569,7 +566,6 @@ public static partial class Levels
         Obj(l, "Green", Green, 0, 4, 0, Dir.W, 0, 2, -1);
         Obj(l, "Orange", Orange, 0, 4, 1, Dir.W, 1, 3, -1);
         l.colorGroup = 5;
-        l.teach = true; // needs all 3 stars to unlock the next level
         l.trick = "doors between and within";
         l.solution = Solutions.Level25();
         return l;

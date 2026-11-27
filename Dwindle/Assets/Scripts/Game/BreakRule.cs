@@ -124,7 +124,7 @@ public static class BreakRule
                 var (next, e2, ok) = Next(l, s, w.ring, blocked);
                 if (next == w.ring && ok) { rest = dist2[s] + 1; break; }
                 if (!ok || closed.Contains(next)) continue;
-                if (used.Contains(next) && !(Recrossable(next) && Straight(s, next))) continue;
+                if (used.Contains(next) && !Recrossable(next)) continue;
                 var t2 = tileAt(next);
                 if (t2 != null && !Tiles.Has(t2.Value, e2)) continue;
                 foreach (var to in Outs(l, next, e2, t2)) if (seen2.Add(to)) { dist2[to] = dist2[s] + 1; q2.Enqueue(to); }
@@ -186,9 +186,6 @@ public static class BreakRule
                 yield return (into == partner.side ? partner.cell : partner.Neighbor, into, true);
         }
     }
-
-    // a + or bridge is crossed again only straight through (the state's heading carries on)
-    static bool Straight((Vector2Int p, Dir h, bool via) s, Vector2Int next) => true;
 
     static IEnumerable<Dir> OtherSides(Dir entry)
     {

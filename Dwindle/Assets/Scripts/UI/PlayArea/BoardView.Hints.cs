@@ -96,7 +96,6 @@ public partial class BoardView
     public int GuideJunctionNumber => guideJunctions.Count > 0 ? guideJunctions.OrderBy(j => j.number).First().number : -1;
     public RectTransform GuideRing => guideRings.Count > 0 ? guideRings[0] : null;
     public RectTransform GuideGhost => guideGhosts.Count > 0 ? guideGhosts.OrderBy(g => g.number).First().square : null;
-    public RectTransform GuideGhostNumber => guideGhosts.Count > 0 ? guideGhosts.OrderBy(g => g.number).First().badge : null;
     public RectTransform HintedArrowRect => hintedArrow != null ? hintedArrow.rectTransform : null;
     public Dir? HintedWay { get { if (hintedArrow == null) return null; foreach (var kv in arrowGraphics) if (kv.Value == hintedArrow) return kv.Key; return null; } } // the way the pulsing arrow points
 
@@ -163,18 +162,6 @@ public partial class BoardView
         rt.anchoredPosition = CellPos(p);
         rt.sizeDelta = Vector2.one * (CellSize - CellGap);
         return rt;
-    }
-
-    // stage 1's number in a ring: a Hint-colored circle filling the ring's hole, pulsing, with a white number
-    RectTransform RingBadge(Vector2 pos, int number)
-    {
-        var hole = destinationPrefab.hole.rectTransform;
-        float size = CellSize * ringSize * (hole.anchorMax.x - hole.anchorMin.x);
-        var circle = UIBuilder.Circle(objectPrefab, hintsRoot, HintColor, size);
-        circle.Rect.anchoredPosition = pos;
-        pulsing.Add((circle.body, Pulse.Fade));
-        pulsing.Add((Number(circle.Rect, number, size * 0.62f), Pulse.Fade));
-        return circle.Rect;
     }
 
     // the hover area of a ring (its tip), nothing drawn
@@ -376,26 +363,6 @@ public partial class BoardView
         cycleShown = i;
         var color = GhostColor(1f); // as stage 2's ghosts (the pulse takes over each frame)
         foreach (var t in cycling) t.Show(JunctionTiles[i], color);
-    }
-
-    // four bars just inside a square's edge
-    RectTransform Frame(Vector2Int p)
-    {
-        var box = Square("Frame", p);
-        float w = hintFrameWidth;
-        Bar(box, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 0), new Vector2(0, w));
-        Bar(box, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -w), new Vector2(0, 0));
-        Bar(box, new Vector2(0, 0), new Vector2(0, 1), new Vector2(0, w), new Vector2(w, -w));
-        Bar(box, new Vector2(1, 0), new Vector2(1, 1), new Vector2(-w, w), new Vector2(0, -w));
-        return box;
-    }
-
-    void Bar(RectTransform box, Vector2 min, Vector2 max, Vector2 offMin, Vector2 offMax)
-    {
-        var img = UIBuilder.NewImage("Bar", box, HintColor);
-        var rt = img.rectTransform;
-        rt.anchorMin = min; rt.anchorMax = max; rt.offsetMin = offMin; rt.offsetMax = offMax;
-        pulsing.Add((img, Pulse.Frame));
     }
 
 }

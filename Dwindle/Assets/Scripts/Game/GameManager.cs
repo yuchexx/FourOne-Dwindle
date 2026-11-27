@@ -99,7 +99,6 @@ public partial class GameManager : MonoBehaviour
     public void ResetProgress()
     {
         Session.ResetAll();
-        if (menu.levelSelect != null) menu.levelSelect.ForgetProgress(); // the part map's object back to the start
         if (tutorial != null) tutorial.ForgetAll(); // every tutorial plays again
         tutorialButtonEarned.Clear();
         board.animateUndo = Session.animateUndo;
@@ -141,7 +140,6 @@ public partial class GameManager : MonoBehaviour
         levelEndHeld = false;  // for the tutorial: nor a held level end (GameManager.Tutorial.cs)
         earnedFlashHeld = false; // for the tutorial: nor a held earned flash (GameManager.Tutorial.cs)
         removalHeld = false;     // for the tutorial: nor a held tile removal (GameManager.Tutorial.cs)
-        doorExitHeld = false;    // for the tutorial: nor an object held at a door it just came out of (GameManager.Tutorial.cs)
         ShowTutorialButton(TutorialButtonFor(index)); // for the tutorial: its button by the title, once it's earned
 
         // every tile type (x0 for the ones this level doesn't hand out), or only its own with Compact supply
@@ -177,7 +175,7 @@ public partial class GameManager : MonoBehaviour
         if (pickedUp is Vector2Int from)
         {
             if (p == from) { DropPickedUp(); return; }
-            if (!cell.obstacle && !cell.closed && cell.tile == null) { DropPickedUp(); OnTileMoved(from, p); return; } // closed: for the tutorial
+            if (!cell.obstacle && cell.tile == null) { DropPickedUp(); OnTileMoved(from, p); return; }
         }
         if (cell.tile != null && !cell.locked) { PickUp(p); return; }
         PlaceSelected(p);
@@ -189,7 +187,7 @@ public partial class GameManager : MonoBehaviour
         if (levelOver) return;
         if (busy) return;
         var cell = Cells[p.x, p.y];
-        if (cell.obstacle || cell.closed || cell.tile != null || selected == null) return; // closed: for the tutorial
+        if (cell.obstacle || cell.tile != null || selected == null) return;
         board.FinishUndo(); // an undo rewind still going: everything to its place before anything moves
 
         var t = selected.Value;
@@ -318,7 +316,7 @@ public partial class GameManager : MonoBehaviour
     {
         if (!CanAct()) return;
         Cell a = Cells[from.x, from.y], b = Cells[to.x, to.y];
-        if (a.tile == null || a.locked || b.obstacle || b.closed || b.tile != null) return; // closed: for the tutorial
+        if (a.tile == null || a.locked || b.obstacle || b.tile != null) return;
         board.FinishUndo();
 
         var t = a.tile.Value;
@@ -475,13 +473,6 @@ public partial class GameManager : MonoBehaviour
         board.ClearChoices();
         int next = Session.StartLevel(Levels.All.Count);
         menu.ShowStart(next == 0 && Session.Get(0).stars == 0 ? "Start" : $"Continue: Level {next + 1}");
-    }
-
-    // the Leave and End screens' Levels button: leaves like Main Menu, then the Levels page (on this level's page)
-    public void GoToLevels()
-    {
-        ShowStartScreen();
-        menu.ShowLevels();
     }
 
     // Start: Level 1 until it's done, then the first level without a star this session

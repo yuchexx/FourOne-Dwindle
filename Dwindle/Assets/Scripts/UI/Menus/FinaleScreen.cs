@@ -90,8 +90,8 @@ public class FinaleScreen : MonoBehaviour
 
         // the buttons under the rows, as the game's icon buttons (icon, name under it, no background; hover colour and
         // grow): Confetti (another round) and Home (the title screen)
-        IconButton(prt, new Vector2(-60f, -h / 2 + 50f), "confetti", "Confetti", font, p, me.MoreConfetti);
-        IconButton(prt, new Vector2(60f, -h / 2 + 50f), iconName, iconName == "home" ? "Home" : "Back", font, p, me.Close);
+        IconButton(prt, new Vector2(-60f, -h / 2 + 50f), "confetti", "Confetti", font, me.MoreConfetti);
+        IconButton(prt, new Vector2(60f, -h / 2 + 50f), iconName, iconName == "home" ? "Home" : "Back", font, me.Close);
 
         me.confettiArea = rt;
         me.confettiColors = confettiColors != null && confettiColors.Length > 0 ? confettiColors : new[] { p.star, p.purpleStar, p.accent, p.text }; // colourful
@@ -162,7 +162,7 @@ public class FinaleScreen : MonoBehaviour
     }
 
     // an icon button: a white icon with its name under it, no background; IconHover gives the hover colour and grow
-    static void IconButton(RectTransform parent, Vector2 pos, string iconName, string name, TMP_FontAsset font, UIPalette p, Action onClick)
+    static void IconButton(RectTransform parent, Vector2 pos, string iconName, string name, TMP_FontAsset font, Action onClick)
     {
         var root = Box(name + "Button", parent, pos, new Vector2(100f, 90f), Color.clear);
         root.raycastTarget = true; // the clickable area (see-through)

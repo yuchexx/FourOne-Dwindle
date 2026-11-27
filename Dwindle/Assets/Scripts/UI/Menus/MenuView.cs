@@ -87,13 +87,12 @@ public class MenuView : MonoBehaviour
         CloseOverlays();
         startScreen.SetActive(false);
         levelsScreen.SetActive(true);
-        levelSelect.Open(); // refresh, and open on the part map
+        levelSelect.Open(); // refresh, and open on the last opened level's page
     }
 
     // the Levels page's Back button
     public void HideLevels()
     {
-        if (levelSelect != null && levelSelect.BackToMap()) return; // a part's list goes back to the part map first
         levelsScreen.SetActive(false);
         startScreen.SetActive(true);
     }
@@ -137,6 +136,8 @@ public class MenuView : MonoBehaviour
 
         for (int i = 0; i < rulesPages.Length; i++)
             rulesPages[i].SetActive(i == currentRulesPage);
+        foreach (var star in rulesPages[currentRulesPage].GetComponentsInChildren<StarGraphic>())
+            if (star.name.StartsWith("StarResult4Icon")) StarSparkle.Set(star, true); // the Stars page's purple stars glitter
 
         // as the Levels page's arrows: both show (with more than one page), greyed at the ends
         bool several = rulesPages.Length > 1;

@@ -96,7 +96,6 @@ public partial class BoardView : MonoBehaviour
         StopAllCoroutines(); // a Flash left over from the last level would touch a destroyed cell
         UIBuilder.Clear(cellsRoot);
         frames.Clear();
-        ForgetGuides(); // for the tutorial: its lines and closed marks go with the markers (BoardView.Tutorial.cs)
         UIBuilder.Clear(markersRoot);
         UIBuilder.Clear(objectsRoot);
         UIBuilder.Clear(choicesRoot);
@@ -612,7 +611,7 @@ public partial class BoardView : MonoBehaviour
 
     // a cell's own color: dark for an obstacle, darker for a tile an object has used.
     // closed (for the tutorial, see BoardView.Tutorial.cs): dimmed
-    Color CellColor(Cell cell) => cell.obstacle ? obstacleColor : cell.closed ? closedCellColor : cell.locked ? lockedCellColor : cellColor;
+    Color CellColor(Cell cell) => cell.obstacle ? obstacleColor : cell.locked ? lockedCellColor : cellColor;
 
     // an object went through this tile: from now on it can't be returned to the supply
     public void SetLocked(Vector2Int p, bool locked)
@@ -655,7 +654,7 @@ public partial class BoardView : MonoBehaviour
         HideGhost(p);
         var cell = Cells[p.x, p.y];
         var t = draggedFrom != null ? draggedTile : previewTile?.Invoke(); // a board tile being dragged previews itself
-        if (t == null || cell == null || cell.obstacle || cell.closed || cell.tile != null) return; // closed: for the tutorial
+        if (t == null || cell == null || cell.obstacle || cell.tile != null) return;
         ghost = Instantiate(tilePrefab, cell.view.transform);
         ghost.Show(t.Value, Color.Lerp(tileColor, cellColor, ghostFade));
         ghostCell = p;
@@ -785,7 +784,6 @@ public partial class BoardView : MonoBehaviour
         recording?.steps.Add(new RewindStep { kind = StepKind.Delivered, obj = o }); // for undo's rewind
         o.view.gameObject.SetActive(false);
         o.dest.SetDelivered(true);
-        ClearGuideLines(o.spec); // for the tutorial: its road's guide line goes (BoardView.Tutorial.cs)
     }
 
     // for undo: matches an object's view to its state - shown or delivered, facing, full size, crossed out if blocked.

@@ -17,7 +17,6 @@ public class TutorialStep
     public float delay;          // seconds to wait before the step shows; nothing can be clicked meanwhile
     public float bubbleWidth;    // 0 = as wide as its text, up to the Bubble Width in TutorialController's Style; below 0 = no limit (one line)
     public string buttonText;    // the Next button's label; null = "Next"
-    public bool skippable;       // a Skip button next to Next, passing this run of Next steps (see TutorialController.SkipFrom)
     public bool backable;        // a Back button left of Next (never on the first step): the step before shows again
     public Action onShow;        // runs as the step shows, to set the game up for what the step teaches
     public Action onDone;        // runs as the step ends, e.g. to undo what onShow changed
@@ -28,8 +27,6 @@ public class TutorialStep
     public Func<GameAction, string> wrong;
     // a "do it" step that ends when this turns true (checked every frame), e.g. Settings opened
     public Func<bool> until;
-    // a to-do box (top left) moved down this far, to clear something drawn under the title (the tour's label)
-    public float topLeftDrop;
     // the Next button's icon (Resources/UIIcons), e.g. "nextlvl" on a last step; null = the next arrow
     public string buttonIcon;
     public bool dim;      // darken everything outside the boxes (the screen tour)
@@ -174,45 +171,18 @@ public static partial class Tutorials
 public enum CoachReply
 {
     None,  // nothing to do
-    Reset, // the attempt went the wrong way: the level starts over (the steps don't) and resetNote shows
-    Undo,  // a slip: the last placement is undone (as with the Undo button) and undoNote shows
-    Done,  // the player did what it teaches: its guides come down for good, doneSteps show; it watches on (Undo can
-           // still come) until the level ends
+    Undo,  // a slip: undone at once (a wrong way back to its arrows), with the coach's note in the red box
+    Done,  // the player did what it teaches: its steps stop for good; it watches on (Undo can still come) until the
+           // level ends
 }
 
-// guidance that stays after a tutorial's steps end, until the player has done what it teaches: no dim and no bubble,
-// just guides on the board. it's set up again each time its level loads (a restart, or its own reset); leaving the
-// level pauses it, coming back picks it up again. TutorialController runs it
+// what watches the player after a tutorial's steps end, until they've done what it teaches. it's set up again each
+// time its level loads; leaving the level pauses it, coming back picks it up again. TutorialController runs it
 public class TutorialCoach
 {
-    public Action onLoaded;                       // the level's board is ready (just loaded, or the steps just ended): put the guides up
     public Func<GameAction, CoachReply> onAction; // each player action, once it has taken effect (GameManager.ActionDone)
-    public string resetNote;                      // shown in the corner after a Reset
-    public string undoNote;                       // shown in the corner after an Undo
-    public bool undoToChoice;                     // an Undo for a wrong way (ChooseDirection) goes back only to its arrow question (it shows again, the tile stays); false, or any other slip = the whole placement
-    public Func<GameAction, string> undoNoteFor;  // the note for the action that called for the Undo; null (or null back) = undoNote
-    public bool undoNoteRed;                      // the undo note in the red box under the to-do box, as Level 1's slips
-    public bool undoInstant;                      // the undo jumps back, no rewind shown
-    public Func<RectTransform>[] noteAbove;       // what the note stays above, so it covers none of it (see Target)
-    // the first Reset / the first Undo only: steps in place of resetNote / undoNote (the level loads again once the
-    // reset's steps end; the undo's show once the placement is undone). later ones get the note. null = always the note
-    public List<TutorialStep> firstResetSteps;
-    public List<TutorialStep> firstUndoSteps;
-    // set by TutorialController as each is shown. a coach is made for each run of its tutorial (the Tutorial button
-    // makes a new one), and kept across restarts and leaving the level, so each shows once per run
-    public bool firstResetShown, firstUndoShown;
-    // an Undo of another kind than the usual (e.g. a wrong tile, besides a wrong way): for the action that called for
-    // it, that kind's own first steps, in place of firstUndoSteps; null (or null back) = firstUndoSteps. return the
-    // same list each time for a kind: each list shows once per run (firstUndoShownFor, set by TutorialController)
-    public Func<GameAction, List<TutorialStep>> firstUndoStepsFor;
-    public readonly HashSet<List<TutorialStep>> firstUndoShownFor = new();
-    public List<TutorialStep> doneSteps;          // shown after Done, like the tutorial's steps (e.g. what the player just earned)
+    public Func<GameAction, string> undoNoteFor;  // the red box's note for the action that called for the Undo
     // until Done: as each delivered object's tile breaks (the delivered object, everyone delivered with it), steps to
     // show it before the next one breaks; null = carry on (GameManager.onRemoval)
     public Func<Arrival, string[], List<TutorialStep>> removalSteps;
-    // until Done: as an object comes out of a door (the object's name, the door's letter), steps to show; null = none.
-    // a door with two ways shows its arrows, and the steps show over them (nothing held: the arrows wait for a click
-    // anyway, GameManager.onDoorQuestion); a door on the board's edge has one way, and the object waits at it, facing
-    // in, till the steps end (GameManager.onDoorExit). an Undo back to the arrows asks again, so show each once
-    public Func<string, string, List<TutorialStep>> doorSteps;
 }

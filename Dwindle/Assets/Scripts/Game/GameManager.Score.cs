@@ -40,11 +40,11 @@ public partial class GameManager
 
     // the ending screen: from the last level's Next (Home: the title screen), or from the Levels page's end card
     // (Back: the Levels page again)
-    // the last level just ended with these stars: the ending screen opens after it (editor: always; a build: every
-    // level starred, this one too; its record isn't saved yet when the end window shows)
+    // the last level just ended with these stars: the ending screen opens after it (every level starred, this one too,
+    // or Unlock all in the editor; its record isn't saved yet when the end window shows)
     bool FinaleAfter(int stars)
     {
-        if (Session.DevTools) return true;
+        if (Session.DevTools && Session.unlockAll) return true;
         if (stars < 1) return false;
         for (int i = 0; i < Levels.All.Count; i++) if (i != levelIndex && Session.Get(i).stars < 1) return false;
         return true;

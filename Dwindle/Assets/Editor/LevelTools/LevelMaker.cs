@@ -1,4 +1,4 @@
-using System; using System.Collections.Generic; using System.IO; using System.Linq; using System.Text; using UnityEngine;
+using System; using System.Collections.Generic; using System.IO; using System.Linq; using System.Text;
 
 public enum Want { Any, Yes, No }
 // for a trick the best plan can use: Required = no plan without it reaches the target; UsedByBestPlan = the best plan

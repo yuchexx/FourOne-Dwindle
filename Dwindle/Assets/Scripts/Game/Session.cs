@@ -9,7 +9,6 @@ public static class Session
     // every saved value starts with this. each build has its own id (Unity makes a new one per build), so builds
     // never share progress and a new build starts clear. the editor keeps one save
     static readonly string Key = "dwindle." + (string.IsNullOrEmpty(Application.buildGUID) ? "editor" : Application.buildGUID) + ".";
-    public static string SaveKey(string name) => Key + name; // for other saved values (the part map's object)
 
     // Settings: every level can be played, whatever the stars
     static bool unlockAllValue;
@@ -79,11 +78,11 @@ public static class Session
 
     // open when it's the first level, the one before it is passed, or Unlock all is on
     public static bool IsUnlocked(int level) => (unlockAll && DevTools) || level == 0 || Passed(level - 1);
-    // the editor only: Unlock all, and the ending screen after just the last level (a build: every level needs a star)
+    // the editor only: Unlock all (levels and the ending)
     public static bool DevTools => Application.isEditor;
     public static bool AllStarred { get { for (int i = 0; i < Levels.All.Count; i++) if (Get(i).stars < 1) return false; return true; } }
-    // the ending screen can open: always in the editor, else once every level has at least one star
-    public static bool FinaleOpen => Levels.All.Count > 0 && (DevTools || AllStarred); // the editor: always (for testing)
+    // the ending screen can open: once every level has at least one star, or with Unlock all (editor)
+    public static bool FinaleOpen => Levels.All.Count > 0 && (AllStarred || (unlockAll && DevTools));
 
     // where Start goes: the first level not passed (so Level 1 until it's done), or the last level once all are
     public static int StartLevel(int count)
@@ -122,12 +121,6 @@ public static class Session
     public static bool GuideDone(int level) => PlayerPrefs.GetInt($"{Key}level{level}.guide", 0) == 1;
     public static void MarkGuideDone(int level) => SetInt($"level{level}.guide", 1);
 
-    // the Levels page's colour groups: each cleared group celebrates once
-    public static bool Celebrated(int group) => PlayerPrefs.GetInt($"{Key}group{group}.celebrated", 0) == 1;
-    public static void MarkCelebrated(int group) => SetInt($"group{group}.celebrated", 1);
-    // the ending screen after the last level: once
-    public static bool FinaleSeen => PlayerPrefs.GetInt(Key + "finale", 0) == 1;
-    public static void MarkFinaleSeen() => SetInt("finale", 1);
     // the hint guide for a stage (1 or 2) has played once (it plays by itself only the first time)
     public static bool HintGuideSeen(int stage) => PlayerPrefs.GetInt(Key + "hintguide" + stage, 0) == 1;
     public static void MarkHintGuideSeen(int stage) => SetInt("hintguide" + stage, 1);

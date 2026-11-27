@@ -23,30 +23,6 @@ public partial class GameManager
         return cell?.view != null ? (RectTransform)cell.view.transform : null;
     }
 
-    // the ring of the object with this color (the score history's rows know objects by color); null when none has it
-    public RectTransform RingRectOf(Color color)
-    {
-        var o = objects?.Find(x => x.spec.color == color);
-        return o != null ? (RectTransform)o.dest.transform : null;
-    }
-
-    // the door the object with this color last came out of: its bar, or its letter's badge; null when it used none
-    public RectTransform DoorOutRect(Color color, bool badge)
-    {
-        var o = objects?.Find(x => x.spec.color == color);
-        if (o == null || o.doorsUsed.Count == 0) return null;
-        var pass = o.doorsUsed[o.doorsUsed.Count - 1];
-        var cell = level.At(pass.outBoard, pass.outSquare.x, pass.outSquare.y);
-        int which = 0; // which end of its pair, in the level's order (as BoardView.DoorPart counts them)
-        foreach (var d in level.doors)
-        {
-            if (d.label != pass.door) continue;
-            if (d.board == pass.outBoard && d.cell == cell && d.side == pass.outSide) return board.DoorPart(d.label, which, badge);
-            which++;
-        }
-        return null;
-    }
-
     // a door's bar, or its letter's badge (see BoardView.DoorPart)
     public RectTransform DoorRect(string label, int which, bool badge) => board.DoorPart(label, which, badge);
     public List<string> DoorLabels() => level == null ? new List<string>() : level.doors.Select(d => d.label).Distinct().ToList(); // each door pair's letter
@@ -58,63 +34,6 @@ public partial class GameManager
 
     // for the tutorial: the tile on a board's square (as in Levels.cs), or null
     public TileType? TileAt(int boardIndex, int x, int y) { var c = level.At(boardIndex, x, y); return Cells[c.x, c.y].tile; }
-
-    // the road to build, dotted across the board like the lines from its start and to its ring (BoardView.GuideLine);
-    // each square's part hides under a tile. squares: the road's squares from the start's side, as (board, x, y) as in
-    // Levels.cs, each next to the one before, or through a door: two squares not next to each other are a door's two
-    // sides, and the line stops at the door it goes into and goes on from its partner. none = straight from the start
-    // to the ring, for an object whose start and ring are in one row or column. gone once the object is delivered,
-    // when the level loads again, or with ClearGuides
-    public void ShowRoadLine(string name, params (int board, int x, int y)[] squares)
-    {
-        var o = Named(name);
-        if (o == null) return;
-        var road = new List<Vector2Int>();
-        foreach (var s in squares) road.Add(level.At(s.board, s.x, s.y));
-        if (road.Count == 0)
-        {
-            var step = o.spec.dest - o.spec.start;
-            if (step.x != 0 && step.y != 0) return; // not straight: it needs its squares
-            var d = new Vector2Int(System.Math.Sign(step.x), System.Math.Sign(step.y));
-            for (var c = o.spec.start + d; c != o.spec.dest; c += d) road.Add(c);
-        }
-        if (road.Count == 0) return; // no square to cross
-        // in stretches between doors
-        Vector2 from = board.EdgeBetween(o.spec.start, road[0]);
-        var stretch = new List<Vector2Int> { road[0] };
-        for (int i = 1; i <= road.Count; i++)
-        {
-            if (i < road.Count && Mathf.Abs(road[i].x - road[i - 1].x) + Mathf.Abs(road[i].y - road[i - 1].y) == 1)
-            {
-                stretch.Add(road[i]);
-                continue;
-            }
-            if (i == road.Count) // the last stretch, to the ring
-            {
-                board.GuideLine(o.spec, from, stretch, board.EdgeBetween(o.spec.dest, stretch[stretch.Count - 1]));
-                break;
-            }
-            // a jump: the door on the last square's edge whose partner is on the next square's
-            var into = level.doors.FirstOrDefault(d => Touches(d, road[i - 1]) && Touches(level.Partner(d), road[i]));
-            if (into == null) return; // not a door: nothing more to draw
-            var outOf = level.Partner(into);
-            board.GuideLine(o.spec, from, stretch, board.EdgePos(into.cell, into.side));
-            from = board.EdgePos(outOf.cell, outOf.side);
-            stretch = new List<Vector2Int> { road[i] };
-        }
-    }
-
-    // the door is on one of the square's edges
-    static bool Touches(DoorSpec door, Vector2Int square) => door.cell == square || door.Neighbor == square;
-
-    // no tile can go on the square until OpenSquare or ClearGuides (or the level loads again); it's dimmed and has a big X
-    public void CloseSquare(int boardIndex, int x, int y) => board.SetClosed(level.At(boardIndex, x, y), true);
-
-    // a closed square opens, its X fading out (BoardView.OpenAnimated)
-    public void OpenSquare(int boardIndex, int x, int y) => board.OpenAnimated(level.At(boardIndex, x, y), 0.4f);
-
-    // the road lines go and the closed squares open
-    public void ClearGuides() => board.ClearGuides();
 
     // while held, a level that's over doesn't end: no end window, no stuck notice, no result saved. for a coach about
     // to reset the level (ReloadLevel), so the attempt it throws away doesn't count as played. LoadLevel lets go
@@ -128,18 +47,6 @@ public partial class GameManager
     public System.Func<Arrival, string[], bool> onRemoval;
     bool removalHeld;
     public void ReleaseRemoval() => removalHeld = false;
-
-    // called as an object coming out of a door gets its arrows (AskDirectionWithRedo), with its name and the door's
-    // letter, so a step can show over them. nothing is held: the arrows wait for a click anyway (not when a redo
-    // answers them: then no arrows show, and this isn't called)
-    public System.Action<string, string> onDoorQuestion;
-
-    // called as an object comes out of a door with one way to go (the door on the board's edge: no arrows), with its
-    // name and the door's letter; true holds it there, facing in, until ReleaseDoorExit, so a step can show it.
-    // LoadLevel lets go of a hold
-    public System.Func<string, string, bool> onDoorExit;
-    bool doorExitHeld;
-    public void ReleaseDoorExit() => doorExitHeld = false;
 
     // while held, delivering together doesn't flash the + slot (the earned flash) right away: the tutorial plays it
     // later with FlashEarnedPlus, once a step frames the slot. LoadLevel lets go

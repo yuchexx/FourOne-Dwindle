@@ -78,7 +78,6 @@ public class TelemetryManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
             gameManagerScript = gameManager.GetComponent<GameManager>();
             levelAttemptsPreCompletion = new List<int>();
             levelAttemptsPostCompletion = new List<int>();

@@ -101,30 +101,16 @@ public static partial class Tutorials
     static bool SettingsOpen(GameManager game) =>
         game.menu != null && game.menu.settings != null && game.menu.settings.panel != null && game.menu.settings.panel.activeInHierarchy;
 
-    // the scene has hand-placed tour boxes (TutorialArea)
-    static bool Placed(GameManager game) => UnityEngine.Object.FindObjectsByType<TutorialArea>(FindObjectsInactive.Exclude, FindObjectsSortMode.None).Length > 0;
-
-    // the screen tour's boxes: TutorialArea objects placed in the scene if there are any, else these
-    static (Func<RectTransform>[] parts, string text)[] TourBoxes(GameManager game)
+    // the screen tour's boxes
+    static (Func<RectTransform>[] parts, string text)[] TourBoxes(GameManager game) => new[]
     {
-        var placed = UnityEngine.Object.FindObjectsByType<TutorialArea>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-        if (placed.Length > 0)
-        {
-            Array.Sort(placed, (a, b) => a.order.CompareTo(b.order));
-            var list = new List<(Func<RectTransform>[] parts, string text)>();
-            foreach (var p in placed) { var rt = (RectTransform)p.transform; list.Add((new Func<RectTransform>[] { () => rt }, p.text)); }
-            return list.ToArray();
-        }
-        return new[]
-        {
-            (new[] { Hud(game, "HomeButton"), TitleText(game) }, "Pause menu"),
-            (new[] { Padded(Score(game), 14f, 4f) }, "Hover score\nto see details"),
-            (HudAll(game, "MoreMenu"), "Rules\n& settings"),
-            (new[] { Target.Hint(game) }, "Hints\nfor help"),
-            (new[] { Target.Supply(game) }, "Tiles provided"),
-            (new[] { Target.Undo(game), Redo(game), Hud(game, "Restart") }, "Controls\nfor placing"),
-        };
-    }
+        (new[] { Hud(game, "HomeButton"), TitleText(game) }, "Pause menu"),
+        (new[] { Padded(Score(game), 14f, 4f) }, "Hover score\nto see details"),
+        (HudAll(game, "MoreMenu"), "Rules\n& settings"),
+        (new[] { Target.Hint(game) }, "Hints\nfor help"),
+        (new[] { Target.Supply(game) }, "Tiles provided"),
+        (new[] { Target.Undo(game), Redo(game), Hud(game, "Restart") }, "Controls\nfor placing"),
+    };
 
     static List<TutorialStep> FirstLevel(GameManager game) => new()
     {
@@ -136,7 +122,7 @@ public static partial class Tutorials
             labels = TourBoxes(game),
             bubble = BubbleSide.TopLeft,
             bubbleUnderLabel = 0, // under "PAUSE MENU", lined up with its box
-            align = Placed(game) ? null : new[] { (0, 'L', 2), (2, 'B', 4), (3, 'B', 4), (5, 'B', 4), (1, 'R', 5) }, // pause box left = Rules box left; bottom boxes level with the tiles box; score box right = controls box right
+            align = new[] { (0, 'L', 2), (2, 'B', 4), (3, 'B', 4), (5, 'B', 4), (1, 'R', 5) }, // pause box left = Rules box left; bottom boxes level with the tiles box; score box right = controls box right
             onShow = () => game.hud.HoldMoreMenu(true), // the More menu open, so its box shows what's inside
             onDone = () => game.hud.HoldMoreMenu(false),
             buttonText = "Start",
@@ -285,12 +271,11 @@ public static partial class Tutorials
 
     static readonly Dictionary<string, Dir> PlusWays = new() { { "Red", Dir.W }, { "Blue", Dir.N } };
     static bool plusBreakShown; // this run: the + break was explained
-    static int plusAlone;       // this run: times one was delivered alone
 
     // do: the box goes as soon as the first tile is placed (nothing boxed, as Level 1's do steps)
     static List<TutorialStep> PlusCombo(GameManager game)
     {
-        plusBreakShown = false; plusAlone = 0;
+        plusBreakShown = false;
         return new()
         {
             new TutorialStep
@@ -306,9 +291,6 @@ public static partial class Tutorials
     // (a lone delivery's first time has the break step before it); the undo jumps back, no rewind shown
     static TutorialCoach PlusComboCoach(GameManager game) => new()
     {
-        undoToChoice = true, // a wrong arrow: back to its arrows, the tile stays
-        undoNoteRed = true,
-        undoInstant = true,
         undoNoteFor = a => a.kind == GameActionKind.ChooseDirection ? "Wrong way: each object heads to its own ring."
             : "Delivering only one object first removes\nthe + tile needed by the other object.\nPlace the + last to deliver both at the same time.",
         onAction = a =>
@@ -317,7 +299,6 @@ public static partial class Tutorials
                 return CoachReply.Undo;
             if (a.kind != GameActionKind.Delivered || a.arrivals == null) return CoachReply.None;
             if (a.arrivals.Length >= 2) return CoachReply.Done;
-            plusAlone++;
             return CoachReply.Undo; // the other can't get there now: the placement is undone
         },
         // as Level 1's: the game pauses as the + breaks, its square boxed, the box right of the board. the first lone
@@ -455,12 +436,6 @@ public static partial class Tutorials
     public static List<TutorialStep> HintGuide(GameManager game, HintButton hb, int stage)
     {
         var steps = new List<TutorialStep>();
-        // as the Level 1 and 3 guides: about the HUD (Hints, the order line, Hide / Help): the box top left; about the board
-        // (a junction, a ring, a ghost, an arrow): the box left of the boards, never over them. 330 wide
-        void Add(string text, params Func<RectTransform>[] targets) =>
-            steps.Add(new TutorialStep { text = text, targets = targets, bubbleWidth = 330f, backable = steps.Count > 0, bubble = BubbleSide.TopLeft });
-        void AddOnBoard(string text, params Func<RectTransform>[] targets) =>
-            steps.Add(new TutorialStep { text = text, targets = targets, bubbleWidth = 330f, backable = steps.Count > 0, bubble = BubbleSide.TopLeft, bubbleBy = Frames(game), keepSide = true });
         var board = game.board;
         if (stage == 1)
         {

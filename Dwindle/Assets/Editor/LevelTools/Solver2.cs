@@ -207,7 +207,7 @@ class Solver2
         {
             var quickOne = SamePlans(); quickOne.quick = true;
             var q = quickOne.Best();
-            if (q != null && new Replay2(L).Run(q, any: lucky).ok) best = q;
+            if (q != null && new Replay2(L).Run(q).ok) best = q;
             else
             {
                 // and if nothing works even when breaks are ignored, nothing works with them (this is the slow case otherwise)
@@ -312,7 +312,7 @@ class Solver2
                 if (verify && ++replays > maxReplays) throw new ReplayLimit();
                 if (verify)
                 {
-                    var rp = new Replay2(L).Run(plan, any: lucky);
+                    var rp = new Replay2(L).Run(plan);
                     // too many ways the tiles could break to follow them all: the plan isn't known to fail, so the list could be short
                     if (!rp.ok && every != null && rp.problem.StartsWith("too many ways")) limitHit = true;
                     if (!rp.ok) return;
@@ -394,15 +394,4 @@ class Solver2
         return best;
     }
 
-    public string Describe(Plan p)
-    {
-        if (p == null) return "  no solution";
-        var objs = L.objects;
-        var sb = new System.Text.StringBuilder();
-        sb.Append($"  score {p.score}, tiles {p.cells}, combos {p.combos} ({p.comboObjects} objects), door objects {p.doorObjects}, hits {p.hits}\n");
-        sb.Append("  events: " + string.Join(" then ", p.events.Select((g, i) => "{" + string.Join(",", g.Select(j => objs[j].name)) + "} last " + LB.Local(L, p.lastCells[i]))) + "\n");
-        for (int i = 0; i < objs.Count; i++)
-            sb.Append($"    {objs[i].name}: " + string.Join(" ", p.routes[i].steps.Select(st => $"{LB.Local(L, st.cell)}={LB.Short(p.tiles[st.cell])}>{st.exit}")) + (p.routes[i].doors > 0 ? $"  [{p.routes[i].doors} doors]" : "") + "\n");
-        return sb.ToString();
-    }
 }

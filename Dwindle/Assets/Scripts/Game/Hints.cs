@@ -16,14 +16,6 @@ public class Hints
 
     public void Clear() { Stage = 0; Revealed = 0; }
 
-    // stage 1 (with the order): how many tiles the best plans place, and how many are left in the supply at the end
-    // (the supply plus the + tiles earned by delivering together, on the answer's plan)
-    public static string TilesText(LevelData l)
-    {
-        int left = TilesLeft(l);
-        return left >= 0 ? $"Best plans: {l.bestTiles} tiles used, {left} left" : $"Best plans: {l.bestTiles} tiles used";
-    }
-
     public static int TilesLeft(LevelData l)
     {
         var s = l.solution;

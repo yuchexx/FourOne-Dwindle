@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 // Redo reapplies only actions removed by Undo. A new placement, move, take-back or direction starts a new branch.
 public partial class GameManager
@@ -34,7 +33,7 @@ public partial class GameManager
             var at = level.At(action.board, action.square.x, action.square.y);
             var cell = Cells[at.x, at.y];
             if (snapshot.takeBack) return cell.tile == action.tile && !cell.locked;
-            if (cell.tile != null || cell.obstacle || cell.closed) return false;
+            if (cell.tile != null || cell.obstacle) return false;
             if (snapshot.move)
             {
                 if (snapshot.movedFrom == null) return false;
@@ -159,7 +158,6 @@ public partial class GameManager
         else
         {
             var partner = level.Partner(door);
-            onDoorQuestion?.Invoke(o.spec.name, door.label); // for the tutorial (GameManager.Tutorial.cs): a step over these arrows
             yield return board.AskDirectionAt(o, board.EdgePos(partner.cell, partner.side), ways, HintArrow(o, door));
         }
         if (!redoingChoice) ClearRedo();

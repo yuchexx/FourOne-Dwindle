@@ -13,14 +13,12 @@ public class HintNote : MonoBehaviour
      [System.NonSerialized] public float fontSize = 20f;
      [System.NonSerialized] public float iconSize = 26f;
      [System.NonSerialized] public float frameWidth = 3f;
-     [System.NonSerialized] public string orderText = "delivery order", junctionText = "meeting junctions";
+     [System.NonSerialized] public string junctionText = "meeting junctions";
      [System.NonSerialized] public string pressText = "Each press: next step", doneText = "placed correct";
     [Tooltip("The note's first line; {s} is the stage, {total} the number of stages, {name} the stage's name")]
      [System.NonSerialized] public string headerText = "Hint {s}/{total} · {name}";
      [System.NonSerialized] public string[] stageTitles = { "Order", "Answer" }; // one per stage (was stageNames, with a "Tiles" stage first)
      [System.NonSerialized] public float headerSize = 20f;
-    [Tooltip("Stage 1's tile line (its tile count is in the supply bar)")]
-     [System.NonSerialized] public string tilesText = "Below the supply dock";
 
     readonly List<Graphic> pulsing = new();
     int shownStage = -1;
@@ -78,10 +76,6 @@ public class HintNote : MonoBehaviour
         b.targetGraphic = label;
         b.onClick.AddListener(() => GuideClicked?.Invoke());
     }
-
-    // stage 1's tile line says the numbers itself, e.g. "Best plans use 7 tiles and leave 2 unused"
-    TextMeshProUGUI tilesLabel;
-    public void SetTiles(string text) { if (tilesLabel != null) tilesLabel.text = text; }
 
     // stage 1's delivery order as one line under the header: "1 ● ●   2 ●", each object's colour, faded once it's delivered.
     // rebuilt on every hint redraw (the plan can change as the board does, and objects arrive)
@@ -166,19 +160,6 @@ public class HintNote : MonoBehaviour
         var back = Fill(box, color);
         Hash(box, pulse);
         if (pulse) pulsing.Add(back);
-    }
-
-    // a destination's circle with a white #
-    void Round(RectTransform row, Color color)
-    {
-        var box = Box(row, "Ring");
-        var circle = UIBuilder.Circle(board.objectPrefab, box, color, iconSize);
-        var rt = circle.Rect;
-        rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.anchoredPosition = Vector2.zero;
-        rt.localEulerAngles = Vector3.zero;
-        Hash(box, true);
-        pulsing.Add(circle.body);
     }
 
     // four Hint bars, like a junction's frame

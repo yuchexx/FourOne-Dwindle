@@ -17,29 +17,6 @@ public partial class GameManager
     public int HintStage => hints.Stage;     // 0 to 2
     public bool PurpleLost => hints.PurpleLost;
     public bool HintHidden { get; set; }     // Hide hint: the overlay is hidden, the stage stays
-    public string HintTilesText => Hints.TilesText(level); // (no longer shown: the line under the dock is the order now)
-
-    // the line under the supply dock from stage 1 on: the delivery order as coloured blocks, "Deliver [Red][Blue]  then
-    // [Green]", each object's block faded once it's delivered (TMP's mark: a block in any font)
-    public string HintOrderText
-    {
-        get
-        {
-            var groups = HintOrderLine();
-            if (groups.Count == 0) return "";
-            var sb = new System.Text.StringBuilder("Deliver ");
-            for (int i = 0; i < groups.Count; i++)
-            {
-                if (i > 0) sb.Append("  then ");
-                foreach (var (color, delivered) in groups[i])
-                {
-                    var c = color; if (delivered) c.a = 0.25f;
-                    sb.Append("<mark=#").Append(ColorUtility.ToHtmlStringRGBA(c)).Append(">   </mark> "); // a block: three hard spaces, marked
-                }
-            }
-            return sb.ToString().TrimEnd(' ');
-        }
-    }
     // stage 1, fixed when shown: who arrives in which delivery (same number = together), and where groups meet
     public List<(string objectName, int number)> HintBadges { get; private set; } = new List<(string, int)>();
     public List<(Vector2Int square, int number)> HintJunctions { get; private set; } = new List<(Vector2Int, int)>();

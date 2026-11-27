@@ -1,4 +1,4 @@
-using System; using System.Collections.Generic; using System.IO; using System.Linq; using UnityEngine;
+using System.IO; using System.Linq;
 
 // the end window's two tips (finishHint at 0 or 1 star, bestPlanHint at 2; sentences in Tips.cs) and tile names, for the Level Maker
 static class Export

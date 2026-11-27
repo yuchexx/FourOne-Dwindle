@@ -7,8 +7,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // the tutorial's look, set on TutorialController (in Play mode, changes show from the next step). the frames and the
-// Next button and the floating points are in the UI Palette's Tutorial color (a yellow), Skip and Back a fixed grey
-// (SkipColor), the dim fixed too (Dim); the notes are in the UI Palette's Accent (the theme color)
+// Next button and the floating points are in the UI Palette's Tutorial color (a yellow), Back a fixed grey
+// (BackColor), the dim fixed too (Dim)
 [Serializable]
 public class TutorialStyle
 {
@@ -16,25 +16,16 @@ public class TutorialStyle
      [System.NonSerialized] public float targetPadding = 6f;  // around a target's element (TutorialStep.targets), so the frame doesn't touch it
      [System.NonSerialized] public float shakeDistance = 8f;  // how far the frames swing when the dim is clicked; 0 = no shake
      [System.NonSerialized] public float shakeSeconds = 0.35f;
-     [System.NonSerialized] public Color bubbleColor = new Color(0.13f, 0.14f, 0.17f);
      [System.NonSerialized] public Color textColor = Color.white;
      [System.NonSerialized] public float fontSize = 26f;
      [System.NonSerialized] public float bubbleWidth = 560f;
      [System.NonSerialized] public float padding = 20f;  // inside the bubble
      [System.NonSerialized] public Vector2 buttonSize = new Vector2(120f, 44f);
      [System.NonSerialized] public float gap = 16f;      // between the areas and the bubble, and between the bubble and the screen edge
-    [Header("Notes (a coach's, in the bottom-right corner, in the UI Palette's Accent)")]
-     [System.NonSerialized] public float noteWidth = 400f;
-    // from the screen's right and bottom edges (lined up with Restart's right edge). the notes also keep Gap above
-    // whatever their coach names (TutorialCoach.noteAbove: the supply bar and the buttons), wherever they are; several
-    // stack up, the newest at the bottom, Gap apart
-     [System.NonSerialized] public Vector2 noteMargin = new Vector2(22f, 24f);
-     [System.NonSerialized] public float noteCloseSize = 32f;                  // its X button, in the top-right corner
 }
 
 // dims the screen except the step's areas, blocks clicks, and shows a text bubble with an optional Next button
-// (and a Skip button left of it). also notes on their own (ShowNote): no dim, nothing blocked, in the bottom-right
-// corner. made entirely from code, as the last child of the canvas
+// (and a Back button left of it). made entirely from code, as the last child of the canvas
 public class TutorialOverlay : MonoBehaviour
 {
     Canvas canvas;
@@ -45,8 +36,8 @@ public class TutorialOverlay : MonoBehaviour
     readonly List<Image> dims = new();      // the dim, in as many pieces as the areas cut the screen into
     readonly List<Image> frames = new();    // four edges per area
     Image blocker;                          // see-through, over everything but the bubble, for look-only steps
-    Image bubble, button, skipButton, backButton;
-    TMP_Text text, buttonLabel, skipLabel, backLabel;
+    Image bubble, button, backButton;
+    TMP_Text text, buttonLabel, backLabel;
 
     TutorialStep step;
     // the overlay showing a step that lets hint tips through, if any; its bubble still counts as covering the board
@@ -54,21 +45,9 @@ public class TutorialOverlay : MonoBehaviour
     public bool IsBubble(Transform t) => t.IsChildOf(bubble.transform);
     void OnDisable() { if (HoverHints == this) HoverHints = null; }
     Vector2 bubbleSize;
-    bool nextClicked, skipClicked, backClicked;
+    bool nextClicked, backClicked;
     float shakeStart = -1; // when the frames started shaking; -1 = still
     readonly Vector3[] corners = new Vector3[4]; // a target's world corners, reused every frame
-
-    // the notes (ShowNote), oldest first; the newest sits at the bottom
-    class Note
-    {
-        public Image bubble;
-        public string message;
-        public float until = -1;    // when it closes by itself; -1 = only with its X
-        public float y = float.NaN; // where it is now (it slides up as newer ones come in); NaN = not placed yet
-    }
-    readonly List<Note> notes = new();
-    Func<RectTransform>[] noteAbove; // what the notes keep above (ShowNote)
-    const float NoteSlide = 14f;     // how fast a note slides to its place (the higher, the quicker)
 
     // floating points (ShowPop): bold text in the UI Palette's Tutorial yellow, over the elements it's about, rising
     // a little as it fades in
@@ -132,21 +111,8 @@ public class TutorialOverlay : MonoBehaviour
         buttonLabel.alignment = TextAlignmentOptions.Center;
         Stretch(buttonLabel.rectTransform);
 
-        skipButton = MakeImage("SkipButton", bubble.rectTransform, raycast: true);
-        var srt = skipButton.rectTransform; // the bottom-right corner too, moved left of Next in Show
-        srt.anchorMin = srt.anchorMax = srt.pivot = new Vector2(1, 0);
-        var skip = skipButton.gameObject.AddComponent<Button>();
-        skip.targetGraphic = skipButton;
-        skip.onClick.AddListener(() => skipClicked = true);
-
-        skipLabel = MakeText("Label", srt);
-        skipLabel.text = "Skip";
-        skipLabel.fontStyle = FontStyles.Bold;
-        skipLabel.alignment = TextAlignmentOptions.Center;
-        Stretch(skipLabel.rectTransform);
-
         backButton = MakeImage("BackButton", bubble.rectTransform, raycast: true);
-        var brt = backButton.rectTransform; // the bottom-right corner too, moved left of Next (and Skip) in Show
+        var brt = backButton.rectTransform; // the bottom-right corner too, moved left of Next in Show
         brt.anchorMin = brt.anchorMax = brt.pivot = new Vector2(1, 0);
         var back = backButton.gameObject.AddComponent<Button>();
         back.targetGraphic = backButton;
@@ -158,115 +124,19 @@ public class TutorialOverlay : MonoBehaviour
         backLabel.alignment = TextAlignmentOptions.Center;
         Stretch(backLabel.rectTransform);
 
-        // icons in place of the words (the plan): next, skip, back
-        foreach (var img in new[] { bubble, button, skipButton, backButton }) Round(img); // rounded corners
-        nextIcon = Icon(nrt, "nextpage"); Icon(srt, "endlvl"); Icon(brt, "prevpage");
-        buttonLabel.gameObject.SetActive(false); skipLabel.gameObject.SetActive(false); backLabel.gameObject.SetActive(false);
+        // icons in place of the words (the plan): next, back
+        nextIcon = Icon(nrt, "nextpage"); Icon(brt, "prevpage");
+        buttonLabel.gameObject.SetActive(false); backLabel.gameObject.SetActive(false);
 
     }
 
-    // a note in the bottom-right corner: nothing dimmed or blocked. it closes with its X, or by itself after `seconds`
-    // (0 = only with the X). a step showing, or Hide, closes it too. one already showing slides up over it; one with
-    // the same message goes, so it isn't there twice. above: elements the notes keep Gap above (missing or hidden ones
-    // don't count), found again every frame
-    public void ShowNote(string message, float seconds, Func<RectTransform>[] above = null)
-    {
-        noteAbove = above;
-        if (step == null) // not over a step: only the notes show
-        {
-            SetDimAndBubble(false);
-            blocker.gameObject.SetActive(false);
-        }
-        foreach (var old in notes.FindAll(n => n.message == message)) CloseNote(old);
-
-        // made over everything else in the overlay, the blocker too. as tall as its text, which leaves room on the
-        // right for the X
-        var palette = UIPalette.Current; // the theme color, and its text color
-        var bubble = MakeImage("Note", root, raycast: true); // clicks on it don't reach the game
-        Round(bubble);
-        bubble.color = palette.tutorial; // like the guide boxes
-        var ort = bubble.rectTransform; // from the bottom-right corner of the screen
-        ort.anchorMin = ort.anchorMax = ort.pivot = new Vector2(1, 0);
-        var note = new Note { bubble = bubble, message = message, until = seconds > 0 ? Time.unscaledTime + seconds : -1 };
-
-        float closeSize = style.noteCloseSize;
-        float textWidth = style.noteWidth - 2 * style.padding - closeSize;
-        var text = MakeText("Text", ort);
-        text.alignment = TextAlignmentOptions.TopLeft;
-        text.color = NextTextColor;
-        text.fontSize = style.fontSize * 0.85f;
-        text.text = message;
-        float textHeight = text.GetPreferredValues(message, textWidth, 0).y;
-        var trt = text.rectTransform; // the top-left corner, inside the padding
-        trt.anchorMin = trt.anchorMax = trt.pivot = new Vector2(0, 1);
-        trt.anchoredPosition = new Vector2(style.padding, -style.padding);
-        trt.sizeDelta = new Vector2(textWidth, textHeight);
-
-        var close = MakeImage("CloseButton", ort, raycast: true);
-        close.color = Color.clear; // just the X shows, the square still takes the click
-        var crt = close.rectTransform; // the top-right corner
-        crt.anchorMin = crt.anchorMax = crt.pivot = new Vector2(1, 1);
-        crt.anchoredPosition = new Vector2(-style.padding / 2, -style.padding / 2);
-        crt.sizeDelta = Vector2.one * closeSize;
-        var button = close.gameObject.AddComponent<Button>();
-        button.targetGraphic = close;
-        button.onClick.AddListener(() => CloseNote(note));
-        var x = MakeText("Label", crt);
-        x.text = "\u00D7"; // the multiplication sign, as an X
-        x.alignment = TextAlignmentOptions.Center;
-        x.color = NextTextColor;
-        x.fontSize = style.fontSize;
-        Stretch(x.rectTransform);
-
-        ort.sizeDelta = new Vector2(style.noteWidth, Mathf.Max(textHeight, closeSize) + 2 * style.padding);
-        notes.Add(note);
-        root.SetAsLastSibling(); // over every screen and pop-up
-        gameObject.SetActive(true);
-        PlaceNotes();
-    }
-
-    // Note Margin from the bottom-right corner, raised to Gap above the highest of the elements they keep above; the
-    // newest there, each older one Gap above the one after it. every frame, as those can move (a resized screen), and
-    // as notes come and go: the others slide to their new places
-    void PlaceNotes()
-    {
-        if (notes.Count == 0) return;
-        float bottom = style.noteMargin.y;
-        if (noteAbove != null)
-            foreach (var find in noteAbove)
-                if (find != null && Around(find(), out var r)) bottom = Mathf.Max(bottom, r.yMax + style.gap);
-        float slide = 1f - Mathf.Exp(-NoteSlide * Time.unscaledDeltaTime);
-        for (int i = notes.Count - 1; i >= 0; i--)
-        {
-            var n = notes[i];
-            n.y = float.IsNaN(n.y) ? bottom : Mathf.Lerp(n.y, bottom, slide);
-            n.bubble.rectTransform.anchoredPosition = new Vector2(-style.noteMargin.x, n.y);
-            bottom += n.bubble.rectTransform.sizeDelta.y + style.gap;
-        }
-    }
-
-    void CloseNote(Note note)
-    {
-        if (note.bubble != null) Destroy(note.bubble.gameObject);
-        notes.Remove(note);
-        HideIfEmpty();
-    }
-
-    // every note closes
-    public void HideNotes()
-    {
-        foreach (var n in notes) if (n.bubble != null) Destroy(n.bubble.gameObject);
-        notes.Clear();
-        HideIfEmpty();
-    }
-
-    // nothing left showing (no step, no blocker, no notes, no floating points): the overlay goes
+    // nothing left showing (no step, no blocker, no floating points, no red box): the overlay goes
     void HideIfEmpty()
     {
-        if (step == null && !blocker.gameObject.activeSelf && notes.Count == 0 && pops.Count == 0 && (errorBox == null || !errorBox.gameObject.activeSelf)) gameObject.SetActive(false);
+        if (step == null && !blocker.gameObject.activeSelf && pops.Count == 0 && (errorBox == null || !errorBox.gameObject.activeSelf)) gameObject.SetActive(false);
     }
 
-    // the end of a Block: things can be clicked again; any notes and floating points stay
+    // the end of a Block: things can be clicked again; any floating points stay
     public void Unblock()
     {
         blocker.gameObject.SetActive(false);
@@ -334,32 +204,30 @@ public class TutorialOverlay : MonoBehaviour
         }
     }
 
-    // canSkip: Skip shows left of Next; canBack: Back shows left of them (TutorialController decides which steps get them)
-    public void Show(TutorialStep s, bool canSkip = false, bool canBack = false)
+    // canBack: Back shows left of Next (TutorialController decides which steps get it)
+    public void Show(TutorialStep s, bool canBack = false)
     {
         step = s;
         HoverHints = s != null && s.hoverHints ? this : (HoverHints == this ? null : HoverHints);
-        nextClicked = skipClicked = backClicked = false;
+        nextClicked = backClicked = false;
         StopShake();
-        HideNotes(); // a step takes over the screen
 
         // the style again each step, so Inspector changes in Play mode show up (the dim and frames take theirs in Layout)
         bubble.color = UIPalette.Current.tutorial; // every guide box in the tutorial colour, dark text (the plan)
         button.color = BubbleButton; // dark on the tutorial colour
         buttonLabel.color = Color.white;
-        skipButton.color = backButton.color = SkipColor;
-        skipLabel.color = backLabel.color = Color.white;
+        backButton.color = BackColor;
+        backLabel.color = Color.white;
         text.color = NextTextColor;
         text.fontSize = style.fontSize;
-        buttonLabel.fontSize = skipLabel.fontSize = backLabel.fontSize = style.fontSize * 0.85f;
+        buttonLabel.fontSize = backLabel.fontSize = style.fontSize * 0.85f;
 
         bool doIt = s.doneWhen != null || s.until != null; // a "do it" step: no button, and the framed areas take clicks (the dim still blocks the rest)
-        if (doIt) canSkip = canBack = false;
+        if (doIt) canBack = false;
         SetDimAndBubble(true); // Block may have hidden them
         dimLayer.gameObject.SetActive(!doIt); // a "do it" step blocks nothing
         blocker.gameObject.SetActive(!doIt); // only the bubble's buttons take clicks
         button.gameObject.SetActive(!doIt);
-        skipButton.gameObject.SetActive(canSkip);
         backButton.gameObject.SetActive(canBack);
         buttonLabel.text = string.IsNullOrEmpty(s.buttonText) ? "Next" : s.buttonText;
         SetNextIcon(s.buttonIcon); // the arrow, or the step's own icon (e.g. next level)
@@ -370,7 +238,7 @@ public class TutorialOverlay : MonoBehaviour
         // is below 0. a step's own width wins over both. no text: just the buttons
         bool hasText = !string.IsNullOrEmpty(s.text);
         bool centered = s.targets == null || s.targets.Length == 0;
-        int buttons = 1 + (canSkip ? 1 : 0) + (canBack ? 1 : 0); // in a row from the right: Next, Skip, Back
+        int buttons = canBack ? 2 : 1; // in a row from the right: Next, Back
         float buttonsWidth = buttons * style.buttonSize.x + (buttons - 1) * style.gap;
         float snug = Mathf.Max(hasText ? text.GetPreferredValues(s.text).x + 1f : 0, buttonsWidth) + 2 * style.padding;
         float width = s.bubbleWidth > 0 ? s.bubbleWidth
@@ -386,9 +254,7 @@ public class TutorialOverlay : MonoBehaviour
         button.rectTransform.anchoredPosition = new Vector2(-style.padding, style.padding);
         button.rectTransform.sizeDelta = style.buttonSize;
         float slot = style.buttonSize.x + style.gap; // from one button's right edge to the next one's
-        skipButton.rectTransform.anchoredPosition = new Vector2(-style.padding - slot, style.padding);
-        skipButton.rectTransform.sizeDelta = style.buttonSize;
-        backButton.rectTransform.anchoredPosition = new Vector2(-style.padding - slot * (canSkip ? 2 : 1), style.padding);
+        backButton.rectTransform.anchoredPosition = new Vector2(-style.padding - slot, style.padding);
         backButton.rectTransform.sizeDelta = style.buttonSize;
         // a picture under the text (TutorialStep.drawPicture): a box as wide as the text, made fresh for each step
         if (picture != null) Destroy(picture.gameObject);
@@ -415,8 +281,6 @@ public class TutorialOverlay : MonoBehaviour
     {
         gameObject.SetActive(false);
         if (picture != null) { Destroy(picture.gameObject); picture = null; }
-        foreach (var n in notes) if (n.bubble != null) Destroy(n.bubble.gameObject); // the notes too
-        notes.Clear();
         ClearPops(); // and the floating points
         step = null;
         StopShake();
@@ -448,19 +312,11 @@ public class TutorialOverlay : MonoBehaviour
         return clicked;
     }
 
-    // true once per click on Skip
     // true once per click on Back
     public bool ConsumeBack()
     {
         bool clicked = backClicked;
         backClicked = false;
-        return clicked;
-    }
-
-    public bool ConsumeSkip()
-    {
-        bool clicked = skipClicked;
-        skipClicked = false;
         return clicked;
     }
 
@@ -480,7 +336,6 @@ public class TutorialOverlay : MonoBehaviour
     void Update()
     {
         if (DimPressed()) Shake();
-        foreach (var n in notes.FindAll(n => n.until >= 0 && Time.unscaledTime >= n.until)) CloseNote(n); // their time is up
     }
 
     // the screen can be resized, so the pieces are placed again every frame
@@ -494,7 +349,6 @@ public class TutorialOverlay : MonoBehaviour
         stepHidden = step != null && step.hideWhen != null && step.hideWhen(); // the step's own: its box and target frames go, its label boxes stay (TutorialStep.hideWhen)
         if (bubble != null) bubble.rectTransform.localScale = stepHidden ? Vector3.zero : Vector3.one;
         hideGroup.alpha = hide ? 0f : 1f; hideGroup.blocksRaycasts = !hide;
-        PlaceNotes();
         PlacePops();
         Layout();
         UpdateShake();
@@ -773,8 +627,6 @@ public class TutorialOverlay : MonoBehaviour
     }
 
     // an icon (Resources/UIIcons) filling a button, white
-    // rounded corners on a box (the sliced rounded sprite)
-    public static void Round(Image img) { } // square corners (rounded was tried and turned down)
 
     static Image Icon(RectTransform button, string name)
     {
@@ -807,7 +659,6 @@ public class TutorialOverlay : MonoBehaviour
         if (errorBox == null)
         {
             errorBox = MakeImage("ErrorBox", root, raycast: false);
-            Round(errorBox);
             errorText = MakeText("Text", errorBox.rectTransform);
             errorText.font = text.font;
             errorText.alignment = TextAlignmentOptions.MidlineLeft;
@@ -1018,8 +869,7 @@ public class TutorialOverlay : MonoBehaviour
 
     // rounded shapes (sliced sprites made in code): a filled box and an outline; RoundScale = the outline texture's border
     const float RoundScale = 6f;
-    static Sprite roundedFill, roundedOutline;
-    public static Sprite RoundedFill() => roundedFill != null ? roundedFill : roundedFill = MakeRounded(64, 16, 0);
+    static Sprite roundedOutline;
     static Sprite RoundedOutline() => roundedOutline != null ? roundedOutline : roundedOutline = MakeRounded(64, 0, (int)RoundScale); // square corners
     static Sprite MakeRounded(int n, int radius, int ring)
     {
@@ -1047,9 +897,9 @@ public class TutorialOverlay : MonoBehaviour
         return Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(b, b, b, b));
     }
 
-    // the Next button's label, dark on the palette's Tutorial yellow; the Skip button, left of Next
+    // the Next button's label, dark on the palette's Tutorial yellow; the Back button, left of Next
     public static readonly Color NextTextColor = new Color(0.08f, 0.08f, 0.10f); // the Tutorial button's too
-    static readonly Color SkipColor = new Color(0.27f, 0.29f, 0.34f);
+    static readonly Color BackColor = new Color(0.27f, 0.29f, 0.34f);
     const float TopLeftWidth = 330f, TopLeftBelow = 85f; // the to-do box: its width, and how far under the screen's top
     static readonly Color BubbleButton = new Color(0.13f, 0.14f, 0.17f);
 
@@ -1075,7 +925,7 @@ public class TutorialOverlay : MonoBehaviour
             BubbleSide.Above => new Vector2(hole.center.x - b.x / 2, hole.yMax + g),
             BubbleSide.Left => new Vector2(hole.xMin - g - b.x, hole.center.y - b.y / 2),
             BubbleSide.Right => new Vector2(hole.xMax + g, hole.center.y - b.y / 2),
-            BubbleSide.TopLeft => new Vector2(g * 2, size.y - TopLeftBelow - (step != null ? step.topLeftDrop : 0f) - b.y), // just under the title
+            BubbleSide.TopLeft => new Vector2(g * 2, size.y - TopLeftBelow - 0f - b.y), // just under the title
             _ => (size - b) / 2,
         };
         pos.x = Mathf.Clamp(pos.x, g, Mathf.Max(g, size.x - g - b.x));

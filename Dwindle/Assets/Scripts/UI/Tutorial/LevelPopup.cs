@@ -65,7 +65,7 @@ public class LevelPopup : MonoBehaviour
         float panelW = textOnly ? 680f : 760f; float textW = textOnly ? 600f : 700f; // text only: a narrower card, the icon in its own row under the text
         int rowsTall = 1; foreach (var dm in list) rowsTall = Mathf.Max(rowsTall, dm.gridH);
         float demoH = textOnly ? 0f : Cell * (rowsTall + 1.7f) + 70f; // room for the start and ring outside the square
-        var panelImg = Box("Panel", rt, Vector2.zero, new Vector2(panelW, 100f), p.panel); TutorialOverlay.Round(panelImg);
+        var panelImg = Box("Panel", rt, Vector2.zero, new Vector2(panelW, 100f), p.panel);
         var panel = panelImg.rectTransform;
         var titleText = Text("Title", panel, Vector2.zero, new Vector2(700f, 44f), $"<b>{title}</b>", 32, font, p.text);
         var bodyText = Text("Body", panel, Vector2.zero, new Vector2(textW, 76f), body, 23, font, p.text);
@@ -97,7 +97,6 @@ public class LevelPopup : MonoBehaviour
 
         // Continue: the next icon
         var button = Box("Continue", panel, new Vector2(panelW / 2 - 56f, -h / 2 + 40f), new Vector2(64f, 52f), p.accent);
-        TutorialOverlay.Round(button);
         button.raycastTarget = true;
         var b = button.gameObject.AddComponent<Button>();
         b.targetGraphic = button;
@@ -433,23 +432,6 @@ public class LevelPopup : MonoBehaviour
         var t = Text("Letter", badge.rectTransform, Vector2.zero, Vector2.one * Cell * 0.3f, $"<b>{letter}</b>", Cell * 0.22f, font, board != null ? board.doorLabelColor : Color.black);
         t.raycastTarget = false;
         return (bar, badge);
-    }
-
-    static Sprite circle;
-    static Sprite CircleSprite()
-    {
-        if (circle != null) return circle;
-        const int n = 64;
-        var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear };
-        for (int y = 0; y < n; y++)
-            for (int x = 0; x < n; x++)
-            {
-                float dx = x - n / 2f + 0.5f, dy = y - n / 2f + 0.5f;
-                float a = Mathf.Clamp01(n / 2f - Mathf.Sqrt(dx * dx + dy * dy));
-                tex.SetPixel(x, y, new Color(1, 1, 1, a));
-            }
-        tex.Apply();
-        return circle = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f));
     }
 
     static RectTransform Group(string name, Transform parent, Vector2 pos, Vector2 size)
