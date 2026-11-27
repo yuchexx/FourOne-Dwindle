@@ -12,9 +12,9 @@ public class TutorialController : MonoBehaviour
     public TutorialStyle style = new TutorialStyle();
     [Tooltip("Coach: how long the board stays as it is after a delivery that resets the level, so the player sees it " +
              "(nothing can be clicked meanwhile)")]
-    [Min(0f)] public float resetDelay = 1f;
+     [System.NonSerialized] public float resetDelay = 1f;
     [Tooltip("Coach: the note after a reset closes by itself after this long (or with its X)")]
-    [Min(0f)] public float noteSeconds = 15f;
+     [System.NonSerialized] public float noteSeconds = 15f;
 
     readonly HashSet<int> finished = new HashSet<int>(); // levels whose tutorial was seen to the end this launch
     TutorialOverlay overlay;
@@ -33,7 +33,7 @@ public class TutorialController : MonoBehaviour
     Coroutine resetting;   // a Reset waiting to reload the level
     Coroutine undoing;     // an Undo waiting to take the placement back
     [Tooltip("Coach: how long the wrong way shows before it's undone (nothing can be clicked meanwhile)")]
-    [Min(0f)] public float undoDelay = 0.4f;
+     [System.NonSerialized] public float undoDelay = 0.4f;
     bool noteOnResume;     // the level is reloading for a Reset: show the note once it's set up again
 
     // a tutorial's level-end steps (Tutorials.EndStepsFor): waiting for its level to end, then the steps
@@ -75,6 +75,31 @@ public class TutorialController : MonoBehaviour
         }));
     }
 
+    // a "do it" step stopped part-way (a restart, leaving, or other steps taking over): its listener goes and any level
+    // end it was holding is let go, so nothing of it carries into the next run
+    GameManager doItGame; Action<GameAction> doItHandler;
+    void DropDoIt()
+    {
+        if (doItGame != null && doItHandler != null) { doItGame.ActionDone -= doItHandler; doItGame.ClearLevelEndHold(); }
+        doItGame = null; doItHandler = null;
+    }
+
+    // steps shown now, in the middle of a level (a guided level's coach moving to its next stage); after runs once they end.
+    // waits while other steps are on screen
+    public void Play(List<TutorialStep> steps, GameManager game, System.Action after = null)
+    {
+        if (steps == null || steps.Count == 0 || canvas == null) { after?.Invoke(); return; }
+        if (overlay == null) overlay = TutorialOverlay.Create(canvas, style);
+        StartCoroutine(PlayWhenFree(steps, game, after));
+    }
+
+    IEnumerator PlayWhenFree(List<TutorialStep> steps, GameManager game, System.Action after)
+    {
+        while (running != null) yield return null;
+        this.game = game;
+        running = StartCoroutine(Run(steps, _ => after?.Invoke()));
+    }
+
     // the tutorial's steps ended (or it has none at the start): it counts as seen, and its coach takes over; with none,
     // its level-end steps (if any) wait for the level's end from now
     void AfterSteps(int levelIndex, GameManager g)
@@ -109,7 +134,8 @@ public class TutorialController : MonoBehaviour
     // so does the level-end steps' wait (TryStart picks it up again on the level's next load)
     public void Stop()
     {
-        if (running != null) StopCoroutine(running);
+        if (overlay != null) overlay.HideError(); // a restart or leaving clears a wrong move's red box
+        if (running != null) { StopCoroutine(running); DropDoIt(); }
         running = null;
         game = null;
         PauseCoach();
@@ -139,6 +165,7 @@ public class TutorialController : MonoBehaviour
                 yield return new WaitForSeconds(step.delay);
             }
             cameBack = false;
+            if (step.chooseWhenShown?.Invoke() is TutorialStep chosen) { steps[i] = chosen; step = chosen; } // a step decided only now (e.g. real arrows up, or an example)
             step.onShow?.Invoke();
             if (step.pops != null) foreach (var p in step.pops) overlay.ShowPop(p.text, PopAbove, p.near);
             bool canSkip = SkipFrom(steps, i);
@@ -146,12 +173,44 @@ public class TutorialController : MonoBehaviour
             overlay.Show(step, canSkip, canBack);
             yield return null; // the click that ended the last step can't end this one too
             bool skipped = false, back = false;
-            while (!overlay.ConsumeNext())
+            if ((step.doneWhen != null || step.until != null) && game != null)
             {
-                if (canSkip && overlay.ConsumeSkip()) { skipped = true; break; }
-                if (canBack && overlay.ConsumeBack()) { back = true; break; }
-                yield return null;
+                // a "do it" step: it ends when the player does it; anything else it names as wrong is undone, with a note
+                var dg = game;
+                bool done = false; string wrongNote = null; int wrongFrame = -1;
+                void OnAct(GameAction a)
+                {
+                    if (step.doneWhen != null && step.doneWhen(a))
+                    {
+                        done = true;
+                        // a move is a take-back and a placement in the same frame: a "wrong" take-back just before it was the move's first half
+                        if (wrongFrame == Time.frameCount) { wrongNote = null; dg.HoldLevelEnd(false); }
+                    }
+                    else if (step.wrong?.Invoke(a) is string n) { wrongNote = n; wrongFrame = Time.frameCount; dg.HoldLevelEnd(true); } // held at once, so a dead end can't end the level first
+                }
+                dg.ActionDone += OnAct; doItGame = dg; doItHandler = OnAct; // kept, so a step stopped part-way can let go (DropDoIt)
+                while (wrongNote != null || (!done && !(step.until?.Invoke() ?? false))) // a slip is handled before the step can end
+                {
+                    if (wrongNote != null)
+                    {
+                        var n = wrongNote; wrongNote = null;                        overlay.HideError(); // the last one closes; it opens again after the undo, so each slip shows
+                        dg.HoldLevelEnd(true);
+                        yield return new WaitForSecondsRealtime(undoDelay);
+                        if (step.wrongBackToArrows) dg.UndoChoiceStep(false); else dg.UndoPlacement(); // a wrong arrow: back to its arrows (the tile stays)
+                        dg.HoldLevelEnd(false);
+                        overlay.ShowError(n, 3f); // red, under the to-do box
+                    }
+                    yield return null;
+                }
+                dg.ActionDone -= OnAct; doItGame = null; doItHandler = null;
             }
+            else
+                while (!overlay.ConsumeNext())
+                {
+                    if (canSkip && overlay.ConsumeSkip()) { skipped = true; break; }
+                    if (canBack && overlay.ConsumeBack()) { back = true; break; }
+                    yield return null;
+                }
             step.onDone?.Invoke(); // what it set up goes either way: Back shows the step before from its own onShow
             if (step.pops != null) overlay.ClearPops();
             if (back)
@@ -273,7 +332,7 @@ public class TutorialController : MonoBehaviour
         var steps = coach?.removalSteps?.Invoke(arrival, together);
         if (steps == null || steps.Count == 0) return false;
         var g = coachGame;
-        if (running != null) StopCoroutine(running);
+        if (running != null) { StopCoroutine(running); DropDoIt(); }
         game = g;
         running = StartCoroutine(Run(steps, done => done.ReleaseRemoval()));
         return true;
@@ -285,7 +344,7 @@ public class TutorialController : MonoBehaviour
     {
         var steps = coach?.doorSteps?.Invoke(objectName, door);
         if (steps == null || steps.Count == 0) return;
-        if (running != null) StopCoroutine(running);
+        if (running != null) { StopCoroutine(running); DropDoIt(); }
         game = coachGame;
         running = StartCoroutine(Run(steps, null));
     }
@@ -296,7 +355,7 @@ public class TutorialController : MonoBehaviour
     {
         var steps = coach?.doorSteps?.Invoke(objectName, door);
         if (steps == null || steps.Count == 0) return false;
-        if (running != null) StopCoroutine(running);
+        if (running != null) { StopCoroutine(running); DropDoIt(); }
         game = coachGame;
         running = StartCoroutine(Run(steps, done => done.ReleaseDoorExit()));
         return true;
@@ -316,8 +375,8 @@ public class TutorialController : MonoBehaviour
         overlay.Block();
         yield return new WaitForSecondsRealtime(undoDelay);
         if (coach != null && coach.undoToChoice && action.kind == GameActionKind.ChooseDirection)
-            g.UndoChoiceStep(); // back to the arrows, the tile stays
-        else g.UndoPlacement(); // the whole placement, whatever undo by step is set to
+            g.UndoChoiceStep(!coach.undoInstant); // back to the arrows, the tile stays
+        else g.UndoPlacement(coach == null || !coach.undoInstant); // the whole placement, whatever undo by step is set to
         g.HoldLevelEnd(false);
         // the coach's first undo: its steps in the middle of the screen in place of the note, once the placement is
         // undone (so nothing moves under them). `undoing` stays set till they end, so no other reset or undo starts
@@ -330,14 +389,14 @@ public class TutorialController : MonoBehaviour
         {
             if (own != null) coach.firstUndoShownFor.Add(own);
             else coach.firstUndoShown = true;
-            if (running != null) StopCoroutine(running);
+            if (running != null) { StopCoroutine(running); DropDoIt(); }
             game = g;
             running = StartCoroutine(Run(first, done => undoing = null));
             yield break;
         }
         undoing = null;
         overlay.Unblock();
-        if (!string.IsNullOrEmpty(note)) overlay.ShowNote(note, noteSeconds, above);
+        if (!string.IsNullOrEmpty(note)) { if (coach != null && coach.undoNoteRed) overlay.ShowError(note, 5f); else overlay.ShowNote(note, noteSeconds, above); }
     }
 
     // ---- the level-end steps ----
@@ -387,7 +446,7 @@ public class TutorialController : MonoBehaviour
         g.HoldEndWindow(true);
         g.hud.HoldScoreHistory(true);
         endPlaying = g;
-        if (running != null) StopCoroutine(running);
+        if (running != null) { StopCoroutine(running); DropDoIt(); }
         game = g; // shown as the tutorial's steps are
         running = StartCoroutine(Run(steps, done =>
         {
@@ -413,7 +472,7 @@ public class TutorialController : MonoBehaviour
         if (first != null && first.Count > 0)
         {
             coach.firstResetShown = true;
-            if (running != null) StopCoroutine(running);
+            if (running != null) { StopCoroutine(running); DropDoIt(); }
             game = g;
             running = StartCoroutine(Run(first, done =>
             {

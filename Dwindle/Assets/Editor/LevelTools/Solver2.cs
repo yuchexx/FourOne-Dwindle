@@ -48,6 +48,8 @@ class Solver2
     public bool oneEvent;             // every object arrives on the same placement
     public List<(string layout, int score)> collect; // when set, every finishing layout's best score is added here
     public List<Plan> every; // when set, every plan scoring at least `floor` is added here: each tile assignment, grouping, order and delivering cell, played out
+    public bool fewTiles; // with every: one tile mix per set of + squares (as a normal search), not every mix (big boards)
+    public Action<Plan> onPlan; // called for each plan added to every
     bool Exhaustive => collect != null || every != null; // nothing is skipped for not beating the best so far
     const int EveryCap = 100000; // tile mixes per road set when listing every plan
     public static volatile bool Abort; // set from another thread to stop every running solve (the level maker's Cancel and time limit)
@@ -222,15 +224,17 @@ class Solver2
         {
             // 0 extra + tiles needs no earned +, so any assignment works and nothing more can beat it;
             // otherwise try each placement of the + tiles, with one, two... earned ones
+            var triedPicks = fewTiles && every != null ? new HashSet<string>() : null; // listing every plan: a tile mix already tried with fewer earned + tiles gives the same plans again
             for (int extra = 0; extra <= maxCombos; extra++)
             {
                 var left = Tiles.All.ToDictionary(t => t, t => L.inventory.GetValueOrDefault(t));
                 left[TileType.Cross] += extra;
                 bool any = false;
-                var picks = every != null ? Assign(byCell, left, EveryCap, everyTile: true) : Assign(byCell, left, extra == 0 || quick ? 1 : 64);
+                var picks = every != null && !fewTiles ? Assign(byCell, left, EveryCap, everyTile: true) : Assign(byCell, left, extra == 0 || quick ? 1 : 64);
                 if (every != null && picks.Count >= EveryCap) limitHit = true; // tile mixes left out
                 foreach (var pick in picks)
                 {
+                    if (triedPicks != null && !triedPicks.Add(string.Join(";", pick.OrderBy(kv => kv.Key.x).ThenBy(kv => kv.Key.y).Select(kv => $"{kv.Key}={kv.Value}")))) continue;
                     var plan = Order(chosen.ToArray(), pick, S, Exhaustive ? null : best);
                     if (plan == null) continue;
                     any = true;
@@ -314,6 +318,7 @@ class Solver2
                     if (!rp.ok) return;
                 }
                 every?.Add(plan);
+                onPlan?.Invoke(plan); // (the solution export saves as it goes)
                 if (best == null || score > best.score) best = plan;
                 return;
             }

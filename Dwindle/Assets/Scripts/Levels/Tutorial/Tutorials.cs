@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // where a step's text bubble goes, next to its area
-public enum BubbleSide { Auto, Below, Above, Left, Right, Center }
+public enum BubbleSide { Auto, Below, Above, Left, Right, Center, TopLeft } // TopLeft: a to-do under the level title
 
 // one page of a tutorial: its text in a bubble over a dim, and a Next button that ends it (nothing else can be clicked)
 public class TutorialStep
@@ -22,6 +22,32 @@ public class TutorialStep
     public Action onShow;        // runs as the step shows, to set the game up for what the step teaches
     public Action onDone;        // runs as the step ends, e.g. to undo what onShow changed
     public TutorialPop[] pops;   // floating points (e.g. "+100") over game elements while the step shows; null = none
+    // a "do it" step: no button, the framed areas take clicks, and the step ends as soon as an action passes this
+    public Func<GameAction, bool> doneWhen;
+    // a "do it" step: an action that isn't what it asks for gets undone, with this note (null = let it be)
+    public Func<GameAction, string> wrong;
+    // a "do it" step that ends when this turns true (checked every frame), e.g. Settings opened
+    public Func<bool> until;
+    // a to-do box (top left) moved down this far, to clear something drawn under the title (the tour's label)
+    public float topLeftDrop;
+    // the Next button's icon (Resources/UIIcons), e.g. "nextlvl" on a last step; null = the next arrow
+    public string buttonIcon;
+    public bool dim;      // darken everything outside the boxes (the screen tour)
+    public bool hoverHints; // hint tips still show when the mouse is over the board (clicks stay blocked)
+    public bool keepSide; // a "do it" step that keeps its own bubble side instead of the top-left to-do spot
+    public bool labelsAsBoxes; // labels drawn as small guide boxes to the left of their boxes (e.g. "Close Settings when done")
+    public string labelSides; // one letter per label: L left of its box (middle height), A above (centred), B below (centred); missing = automatic
+    public Func<bool> hideWhen; // true: the step's box and target frames are hidden for now (e.g. Settings turned to another tab); its label boxes stay
+    public float pictureHeight;              // room for a small picture under the text (drawPicture fills it)
+    public bool wrongBackToArrows;           // a "wrong" action is undone only back to its arrow question (a wrong arrow), not the whole placement
+    public Func<TutorialStep> chooseWhenShown; // decided as the step comes up: the step to show in its place (null: this one)
+    public Action<RectTransform> drawPicture; // draws into a box under the text, as wide as the text, pictureHeight tall
+    public Func<RectTransform> alignTop; // the bubble's top lined up with this element's top (e.g. the score)
+    public int bubbleUnderLabel = -1; // the bubble goes under this label (its index), lined up with its box's left edge, the same gap as box-to-label
+    // label boxes lined up: (box, side L R T B, other box) moves that side of the box to the other box's same side
+    public (int box, char side, int to)[] align;
+    // boxed groups, each with a short line just outside its box (above it in the lower half of the screen, below in the upper)
+    public (Func<RectTransform>[] parts, string text)[] labels;
 }
 
 // floating points on a step (TutorialStep.pops): in the tutorial's yellow, centered over
@@ -83,39 +109,23 @@ public static class Target
         () => game.hud.undoButton != null ? (RectTransform)game.hud.undoButton.transform : null;
 }
 
-// tutorials by name, one file each (Tutorials.Intro.cs, Tutorials.Unused.cs, Tutorials.Junction.cs, Tutorials.Combo.cs, Tutorials.UseEarned.cs, Tutorials.Doors.cs, Tutorials.Detour.cs, Tutorials.Bridge.cs, Tutorials.DeliverAll.cs, Tutorials.BuildAhead.cs); a level picks one with LevelData.tutorial
+// tutorials by name (Tutorials.Plan.cs); a level picks one with LevelData.tutorial
 public static partial class Tutorials
 {
     // a tutorial's name -> its steps, made with the running game so steps can check it or set it up. a level picks its
     // tutorial by name (LevelData.tutorial, set in Levels.cs), so it stays with its level when levels are inserted or moved
     static readonly Dictionary<string, Func<GameManager, List<TutorialStep>>> ByName = new()
     {
-        { "Intro", Intro },
-        { "Unused", Unused },
-        { "Junction", Junction },
-        { "TJunction", TJunction }, // in Tutorials.Junction.cs
-        { "Combo", Combo },
-        { "TCombo", TCombo }, // in Tutorials.Combo.cs
-        { "BridgeCombo", BridgeCombo }, // in Tutorials.Combo.cs
-        { "UseEarned", UseEarned },
-        { "UseEarnedT", UseEarnedT }, // in Tutorials.UseEarned.cs
-        { "UseEarnedBridge", UseEarnedBridge }, // in Tutorials.UseEarned.cs
-        { "Doors", Doors },
-        { "Detour", Detour },
-        { "Bridge", Bridge },
-        { "DeliverAll", DeliverAll },
-        { "BuildAhead", BuildAhead },
+        { "FirstLevel", FirstLevel }, // in Tutorials.Plan.cs
+        { "PlusCombo", PlusCombo }, // in Tutorials.Plan.cs
+        { "DoorsAcross", DoorsAcross }, // in Tutorials.Plan.cs
     };
 
     // a tutorial's name -> its coach, for tutorials that have one (it takes over once the steps end)
     static readonly Dictionary<string, Func<GameManager, TutorialCoach>> CoachByName = new()
     {
-        { "Intro", IntroCoach },
-        { "Junction", JunctionCoach },
-        { "TJunction", TJunctionCoach },
-        { "Combo", ComboCoach },
-        { "UseEarned", UseEarnedCoach },
-        { "Doors", DoorsCoach },
+        { "FirstLevel", FirstLevelCoach },
+        { "PlusCombo", PlusComboCoach },
     };
 
     // a tutorial's name -> its level-end steps: shown once the level ends with everyone delivered, with the end window
@@ -123,9 +133,8 @@ public static partial class Tutorials
     // they wait for that level end from when the coach is Done, or from when the steps end if the tutorial has no coach
     static readonly Dictionary<string, Func<GameManager, List<TutorialStep>>> EndStepsByName = new()
     {
-        { "Intro", IntroEnd },
-        { "Unused", UnusedEnd },
-        { "Combo", ComboEnd },
+        { "FirstLevel", FirstLevelEnd },
+        { "PlusCombo", PlusComboEnd },
     };
 
     // on start: a level whose l.tutorial names no tutorial here (a typo, or one renamed) would just get none, so say so
@@ -139,7 +148,9 @@ public static partial class Tutorials
 
     // null when the level has no tutorial
     public static List<TutorialStep> For(LevelData level, GameManager game) =>
-        !string.IsNullOrEmpty(level.tutorial) && ByName.TryGetValue(level.tutorial, out var make) ? make(game) : null;
+        !string.IsNullOrEmpty(level.tutorial) && ByName.TryGetValue(level.tutorial, out var make) ? make(game)
+        : !string.IsNullOrEmpty(level.think) ? new List<TutorialStep> { new TutorialStep { text = level.think, buttonText = "Got it" } } // a think guide: one step
+        : null;
 
     // null when the level's tutorial has no coach
     public static TutorialCoach CoachFor(LevelData level, GameManager game) =>
@@ -151,7 +162,8 @@ public static partial class Tutorials
 
     // whether the level's tutorial is its opening steps and nothing else: no coach, no level-end steps
     public static bool StepsOnly(LevelData level) =>
-        !string.IsNullOrEmpty(level.tutorial) && !CoachByName.ContainsKey(level.tutorial) && !HasEnd(level);
+        (!string.IsNullOrEmpty(level.tutorial) && !CoachByName.ContainsKey(level.tutorial) && !HasEnd(level))
+        || (string.IsNullOrEmpty(level.tutorial) && !string.IsNullOrEmpty(level.think));
 
     // whether level-end steps wait for the level's end (TutorialController holds the end window for them)
     public static bool HasEnd(LevelData level) =>
@@ -179,6 +191,8 @@ public class TutorialCoach
     public string undoNote;                       // shown in the corner after an Undo
     public bool undoToChoice;                     // an Undo for a wrong way (ChooseDirection) goes back only to its arrow question (it shows again, the tile stays); false, or any other slip = the whole placement
     public Func<GameAction, string> undoNoteFor;  // the note for the action that called for the Undo; null (or null back) = undoNote
+    public bool undoNoteRed;                      // the undo note in the red box under the to-do box, as Level 1's slips
+    public bool undoInstant;                      // the undo jumps back, no rewind shown
     public Func<RectTransform>[] noteAbove;       // what the note stays above, so it covers none of it (see Target)
     // the first Reset / the first Undo only: steps in place of resetNote / undoNote (the level loads again once the
     // reset's steps end; the undo's show once the placement is undone). later ones get the note. null = always the note

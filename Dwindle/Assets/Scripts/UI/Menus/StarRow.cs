@@ -18,6 +18,7 @@ public class StarRow : MonoBehaviour
     ? (purple ? palette.purpleStar : palette.star)
     : palette.starEmpty;
             if (stars[i] is StarGraphic sg) sg.outlineColor = Color.clear;
+            StarSparkle.Set(stars[i], on && purple); // purple stars sparkle
             if (captions != null && i < captions.Length && captions[i] != null)
                 captions[i].text = i < goals.Length ? goals[i] : "";
         }

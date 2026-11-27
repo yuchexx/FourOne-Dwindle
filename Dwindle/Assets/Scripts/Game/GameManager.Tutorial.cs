@@ -49,9 +49,15 @@ public partial class GameManager
 
     // a door's bar, or its letter's badge (see BoardView.DoorPart)
     public RectTransform DoorRect(string label, int which, bool badge) => board.DoorPart(label, which, badge);
+    public List<string> DoorLabels() => level == null ? new List<string>() : level.doors.Select(d => d.label).Distinct().ToList(); // each door pair's letter
+    public RectTransform BoardFrameRect(int i) => board.BoardFrame(i);
+    public int BoardCount => level == null ? 0 : level.boards.Count;
 
     // how many of a tile type are left in the supply
     public int TilesLeft(TileType t) => inventory != null ? inventory.GetValueOrDefault(t) : 0;
+
+    // for the tutorial: the tile on a board's square (as in Levels.cs), or null
+    public TileType? TileAt(int boardIndex, int x, int y) { var c = level.At(boardIndex, x, y); return Cells[c.x, c.y].tile; }
 
     // the road to build, dotted across the board like the lines from its start and to its ring (BoardView.GuideLine);
     // each square's part hides under a tile. squares: the road's squares from the start's side, as (board, x, y) as in
@@ -113,7 +119,8 @@ public partial class GameManager
     // while held, a level that's over doesn't end: no end window, no stuck notice, no result saved. for a coach about
     // to reset the level (ReloadLevel), so the attempt it throws away doesn't count as played. LoadLevel lets go
     bool levelEndHeld;
-    public void HoldLevelEnd(bool hold) => levelEndHeld = hold;
+    public void HoldLevelEnd(bool hold) { levelEndHeld = hold; if (!hold && !levelOver && !busy && level != null) CheckLevelEnd(); } // a level end skipped while held is checked again
+    public void ClearLevelEndHold() => levelEndHeld = false; // let go without checking (the level is about to reload)
 
     // called as each object a placement delivered breaks its tile (gone from the board already), one at a time, with
     // the names of everyone that placement delivered; true holds the deliveries there (the next tile, the combo, the
@@ -202,16 +209,140 @@ public partial class GameManager
     // for TutorialController): from now on its Tutorial button shows (see LoadLevel)
     public void EarnTutorialButton()
     {
-        if (tutorial == null || level == null || string.IsNullOrEmpty(level.tutorial)) return;
+        if (tutorial == null || level == null || !HasGuide(level)) return;
         tutorialButtonEarned.Add(levelIndex);
         ShowTutorialButton(true);
     }
 
-    // whether the level that's on gets the button: it has a tutorial, and either tutorials are off in Settings (nothing
+    // for the tutorial: Undo, Redo, Restart and Hint greyed out and not clickable while a guide runs, with a PAUSED tag
+    // in the middle of the bottom-right controls and one above Hint
+    UnityEngine.UI.Image pausedTag, hintPausedTag;
+    public void PauseControls(bool paused)
+    {
+        var screen = hud != null && hud.levelTitleText != null ? hud.levelTitleText.transform.parent : null;
+        if (screen == null) return;
+        foreach (var name in new[] { "UndoButton", "RedoButton", "HintButton" }) // Restart stays: it replays an unfinished guide
+        {
+            var t = screen.Find(name);
+            if (t == null) continue;
+            var cg = t.GetComponent<CanvasGroup>();
+            if (cg == null) { if (!paused) continue; cg = t.gameObject.AddComponent<CanvasGroup>(); }
+            cg.alpha = paused ? 0.35f : 1f;
+            cg.interactable = cg.blocksRaycasts = !paused;
+        }
+        // in the screen's own space
+        Rect R(RectTransform t) { var c = new Vector3[4]; t.GetWorldCorners(c); var a = screen.InverseTransformPoint(c[0]); var b = screen.InverseTransformPoint(c[2]); return Rect.MinMaxRect(a.x, a.y, b.x, b.y); }
+        Rect? Around(params string[] names)
+        {
+            Rect? u = null;
+            foreach (var n in names)
+                if (screen.Find(n) is RectTransform t) { var r = R(t); u = u == null ? r : Rect.MinMaxRect(Mathf.Min(u.Value.xMin, r.xMin), Mathf.Min(u.Value.yMin, r.yMin), Mathf.Max(u.Value.xMax, r.xMax), Mathf.Max(u.Value.yMax, r.yMax)); }
+            return u;
+        }
+        var controls = Around("UndoButton", "RedoButton"); // the paused pair: Undo and Redo, centred on them
+        if (controls != null) PlaceTag(ref pausedTag, "PausedTag", screen, paused, controls.Value.center, Mathf.Max(90f, controls.Value.width), 0.5f);
+        // Hint: over its middle
+        var hint = Around("HintButton");
+        if (hint != null) PlaceTag(ref hintPausedTag, "HintPausedTag", screen, paused, hint.Value.center, Mathf.Max(90f, hint.Value.width), 0.5f); // over the middle of Hint
+    }
+
+    // Hint alone greyed out with its PAUSED tag (Level 3's guide: Undo and Restart stay)
+    public void PauseHint(bool paused)
+    {
+        var screen = hud != null && hud.levelTitleText != null ? hud.levelTitleText.transform.parent : null;
+        if (screen == null || !(screen.Find("HintButton") is RectTransform t)) return;
+        var cg = t.GetComponent<CanvasGroup>();
+        if (cg == null) { if (!paused) return; cg = t.gameObject.AddComponent<CanvasGroup>(); }
+        cg.alpha = paused ? 0.35f : 1f;
+        cg.interactable = cg.blocksRaycasts = !paused;
+        var c = new Vector3[4]; t.GetWorldCorners(c);
+        var a = screen.InverseTransformPoint(c[0]); var b = screen.InverseTransformPoint(c[2]);
+        var r = Rect.MinMaxRect(a.x, a.y, b.x, b.y);
+        PlaceTag(ref hintPausedTag, "HintPausedTag", screen, paused, r.center, Mathf.Max(90f, r.width), 0.5f);
+    }
+
+    void PlaceTag(ref UnityEngine.UI.Image tag, string name, Transform screen, bool paused, Vector2 at, float width, float pivotY)
+    {
+        if (paused && tag == null)
+        {
+            tag = UIBuilder.NewImage(name, screen, UIPalette.Current.tutorial);
+            tag.raycastTarget = false;
+            var label = UIBuilder.NewText("Text", tag.transform, "PAUSED", 18, new Color(0.08f, 0.08f, 0.1f), hud.levelTitleText.font);
+            label.fontStyle = TMPro.FontStyles.Bold;
+            label.alignment = TMPro.TextAlignmentOptions.Center;
+            label.raycastTarget = false;
+            UIBuilder.Fill(label.rectTransform);
+        }
+        if (tag == null) return;
+        tag.gameObject.SetActive(paused);
+        if (!paused) return;
+        var rt = tag.rectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f); rt.pivot = new Vector2(0.5f, pivotY);
+        rt.sizeDelta = new Vector2(width, 28f);
+        rt.localPosition = new Vector3(at.x, at.y, 0f);
+        rt.SetAsLastSibling();
+    }
+
+    // for the tutorial: the stuck notice held back while a guide runs; off again on every level load
+    bool stuckPaused;
+    public void PauseStuckNotice(bool paused) => stuckPaused = paused;
+
+    // levels whose guide ran to its very end this launch (a restart before that plays it again from the start)
+    public void MarkGuideDone() => Session.MarkGuideDone(levelIndex); // saved
+    // for the hint guide: a placement's square in the board's own grid (GameAction gives the board and its local square)
+    public Vector2Int GridCell(int board, Vector2Int local) => level.boards[board].origin + local;
+
+    // for the tutorial: a supply tile goes on a square as if the player had put it there (Level 1's blocking tile)
+    public void TutorialPlace(int boardIndex, int x, int y, TileType t)
+    {
+        if (inventory == null || inventory.GetValueOrDefault(t) <= 0) return;
+        selected = t;
+        PlaceSelected(level.At(boardIndex, x, y));
+        selected = null;
+        hud.RefreshInventory(inventory, selected);
+    }
+
+    // a level with something to replay: a pop-up, a tutorial or a think guide
+    static bool HasGuide(LevelData l) => !string.IsNullOrEmpty(l.popup) || !string.IsNullOrEmpty(l.tutorial) || !string.IsNullOrEmpty(l.think);
+
+    // whether the level that's on gets the button: it has a guide, and either tutorials are off in Settings (nothing
     // pops up by itself, so the button is the way in) or it has ended or been restarted before
     bool TutorialButtonFor(int index) =>
-        tutorial != null && !string.IsNullOrEmpty(Levels.All[index].tutorial)
+        tutorial != null && HasGuide(Levels.All[index])
         && (!Session.showTutorials || tutorialButtonEarned.Contains(index));
+
+    bool openedFromMenu; // this load came from a menu (LoadLevel)
+    bool forcePopup; // the Tutorial button: the pop-up shows again, even with tutorials off
+
+    // the pop-ups' canvas and font: the HUD's
+    Canvas PopupCanvas => tutorial != null && tutorial.canvas != null ? tutorial.canvas : hud != null && hud.levelTitleText != null ? hud.levelTitleText.canvas : null; // the HUD object itself may sit outside the Canvas
+    TMPro.TMP_FontAsset PopupFont => hud != null && hud.levelTitleText != null ? hud.levelTitleText.font : null;
+
+    // on load: the level's pop-up first (Guide me, not seen yet; or the Tutorial button), then its tutorial / think guide
+    void StartGuide(int index)
+    {
+        var lg = Levels.All[index];
+        if (openedFromMenu && tutorial != null && !string.IsNullOrEmpty(lg.tutorial) && Session.PopupSeen(index) && !Session.GuideDone(index))
+        { tutorial.Forget(index); forcePopup = true; } // left part-way before: the guide starts over, pop-up first
+        TutorialOverlay.HideWhile = () => menu != null && ((menu.leaveDialog != null && menu.leaveDialog.panel.activeInHierarchy) || (menu.rulesPopup != null && menu.rulesPopup.activeInHierarchy) || (menu.endWindow != null && menu.endWindow.panel.activeInHierarchy && !endWindowHeld));
+        var l = Levels.All[index];
+        bool run = Session.showTutorials || forcePopup;
+        bool popup = !string.IsNullOrEmpty(l.popup) && (forcePopup || !Session.PopupSeen(index)); // a pop-up shows the first time whatever the Tutorials switch says
+        forcePopup = false;
+        if (popup && PopupCanvas == null) Debug.LogWarning($"{l.title}: no Canvas found for its \"{l.popup}\" pop-up (set TutorialController's Canvas).");
+        if (popup && PopupCanvas != null)
+        {
+            LevelPopup.Show(PopupCanvas, l.popup, PopupFont, board, () =>
+            {
+                Session.MarkPopupSeen(index);
+                if (levelIndex != index) return; // left meanwhile
+                if (run && tutorial != null) tutorial.TryStart(index, this);
+                if (string.IsNullOrEmpty(l.tutorial) && string.IsNullOrEmpty(l.think)) EarnTutorialButton(); // only a pop-up: the button can bring it back
+            });
+            return;
+        }
+        if (run && tutorial != null) tutorial.TryStart(index, this);
+    }
 
     // Settings' Show tutorials just changed: the level that's on gets or loses its button right away
     void RefreshTutorialButton() { if (level != null) ShowTutorialButton(TutorialButtonFor(levelIndex)); }
@@ -225,7 +356,7 @@ public partial class GameManager
         PlaceTutorialButton();
     }
 
-    void LateUpdate() => PlaceTutorialButton();
+    void LateUpdate() { PlaceTutorialButton(); PlayHintSound(); }
 
     // each frame, as the title's text (and so its width) changes with the level: its left edge Tutorial Button Gap
     // right of where the text ends, level with the title's middle
@@ -245,10 +376,10 @@ public partial class GameManager
     // start too, even with tutorials off in Settings
     void ReplayTutorial()
     {
-        if (tutorial == null || string.IsNullOrEmpty(level?.tutorial)) return;
+        if (tutorial == null || level == null || !HasGuide(level)) return;
         tutorial.Forget(levelIndex);
-        ReloadLevel(); // LoadLevel starts the tutorial when tutorials are on
-        if (!Session.showTutorials) tutorial.TryStart(levelIndex, this);
+        forcePopup = true; // StartGuide shows the pop-up and runs the guide, even with tutorials off
+        ReloadLevel();
     }
 
     // the level from the start again, as it first loaded. unlike Restart it reports nothing.

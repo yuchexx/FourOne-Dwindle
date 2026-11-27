@@ -49,7 +49,11 @@ public partial class GameManager : MonoBehaviour
     // for the tutorial (TutorialController): every player action, once it has taken effect. a click that changed
     // nothing (blocked, missed, ignored while objects move) reports nothing
     public event System.Action<GameAction> ActionDone;
-    void Report(GameAction action) => ActionDone?.Invoke(action);
+    void Report(GameAction action)
+    {
+        if (action.kind is GameActionKind.Undo or GameActionKind.Hint or GameActionKind.Restart) QuietHintSounds(); // their redraws make no answer sound
+        ActionDone?.Invoke(action);
+    }
 
     // for the tutorial: an action on a square, in its board's own coordinates
     GameAction OnSquare(GameActionKind kind, Vector2Int p, TileType tile)
@@ -87,7 +91,7 @@ public partial class GameManager : MonoBehaviour
         board.keepAbove = new[] { hud.supplyDock };
         HintsChanged += DrawHints;
         board.animateUndo = Session.animateUndo; // the saved setting
-        if (menu.levelSelect != null) menu.levelSelect.Build(Levels.All, LoadLevel); // the Levels page's cards
+        if (menu.levelSelect != null) menu.levelSelect.Build(Levels.All, PickCard); // the Levels page's cards
         ShowStartScreen();
     }
 
@@ -106,7 +110,10 @@ public partial class GameManager : MonoBehaviour
 
     public void LoadLevel(int index)
     {
+        openedFromMenu = (menu != null && menu.gameScreen != null && !menu.gameScreen.activeInHierarchy) || index != levelIndex; // opened from a menu or Next level (not a restart or a guide's reload)
         StopAllCoroutines();
+        PauseControls(false); // a guide that paused them is over
+        stuckPaused = false;
         if (tutorial != null) tutorial.Stop();
         TelemetryManager.Instance.StartLevel(index);
         Session.lastOpened = index; // the Levels page opens on this level's page
@@ -140,10 +147,11 @@ public partial class GameManager : MonoBehaviour
         // every tile type (x0 for the ones this level doesn't hand out), or only its own with Compact supply
         hud.BuildSlots(SupplyTypes(), SelectTile, SupplyDragStart, e => board.MoveDrag(e), SupplyDragEnd);
         objects = board.Build(level, OnCellClicked, OnDoorClicked, OnCellRightClicked, PreviewTile);
+        foreach (var (cell, tile) in level.startTiles) board.SetTile(cell, tile); // free tiles already on the board (Level 1)
         ResetHintsForLoad();
         RefreshAll();
 
-        if (tutorial != null && Session.showTutorials) tutorial.TryStart(index, this); // the tutorial's steps can call back into the game
+        StartGuide(index); // its pop-up (Guide me), then its tutorial or think guide; the steps can call back into the game
     }
 
     // player input
@@ -201,7 +209,7 @@ public partial class GameManager : MonoBehaviour
 
     // the supply dock's tile types, in the dock's order
     IEnumerable<TileType> SupplyTypes() => Tiles.SupplyOrder.Where(t =>
-        !Session.compactSupply || t == TileType.Cross || level.inventory.GetValueOrDefault(t) > 0);
+        !Session.compactSupply || t == TileType.Cross || level.inventory.GetValueOrDefault(t) > 0 || level.startTiles.Exists(s => s.tile == t)); // a starting tile's type too (it can go back to the dock)
 
     // tiles can be picked and placed: the level is on, nothing moving
     bool CanAct() => !levelOver && !busy;
@@ -484,6 +492,7 @@ public partial class GameManager : MonoBehaviour
         Report(new GameAction { kind = GameActionKind.Restart, score = Score, tilesUsed = history.TilesUsed, delivered = Delivered });
         ReportLevel();
         EarnTutorialButton(); // for the tutorial: a restart shows the level's Tutorial button from now on
+        if (tutorial != null && level != null && !string.IsNullOrEmpty(level.tutorial) && !Session.GuideDone(levelIndex)) { tutorial.Forget(levelIndex); forcePopup = true; } // its guide not seen to the end: it starts over, pop-up first
         LoadLevel(levelIndex);
     }
     public void NextLevel()
@@ -492,6 +501,11 @@ public partial class GameManager : MonoBehaviour
         {
             ReportLevel();
             LoadLevel(levelIndex + 1);
+        }
+        else if (levelOver && Session.FinaleOpen) // the last level's Next: the ending screen
+        {
+            ReportLevel();
+            ShowFinale(false);
         }
     }
 

@@ -70,6 +70,10 @@ public class AudioManager : MonoBehaviour
     public Slot stuckNotice = new Slot { volume = 0.6f };
     [Tooltip("The Hint button, either stage (instead of Click)")]
     public Slot hint = new Slot { volume = 0.7f };
+    [Tooltip("The answer (hint stage 2): a tile placed right, its number fills in")]
+    public Slot hintRight = new Slot { volume = 0.6f };
+    [Tooltip("The answer (hint stage 2): a step goes wrong (its number pulses); once per change, however many steps")]
+    public Slot hintWrong = new Slot { volume = 0.6f };
 
     [Header("Found by itself (set only if there are several)")]
     public GameManager game;
@@ -135,7 +139,7 @@ public class AudioManager : MonoBehaviour
 
     // ---- effects
 
-    public enum Sfx { Click, Toggle, PickTile, PlaceTile, TakeBack, Nope, Step, ArrowsAppear, ArrowPicked, Door, Delivered, TileBreak, PlusEarned, LevelComplete, Star, StuckNotice, Hint }
+    public enum Sfx { Click, Toggle, PickTile, PlaceTile, TakeBack, Nope, Step, ArrowsAppear, ArrowPicked, Door, Delivered, TileBreak, PlusEarned, LevelComplete, Star, StuckNotice, Hint, HintRight, HintWrong }
 
     Slot SlotFor(Sfx id) => id switch
     {
@@ -156,6 +160,8 @@ public class AudioManager : MonoBehaviour
         Sfx.Star => star,
         Sfx.StuckNotice => stuckNotice,
         Sfx.Hint => hint.Empty ? click : hint,
+        Sfx.HintRight => hintRight,
+        Sfx.HintWrong => hintWrong,
         _ => null,
     };
 
@@ -194,7 +200,9 @@ public class AudioManager : MonoBehaviour
         var clip = s.clips[Random.Range(0, s.clips.Length)];
         if (s == delivered)
         {
-            clip = s.clips[successiveDeliveries];
+            int over = successiveDeliveries - (s.clips.Length - 1);
+            clip = s.clips[Mathf.Min(successiveDeliveries, s.clips.Length - 1)];
+            if (over > 0) pitch *= Mathf.Pow(2f, 2f * over / 12f); // more deliveries in a row than clips: the last one, a step higher each time
             successiveDeliveries++;
         }
         else if (s == tileBreak)

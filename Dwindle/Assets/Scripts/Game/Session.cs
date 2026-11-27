@@ -78,7 +78,12 @@ public static class Session
     public static bool Passed(int level) => Get(level).stars >= Levels.All[level].starsToPass;
 
     // open when it's the first level, the one before it is passed, or Unlock all is on
-    public static bool IsUnlocked(int level) => unlockAll || level == 0 || Passed(level - 1);
+    public static bool IsUnlocked(int level) => (unlockAll && DevTools) || level == 0 || Passed(level - 1);
+    // the editor only: Unlock all, and the ending screen after just the last level (a build: every level needs a star)
+    public static bool DevTools => Application.isEditor;
+    public static bool AllStarred { get { for (int i = 0; i < Levels.All.Count; i++) if (Get(i).stars < 1) return false; return true; } }
+    // the ending screen can open: always in the editor, else once every level has at least one star
+    public static bool FinaleOpen => Levels.All.Count > 0 && (DevTools || AllStarred); // the editor: always (for testing)
 
     // where Start goes: the first level not passed (so Level 1 until it's done), or the last level once all are
     public static int StartLevel(int count)
@@ -109,6 +114,24 @@ public static class Session
         return n;
     }
 
+    // a level's pop-up was seen (it shows once by itself; the Tutorial button replays it)
+    public static bool PopupSeen(int level) => PlayerPrefs.GetInt($"{Key}level{level}.popup", 0) == 1;
+    public static void MarkPopupSeen(int level) => SetInt($"level{level}.popup", 1);
+
+    // a level's guide was seen to its very end (a level left or restarted before that plays it again from its pop-up)
+    public static bool GuideDone(int level) => PlayerPrefs.GetInt($"{Key}level{level}.guide", 0) == 1;
+    public static void MarkGuideDone(int level) => SetInt($"level{level}.guide", 1);
+
+    // the Levels page's colour groups: each cleared group celebrates once
+    public static bool Celebrated(int group) => PlayerPrefs.GetInt($"{Key}group{group}.celebrated", 0) == 1;
+    public static void MarkCelebrated(int group) => SetInt($"group{group}.celebrated", 1);
+    // the ending screen after the last level: once
+    public static bool FinaleSeen => PlayerPrefs.GetInt(Key + "finale", 0) == 1;
+    public static void MarkFinaleSeen() => SetInt("finale", 1);
+    // the hint guide for a stage (1 or 2) has played once (it plays by itself only the first time)
+    public static bool HintGuideSeen(int stage) => PlayerPrefs.GetInt(Key + "hintguide" + stage, 0) == 1;
+    public static void MarkHintGuideSeen(int stage) => SetInt("hintguide" + stage, 1);
+
     // Settings > Reset progress: stars, settings, the player id and try counts all go back to a first visit
     // only this build's values go (other builds on the same site keep theirs)
     public static void ResetAll()
@@ -122,13 +145,16 @@ public static class Session
     }
 
     // the level list's version: change it when levels are reordered, so old stars don't land on other levels
-    const string LevelOrder = "plan-D1";
+    const string LevelOrder = "plan-E2"; // the 36-level plan (Levels.cs)
 
     // a new level order: stars, purple, tries and the last level opened go; settings and the player id stay
     static void ForgetLevels()
     {
         for (int i = 0; i < 200; i++)
-            foreach (var k in new[] { "stars", "purple", "triesBefore", "triesAfter" }) PlayerPrefs.DeleteKey($"{Key}level{i}.{k}");
+            foreach (var k in new[] { "stars", "purple", "triesBefore", "triesAfter", "popup", "guide" }) PlayerPrefs.DeleteKey($"{Key}level{i}.{k}");
+        for (int g = 0; g < 20; g++) PlayerPrefs.DeleteKey($"{Key}group{g}.celebrated");
+        PlayerPrefs.DeleteKey(Key + "finale"); // the ending screen shows again
+        PlayerPrefs.DeleteKey(Key + "hintguide1"); PlayerPrefs.DeleteKey(Key + "hintguide2"); PlayerPrefs.DeleteKey(Key + "hintguide3"); // the hint guide plays again
         PlayerPrefs.DeleteKey(Key + "lastOpened");
         PlayerPrefs.SetString(Key + "levelOrder", LevelOrder);
         PlayerPrefs.Save();
@@ -146,7 +172,7 @@ public static class Session
     {
         unlockAllValue = GetBool("unlockAll", false);
         placementValue = (Placement)PlayerPrefs.GetInt(Key + "placement", (int)Placement.Both);
-        compactSupplyValue = GetBool("compactSupply", false);
+        compactSupplyValue = GetBool("compactSupply", true); // default on: the dock shows only the level's own tiles
         showTutorialsValue = GetBool("showTutorials", true);
         showHintTipsValue = GetBool("showHintTips", true);
         animateUndoValue = GetBool("animateUndo", true);

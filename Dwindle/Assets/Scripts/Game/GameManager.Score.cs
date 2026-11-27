@@ -35,7 +35,44 @@ public partial class GameManager
         menu.endWindow.Show(EndTitle(stars, purple), earned, purple, goals,
             stars == 3 ? $"Score {Score} · target reached!" : $"Score {Score}",
             EndNote(stars, purple, isLast),
-            canUndo: history.CanUndo, canNext: stars >= level.starsToPass && !isLast);
+            canUndo: history.CanUndo, canNext: isLast ? FinaleAfter(stars) : stars >= level.starsToPass); // the last level's Next: the ending screen (NextLevel)
+    }
+
+    // the ending screen: from the last level's Next (Home: the title screen), or from the Levels page's end card
+    // (Back: the Levels page again)
+    // the last level just ended with these stars: the ending screen opens after it (editor: always; a build: every
+    // level starred, this one too; its record isn't saved yet when the end window shows)
+    bool FinaleAfter(int stars)
+    {
+        if (Session.DevTools) return true;
+        if (stars < 1) return false;
+        for (int i = 0; i < Levels.All.Count; i++) if (i != levelIndex && Session.Get(i).stars < 1) return false;
+        return true;
+    }
+
+    void ShowFinale(bool fromLevels)
+    {
+        if (PopupCanvas == null) return;
+        menu.HideMenu(); // the end window goes: the last level's score with it
+        var colors = menu.levelSelect != null ? menu.levelSelect.SectionColors() : null; // the swatches as the cards' colours
+        var star = menu.levelSelect != null && menu.levelSelect.cardTemplate != null && menu.levelSelect.cardTemplate.stars.Length > 0 ? menu.levelSelect.cardTemplate.stars[0] : null; // drawn as the cards' stars
+        FinaleScreen.Show(PopupCanvas, PopupFont, colors, () => { if (fromLevels && menu.levelsScreen != null) menu.levelsScreen.SetActive(false); ShowStartScreen(); }, "home", star, Confetti()); // Home: the title screen, from either way in
+    }
+
+    // the confetti: the six bright group colours and the stars' gold and purple
+    Color[] Confetti()
+    {
+        var list = new System.Collections.Generic.List<Color>();
+        if (menu.levelSelect != null) list.AddRange(menu.levelSelect.groupColors);
+        list.Add(UIPalette.Current.star); list.Add(UIPalette.Current.purpleStar);
+        return list.ToArray();
+    }
+
+    // a card on the Levels page: its level, or the end card past the last level
+    void PickCard(int index)
+    {
+        if (index >= Levels.All.Count) ShowFinale(true);
+        else LoadLevel(index);
     }
 
     // the end window's title: one of a few per result (0-3 stars, purple), never last time's for that result. picked
@@ -75,7 +112,11 @@ public partial class GameManager
             string unlock = $"Earn {level.starsToPass} stars to unlock the next level.";
             note = note == null ? unlock : note + "\n" + unlock;
         }
-        if (isLast && stars > 0) note = note == null ? "All levels done!" : note + "\nAll levels done!";
+        if (isLast && stars > 0)
+        {
+            string last = FinaleAfter(stars) ? "All levels done!" : null;
+            if (last != null) note = note == null ? last : note + "\n" + last;
+        }
         return note;
     }
 

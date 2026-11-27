@@ -53,6 +53,7 @@ public class SettingsView : MonoBehaviour
         if (showBreaksToggle != null) showBreaksToggle.onValueChanged.AddListener(on => game.ShowBreaks = on);
         if (musicSlider != null) musicSlider.onValueChanged.AddListener(v => Session.musicVolume = v);
         if (effectsSlider != null) effectsSlider.onValueChanged.AddListener(v => Session.effectsVolume = v);
+        if (!Session.DevTools) HideRow(unlockAllToggle.transform); // Unlock all: the editor only
         unlockAllToggle.onValueChanged.AddListener(on =>
         {
             game.UnlockAll = on;
@@ -63,6 +64,25 @@ public class SettingsView : MonoBehaviour
         if (hintTipsToggle != null) hintTipsToggle.onValueChanged.AddListener(on => game.ShowHintTips = on);
         if (resetProgressButton != null) resetProgressButton.onClick.AddListener(() => { if (resetConfirmPanel != null) resetConfirmPanel.SetActive(true); });
         CloseResetConfirm();
+    }
+
+    // a row taken off its page (its "...Row" object, else the page's child holding it); the rows under it move up
+    // into its place (a layout group on the page does that itself)
+    void HideRow(Transform t)
+    {
+        Transform page = null;
+        foreach (var tab in tabs) if (tab.page != null && t.IsChildOf(tab.page.transform)) page = tab.page.transform;
+        Transform row = t;
+        while (row.parent != null && row.parent != page && !row.name.EndsWith("Row")) row = row.parent;
+        if (!(row is RectTransform rrt) || row.parent == null) { t.gameObject.SetActive(false); return; }
+        float y = rrt.anchoredPosition.y, next = float.NegativeInfinity;
+        foreach (Transform s in row.parent)
+            if (s != row && s.gameObject.activeSelf && s is RectTransform srt && srt.anchoredPosition.y < y - 1f) next = Mathf.Max(next, srt.anchoredPosition.y);
+        row.gameObject.SetActive(false);
+        if (row.parent.GetComponent<LayoutGroup>() != null || float.IsNegativeInfinity(next)) return;
+        float shift = y - next; // one row's step
+        foreach (Transform s in row.parent)
+            if (s != row && s is RectTransform srt && srt.anchoredPosition.y < y - 1f) srt.anchoredPosition += new Vector2(0f, shift);
     }
 
     // the confirm pop-up's Reset button: everything resets and it's back to the start screen
@@ -112,6 +132,14 @@ public class SettingsView : MonoBehaviour
     }
 
     // the chosen tab's page shows, the others hide
+    // for the tutorial: the tab whose page holds this control
+    public void ShowPageOf(Component c)
+    {
+        if (c == null) return;
+        for (int k = 0; k < tabs.Length; k++)
+            if (tabs[k].page != null && c.transform.IsChildOf(tabs[k].page.transform)) { ShowTab(k); return; }
+    }
+
     void ShowTab(int i)
     {
         for (int k = 0; k < tabs.Length; k++)

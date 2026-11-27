@@ -10,17 +10,17 @@ public class HintNote : MonoBehaviour
 {
     [Tooltip("Optional: the labels' font (empty: TextMeshPro's default)")]
     public TMP_FontAsset font;
-    public float fontSize = 18f;
-    public float iconSize = 26f;
-    [Min(1f)] public float frameWidth = 3f;
-    public string orderText = "order", junctionText = "junctions";
-    public string pressText = "Each press: next step", doneText = "placed correct";
+     [System.NonSerialized] public float fontSize = 20f;
+     [System.NonSerialized] public float iconSize = 26f;
+     [System.NonSerialized] public float frameWidth = 3f;
+     [System.NonSerialized] public string orderText = "delivery order", junctionText = "meeting junctions";
+     [System.NonSerialized] public string pressText = "Each press: next step", doneText = "placed correct";
     [Tooltip("The note's first line; {s} is the stage, {total} the number of stages, {name} the stage's name")]
-    public string headerText = "Hint {s}/{total} · {name}";
-    public string[] stageTitles = { "Order", "Answer" }; // one per stage (was stageNames, with a "Tiles" stage first)
-    public float headerSize = 20f;
+     [System.NonSerialized] public string headerText = "Hint {s}/{total} · {name}";
+     [System.NonSerialized] public string[] stageTitles = { "Order", "Answer" }; // one per stage (was stageNames, with a "Tiles" stage first)
+     [System.NonSerialized] public float headerSize = 20f;
     [Tooltip("Stage 1's tile line (its tile count is in the supply bar)")]
-    public string tilesText = "Below the supply dock";
+     [System.NonSerialized] public string tilesText = "Below the supply dock";
 
     readonly List<Graphic> pulsing = new();
     int shownStage = -1;
@@ -46,24 +46,70 @@ public class HintNote : MonoBehaviour
         this.board = board;
         pulsing.Clear();
         UIBuilder.Clear(transform);
+        orderRow = null; // cleared with the rest (Destroy waits for the frame's end)
         var p = UIPalette.Current;
         if (stage >= 1) Header(stage, p.text);
-        if (stage == 1)
+        if (stage == 1) // what the board shows: the junction frames, where the order is, hovering for more
         {
-            // like the tile count's box under the supply: the hint purple behind white text that pulses
-            var row = Row(tilesText);
-            row.GetComponentInChildren<TextMeshProUGUI>().color = p.text;
-            row.gameObject.AddComponent<Image>().color = p.hint;
-            row.GetComponent<HorizontalLayoutGroup>().padding = new RectOffset(8, 8, 2, 2);
-            var order = Row(orderText);
-            Square(order, p.hint, true);
-            Round(order, p.hint);
-            Framed(Row(junctionText));
+            Framed(Row(junctionNote));
+            Row(orderNote);
+            Row(hoverNote);
         }
-        else if (stage >= 2)
+        if (stage >= 2)
         {
             Row(pressText);
             Square(Row(doneText), p.hintAccent, false); // still, like the board's
+        }
+        if (stage >= 1) GuideButton(p); // last: how the hints work (the guide comes later)
+    }
+
+    // "How hints work": a small text button under the lines; GuideClicked says it was pressed (nothing listens yet:
+    // the hint guide is still to be designed)
+     [System.NonSerialized] public string guideLinkText = "Hint guide";
+    [Tooltip("Stage 1's lines")]
+     [System.NonSerialized] public string junctionNote = "Junction: where objects meet", orderNote = "Order: below the supply dock", hoverNote = "Hover a ring or junction for more";
+    public event System.Action GuideClicked;
+    void GuideButton(UIPalette p)
+    {
+        var row = UIBuilder.NewRow("GuideLine", transform, 6f);
+        var label = Text(row, "<u>" + guideLinkText + "</u>", fontSize, p.accent);
+        label.raycastTarget = true;
+        var b = label.gameObject.AddComponent<Button>();
+        b.targetGraphic = label;
+        b.onClick.AddListener(() => GuideClicked?.Invoke());
+    }
+
+    // stage 1's tile line says the numbers itself, e.g. "Best plans use 7 tiles and leave 2 unused"
+    TextMeshProUGUI tilesLabel;
+    public void SetTiles(string text) { if (tilesLabel != null) tilesLabel.text = text; }
+
+    // stage 1's delivery order as one line under the header: "1 ● ●   2 ●", each object's colour, faded once it's delivered.
+    // rebuilt on every hint redraw (the plan can change as the board does, and objects arrive)
+    RectTransform orderRow;
+     [System.NonSerialized] public float deliveredAlpha = 0.25f;
+    public void ShowOrder(List<List<(Color color, bool delivered)>> groups)
+    {
+        if (orderRow == null)
+        {
+            orderRow = UIBuilder.NewRow("OrderLine", transform, 4f);
+            orderRow.SetSiblingIndex(Mathf.Min(1, transform.childCount - 1)); // right under the header
+        }
+        UIBuilder.Clear(orderRow);
+        for (int i = 0; i < groups.Count; i++)
+        {
+            var n = Text(orderRow, (i > 0 ? "  " : "") + (i + 1), fontSize, UIPalette.Current.text);
+            n.fontStyle = FontStyles.Bold;
+            foreach (var (color, delivered) in groups[i])
+            {
+                var box = (RectTransform)new GameObject("Dot", typeof(RectTransform)).transform;
+                box.SetParent(orderRow, false);
+                UIBuilder.FixedSize(box.gameObject, iconSize * 0.8f);
+                var c = color; if (delivered) c.a = deliveredAlpha;
+                var dot = UIBuilder.Circle(board.objectPrefab, box, c, iconSize * 0.8f);
+                var rt = dot.Rect;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero; rt.localEulerAngles = Vector3.zero;
+            }
         }
     }
 

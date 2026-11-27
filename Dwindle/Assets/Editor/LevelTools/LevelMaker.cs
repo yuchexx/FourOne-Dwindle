@@ -248,10 +248,13 @@ static class LevelMaker
         sb.Append($"        var l = new LevelData {{ title = \"Level {number}\", targetScore = {r.props.score}, bestTiles = {r.props.tiles}" +
                   (tips.Count > 0 ? ",\n            " + string.Join(", ", tips) : "") + " };\n");
         // the Levels page and tutorial lines, kept when an existing level is written again (or set in the window)
-        if (!string.IsNullOrEmpty(l.section)) sb.Append($"        l.section = \"{l.section}\"; // the Levels page starts a part here\n");
+        // (the Levels page's section and the stars to pass come from these in Levels' static constructor)
+        sb.Append($"        l.colorGroup = {l.colorGroup};\n");
+        if (l.teach) sb.Append("        l.teach = true; // needs all 3 stars to unlock the next level\n");
+        if (!string.IsNullOrEmpty(l.trick)) sb.Append($"        l.trick = \"{l.trick}\";\n");
+        if (!string.IsNullOrEmpty(l.popup)) sb.Append($"        l.popup = \"{l.popup}\"; // the pop-up before it (LevelPopups)\n");
         if (!string.IsNullOrEmpty(l.tutorial)) sb.Append($"        l.tutorial = \"{l.tutorial}\";\n");
-        if (l.teach) sb.Append("        l.teach = true;\n");
-        if (l.starsToPass != 1) sb.Append($"        l.starsToPass = {l.starsToPass}; // stars that unlock the next level\n");
+        if (!string.IsNullOrEmpty(l.think)) sb.Append($"        l.think = \"{l.think.Replace("\"", "\\\"").Replace("\n", "\\n")}\";\n");
         sb.Append($"        l.SetBoards({string.Join(", ", l.boards.Select(b => $"({b.width}, {b.height})"))});\n");
         sb.Append("        l.inventory = Inv(" + string.Join(", ", Tiles.All.Where(t => l.inventory.GetValueOrDefault(t) > 0).Select(t => $"{InvNames[t]}: {l.inventory[t]}")) + ");\n");
         foreach (var o in l.obstacles) { int b = l.BoardOf(o); var p = o - l.boards[b].origin; sb.Append($"        l.obstacles.Add(l.At({b}, {p.x}, {p.y}));\n"); }

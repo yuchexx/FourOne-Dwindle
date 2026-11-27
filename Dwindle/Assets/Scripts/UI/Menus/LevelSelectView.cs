@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -54,6 +55,15 @@ public class LevelSelectView : MonoBehaviour
     [Tooltip("{p} is the page's number, {total} the number of pages")]
     public string pageText = "{p}/{total}";
 
+    [Header("Colour groups (the plan: one list, no part map)")]
+     [System.NonSerialized] public bool colourGroups = true; // on: no part map or headings; each card in its colour group's colour, 4 a row straight through
+     [System.NonSerialized] public bool celebrateCleared = false; // the "cleared" pop when a colour group is done (off: to be shown on the cards instead)
+     [System.NonSerialized] public string endCardText = "The End"; // the card past the last level, once it's passed: opens the ending screen
+    int levelCount;                        // the levels' cards (the end card, if any, comes after them)
+    bool EndOpen => levelCount > 0 && Session.FinaleOpen; // editor: the last level passed; a build: every level starred
+     [System.NonSerialized] public Color[] groupColors = { new Color32(0x6B, 0x70, 0xF0, 0xFF), new Color32(0xE0, 0x52, 0x4F, 0xFF), new Color32(0x3F, 0xAE, 0x6A, 0xFF), new Color32(0xEF, 0x8A, 0x2C, 0xFF), new Color32(0xC2, 0x56, 0x9B, 0xFF), new Color32(0x4A, 0x7F, 0xE0, 0xFF) }; // placeholder
+     [System.NonSerialized] public float celebrateSeconds = 2.5f;
+
     [Header("Parts (in Play mode, changes show right away)")]
     [Tooltip("Each part (LevelData.section) starts on a new row under its heading")]
     public bool showParts = true;
@@ -68,11 +78,16 @@ public class LevelSelectView : MonoBehaviour
 
     [Header("Tutorial levels (in Play mode, changes show right away)")]
     [Tooltip("An open tutorial level's card: a deeper purple than Accent, so purple stars still show on it")]
-    public Color tutorialCardColor = new Color32(0x4A, 0x4F, 0xA8, 0xFF);
+     [System.NonSerialized] public Color tutorialCardColor = new Color32(0x40, 0x3B, 0x8A, 0xFF);
+    [Header("Colour groups: grey card shades (off: each card in its group's colour)")]
+     [System.NonSerialized] public bool shadeCards = true;
+     [System.NonSerialized] public Color topSectionShade = new Color32(0x6A, 0x6F, 0x84, 0xFF);    // section 1: the lightest slate
+     [System.NonSerialized] public Color bottomSectionShade = new Color32(0x40, 0x44, 0x52, 0xFF); // the last section: the darkest (still clear of the page); the ones between step evenly darker
+     [System.NonSerialized] public float firstLevelTint = 0.4f;        // each section's first level: its section's grey this far toward the accent (purple-ish)
     [Tooltip("A locked tutorial level's frame: thickness in screen pixels, so all four edges come out the same")]
-    [Min(1)] public int frameWidth = 3;
+     [System.NonSerialized] public int frameWidth = 3;
     [Tooltip("The frame's color (default: a lighter version of the palette's Accent)")]
-    public Color frameColor = new Color32(0xAA, 0xAE, 0xFA, 0xFF);
+     [System.NonSerialized] public Color frameColor = new Color32(0x40, 0x3B, 0x8A, 0xFF);
 
     readonly List<LevelCard> cards = new List<LevelCard>();
     readonly List<bool> hasTutorial = new List<bool>();
@@ -90,7 +105,9 @@ public class LevelSelectView : MonoBehaviour
     int page, pageCount = 1;
     int shownPart = -1; // the open part with a part map, -1 for every card
     bool listShown = true; // false while the part map shows
-    bool ByPart => partMap != null;
+    bool ByPart => partMap != null && !colourGroups;
+    readonly List<int> colourOf = new List<int>(); // each card's colour group (LevelData.colorGroup)
+    IList<LevelData> shownLevels;
 
     void OnValidate()
     {
@@ -110,6 +127,9 @@ public class LevelSelectView : MonoBehaviour
         partOf.Clear();
         groupOf.Clear();
         parts.Clear();
+        colourOf.Clear();
+        shownLevels = levels;
+        levelCount = levels.Count;
         string part = null, group = null;
         cardTemplate.gameObject.SetActive(false);
         if (headingTemplate != null) headingTemplate.gameObject.SetActive(false);
@@ -129,12 +149,26 @@ public class LevelSelectView : MonoBehaviour
             card.button.onClick.AddListener(() => onPick(index));
             cards.Add(card);
             hasTutorial.Add(!string.IsNullOrEmpty(levels[i].tutorial) || levels[i].teach); // tutorial and teach levels
-            names.Add((levels[i].teach ? lessonText : cardText).Replace("{n}", levels[i].label ?? (i + 1).ToString()));
+            names.Add((levels[i].teach && !colourGroups ? lessonText : cardText).Replace("{n}", levels[i].label ?? (i + 1).ToString()));
+            colourOf.Add(levels[i].colorGroup);
             if (!string.IsNullOrEmpty(levels[i].section) && levels[i].section != part) { part = levels[i].section; group = null; }
             if (!string.IsNullOrEmpty(levels[i].group)) group = levels[i].group;
             partOf.Add(part);
             groupOf.Add(group);
             if (parts.Count == 0 || parts[parts.Count - 1] != part) parts.Add(part);
+        }
+        if (colourGroups) // the end card: after the last level, shown once it's passed
+        {
+            var end = Instantiate(cardTemplate, cardTemplate.transform.parent);
+            end.name = "EndCard";
+            end.button.onClick = new Button.ButtonClickedEvent();
+            end.button.onClick.AddListener(() => onPick(levels.Count));
+            cards.Add(end);
+            hasTutorial.Add(false);
+            names.Add(endCardText);
+            colourOf.Add(-1);
+            partOf.Add(part);
+            groupOf.Add(group);
         }
         // a part with only one section (Challenge, Finale): no heading, the page's title already says it
         foreach (var p in parts)
@@ -145,7 +179,8 @@ public class LevelSelectView : MonoBehaviour
         }
         if (prevButton != null) { prevButton.onClick.RemoveListener(PrevPage); prevButton.onClick.AddListener(PrevPage); }
         if (nextButton != null) { nextButton.onClick.RemoveListener(NextPage); nextButton.onClick.AddListener(NextPage); }
-        if (partMap == null && autoPartMap && parts.Count > 1) partMap = MakePartMap();
+        if (partMap == null && autoPartMap && parts.Count > 1 && !colourGroups) partMap = MakePartMap();
+        if (colourGroups && partMap != null) partMap.gameObject.SetActive(false); // a scene part map stays hidden
         if (ByPart) { var labels = new List<string>(); for (int p = 0; p < parts.Count; p++) labels.Add(PartLabel(p)); partMap.Build(labels, ShowPart); }
         Layout();
         Refresh();
@@ -221,8 +256,35 @@ public class LevelSelectView : MonoBehaviour
 
     string PartLabel(int p) => partText.Replace("{n}", (p + 1).ToString()).Replace("{name}", parts[p] ?? "");
 
-    // the heading a card's row goes under: its section inside a part map's part, else its part
-    string HeadOf(int i) => ByPart ? (sectionRows ? groupOf[i] : null) : showParts ? partOf[i] : null;
+    // the heading a card's row goes under: its section inside a part map's part, else its part (none with colour groups)
+    string HeadOf(int i) => colourGroups ? null : ByPart ? (sectionRows ? groupOf[i] : null) : showParts ? partOf[i] : null;
+
+    // a card's colour with colour groups: grey shades (sections alternate two shades, a section's first level lighter
+    // so it stands out, the stars readable on all), or the group's own colour when shadeCards is off. locked: darker
+    Color CardShade(int i, bool open)
+    {
+        Color c;
+        if (!shadeCards) c = GroupColor(colourOf[i]);
+        else
+        {
+            bool first = i == 0 || colourOf[i] != colourOf[i - 1];
+            int g = Mathf.Max(0, colourOf[i]);
+            c = first ? Color.Lerp(SectionShade(g), UIPalette.Current.accent, firstLevelTint) : SectionShade(g);
+        }
+        return open ? c : Color.Lerp(c, UIPalette.Current.background, 0.4f);
+    }
+
+    Color SectionShade(int group) => Color.Lerp(topSectionShade, bottomSectionShade, Levels.GroupNames.Length > 1 ? (float)group / (Levels.GroupNames.Length - 1) : 0f); // darker each section
+
+    // each colour group's colour as the cards show it (its shade, or its own colour): the ending screen's swatches
+    public Color[] SectionColors()
+    {
+        var res = new Color[Levels.GroupNames.Length];
+        for (int g = 0; g < res.Length; g++) res[g] = shadeCards ? SectionShade(g) : GroupColor(g);
+        return res;
+    }
+
+    Color GroupColor(int group) => groupColors.Length > 0 ? groupColors[Mathf.Clamp(group, 0, groupColors.Length - 1)] : cardColor;
     bool Shown(int i) => !ByPart || shownPart < 0 || partOf[i] == parts[shownPart];
 
     // rows: a row ends when full or where a new heading starts. pages: rowsPerPage rows each. a heading's first row on
@@ -372,9 +434,62 @@ public class LevelSelectView : MonoBehaviour
     public void Open()
     {
         if (ByPart) { ShowMap(); return; }
+        Layout(); // the end card may have just opened
         Refresh();
-        int level = Session.lastOpened >= 0 ? Session.lastOpened : Session.StartLevel(cards.Count);
+        int level = Session.lastOpened >= 0 ? Session.lastOpened : Session.StartLevel(levelCount);
         ShowPage(level >= 0 && level < pageOf.Count ? pageOf[level] : 0);
+        if (colourGroups && celebrateCleared) CelebrateCleared(); // off for now: the cards will show it later
+    }
+
+    // a colour group whose levels are all passed: a short "cleared" pop, once (Session remembers it)
+    void CelebrateCleared()
+    {
+        if (shownLevels == null) return;
+        for (int g = 0; g <= colourOf.DefaultIfEmpty(-1).Max(); g++)
+        {
+            if (Session.Celebrated(g)) continue;
+            bool any = false, all = true;
+            for (int i = 0; i < cards.Count; i++) if (i < levelCount && colourOf[i] == g) { any = true; all &= Session.Passed(i); }
+            if (!any || !all) continue;
+            Session.MarkCelebrated(g);
+            StartCoroutine(Celebrate(g));
+            return; // one at a time
+        }
+    }
+
+    System.Collections.IEnumerator Celebrate(int g)
+    {
+        var screen = (RectTransform)cardTemplate.transform.parent;
+        var go = new GameObject("GroupCleared", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+        var rt = (RectTransform)go.transform;
+        rt.SetParent(screen, false);
+        rt.sizeDelta = new Vector2(560f, 120f);
+        rt.anchoredPosition = new Vector2(0f, 40f);
+        var bg = go.GetComponent<Image>();
+        bg.color = groupColors.Length > 0 ? groupColors[Mathf.Clamp(g, 0, groupColors.Length - 1)] : UIPalette.Current.accent;
+        bg.raycastTarget = false;
+        var text = Instantiate(cardTemplate.label, rt);
+        text.name = "Text";
+        var tr = text.rectTransform;
+        tr.anchorMin = Vector2.zero; tr.anchorMax = Vector2.one; tr.offsetMin = tr.offsetMax = Vector2.zero; tr.anchoredPosition = Vector2.zero;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = Color.white;
+        string name = g < Levels.GroupNames.Length ? Levels.GroupNames[g] : "Group";
+        text.text = $"<b>{name}</b>\ncleared!";
+        var cg = go.GetComponent<CanvasGroup>();
+        cg.blocksRaycasts = false;
+        for (float t = 0f; t < 0.35f; t += Time.unscaledDeltaTime) // pop in
+        {
+            float k = t / 0.35f;
+            float e = 1f + 2.70158f * Mathf.Pow(k - 1f, 3f) + 1.70158f * Mathf.Pow(k - 1f, 2f); // ease out, a little overshoot
+            rt.localScale = Vector3.one * Mathf.LerpUnclamped(0.6f, 1f, e);
+            cg.alpha = k;
+            yield return null;
+        }
+        rt.localScale = Vector3.one; cg.alpha = 1f;
+        yield return new WaitForSecondsRealtime(celebrateSeconds);
+        for (float t = 0f; t < 0.4f; t += Time.unscaledDeltaTime) { cg.alpha = 1f - t / 0.4f; yield return null; }
+        Destroy(go);
     }
 
     public void PrevPage() => ShowPage(page - 1);
@@ -404,13 +519,23 @@ public class LevelSelectView : MonoBehaviour
         for (int i = 0; i < cards.Count; i++)
         {
             var card = cards[i];
+            if (i >= levelCount) // the end card: the accent, its name, no stars; locked (faded) till the ending opens
+            {
+                card.button.interactable = EndOpen;
+                if (card.button.targetGraphic != null) card.button.targetGraphic.color = EndOpen ? palette.accent : Color.Lerp(cardColor, palette.accent, 0.35f);
+                card.label.text = EndOpen ? names[i] : lockedText;
+                PlaceLabel(card.label, false); // centred on the card
+                if (card.tutorialFrame != null) DrawFrame(card, false, frameColor);
+                foreach (var st in card.stars) st.gameObject.SetActive(false);
+                continue;
+            }
             var record = Session.Get(i);
             bool open = Session.IsUnlocked(i);
             card.button.interactable = open;
-            if (card.button.targetGraphic != null) card.button.targetGraphic.color = open && hasTutorial[i] ? tutorialCardColor : cardColor;
+            if (card.button.targetGraphic != null) card.button.targetGraphic.color = colourGroups ? CardShade(i, open) : open && hasTutorial[i] ? tutorialCardColor : cardColor; // colour groups: grey shades by group (or the group's colour), faded while locked
             card.label.text = open ? names[i] : lockedText;
             PlaceLabel(card.label, open);
-            if (card.tutorialFrame != null) DrawFrame(card, !open && hasTutorial[i], frameColor);
+            if (card.tutorialFrame != null) DrawFrame(card, !colourGroups && !open && hasTutorial[i], frameColor);
             for (int s = 0; s < card.stars.Length; s++)
             {
                 bool earned = s < record.stars;
@@ -418,6 +543,7 @@ public class LevelSelectView : MonoBehaviour
                 card.stars[s].color = earned
     ? (record.purple ? palette.purpleStar : palette.star)
     : palette.starEmpty;
+                StarSparkle.Set(card.stars[s], open && earned && record.purple); // purple stars sparkle
             }
         }
         if (!ByPart) return;
@@ -434,8 +560,8 @@ public class LevelSelectView : MonoBehaviour
             partMap.Set(p, got, max, first >= 0 && Session.IsUnlocked(first));
         }
         // where the player is: the part of the next level to play, past the last part once every level is passed
-        int next = Session.StartLevel(cards.Count);
-        bool allDone = cards.Count > 0 && Session.Passed(cards.Count - 1);
+        int next = Session.StartLevel(levelCount);
+        bool allDone = EndOpen;
         partMap.SetCurrent(allDone ? parts.Count : Mathf.Max(0, parts.IndexOf(partOf[next])));
     }
 

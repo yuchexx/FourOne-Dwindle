@@ -17,7 +17,29 @@ public partial class GameManager
     public int HintStage => hints.Stage;     // 0 to 2
     public bool PurpleLost => hints.PurpleLost;
     public bool HintHidden { get; set; }     // Hide hint: the overlay is hidden, the stage stays
-    public string HintTilesText => Hints.TilesText(level); // stage 1, with the order
+    public string HintTilesText => Hints.TilesText(level); // (no longer shown: the line under the dock is the order now)
+
+    // the line under the supply dock from stage 1 on: the delivery order as coloured blocks, "Deliver [Red][Blue]  then
+    // [Green]", each object's block faded once it's delivered (TMP's mark: a block in any font)
+    public string HintOrderText
+    {
+        get
+        {
+            var groups = HintOrderLine();
+            if (groups.Count == 0) return "";
+            var sb = new System.Text.StringBuilder("Deliver ");
+            for (int i = 0; i < groups.Count; i++)
+            {
+                if (i > 0) sb.Append("  then ");
+                foreach (var (color, delivered) in groups[i])
+                {
+                    var c = color; if (delivered) c.a = 0.25f;
+                    sb.Append("<mark=#").Append(ColorUtility.ToHtmlStringRGBA(c)).Append(">   </mark> "); // a block: three hard spaces, marked
+                }
+            }
+            return sb.ToString().TrimEnd(' ');
+        }
+    }
     // stage 1, fixed when shown: who arrives in which delivery (same number = together), and where groups meet
     public List<(string objectName, int number)> HintBadges { get; private set; } = new List<(string, int)>();
     public List<(Vector2Int square, int number)> HintJunctions { get; private set; } = new List<(Vector2Int, int)>();
@@ -64,9 +86,14 @@ public partial class GameManager
             case 0:
                 {
                     var st = CurrentState();
-                    var plan = PlanMatcher.Closest(level, st) ?? PlanMatcher.Nearest(level, st);
-                    HintBadges = PlanMatcher.Badges(level, plan.family, plan.order);
-                    HintJunctions = PlanMatcher.Junctions(level, plan.family, plan.order);
+                    ShowOrderOf(PlanMatcher.Closest(level, st) ?? PlanMatcher.Nearest(level, st));
+                    if (Stage1Empty) // nothing for stage 1 to show: straight to the answer
+                    {
+                        stage3 = new Stage3(level, st);
+                        hints.Stage = 2;
+                        hints.Revealed = 1;
+                        break;
+                    }
                     hints.Stage = 1;
                     break;
                 }
@@ -84,6 +111,42 @@ public partial class GameManager
         Report(new GameAction { kind = GameActionKind.Hint, hintStage = hints.Stage, answerStep = hints.Revealed }); // for analytics
         HintsChanged?.Invoke();
         RefreshHintedArrow();
+        if (!Session.HintGuideSeen(hints.Stage)) StartCoroutine(HintGuideSoon(hints.Stage)); // the first time a stage opens: its guide
+    }
+
+    // stage 1 has no meeting square to show (e.g. Level 2): Hint goes straight to the answer
+    // worked out once per level, from the board as it starts (so the Hints button's dots don't change as you play)
+    bool? stage1Empty;
+    public bool Stage1Empty => stage1Empty ??= WorkOutStage1Empty();
+    bool WorkOutStage1Empty()
+    {
+        {
+            if (level?.solution == null) return false;
+            var st = CurrentState();
+            var plan = orderPlan ?? PlanMatcher.Closest(level, st) ?? PlanMatcher.Nearest(level, st);
+            return PlanMatcher.Junctions(level, plan.family, plan.order).Count == 0; // no meeting square: nothing to show but the order (e.g. Level 2: Red, then Blue)
+        }
+    }
+
+    // the answer's arrow step, the first time arrows come up with the answer open (seen key 3): over the arrows, once
+    System.Collections.IEnumerator ArrowGuideSoon()
+    {
+        yield return null; // the arrows are made first
+        if (tutorial == null || board.HintedArrowRect == null) yield break;
+        Session.MarkHintGuideSeen(3);
+        tutorial.Play(Tutorials.ArrowGuide(this), this);
+    }
+
+    // the hint guide for the stage shown now (the Hint help button), or for a stage that just opened (once, saved)
+    public void ShowHintGuide() { if (hints.Stage >= 1) StartCoroutine(HintGuideSoon(hints.Stage)); }
+    System.Collections.IEnumerator HintGuideSoon(int stage)
+    {
+        yield return null; // the hints are drawn first, so the guide can point at them
+        if (tutorial == null || levelOver || hints.Stage != stage) yield break;
+        Session.MarkHintGuideSeen(stage);
+        if (stage >= Hints.Stages) Session.MarkHintGuideSeen(3); // the answer's guide covers the arrow too
+        var hb = FindAnyObjectByType<HintButton>();
+        tutorial.Play(Tutorials.HintGuide(this, hb, stage), this, () => { if (hb != null) hb.HoldOpen(false); });
     }
 
     // the arrows showing now: the one the hint points to pulses (a hint used, hidden or shown while they show)
@@ -106,9 +169,75 @@ public partial class GameManager
         if (level == null || board.Cells == null) return;
         var st = CurrentState(); // the board, once for this redraw
         if (!busy) FollowBoard(st); // mid-round the board is half moved: it's judged once everything has stopped
-        if (HintHidden) { board.ShowHints(new List<(string, int)>(), new List<(Vector2Int, int)>(), new List<(Vector2Int, TileType, int, StepState)>()); return; }
+        if (!busy && hints.Stage == 1) FollowOrder(st); // stage 1 follows the board too
+        if (HintHidden) { heardSteps = null; board.ShowHints(new List<(string, int)>(), new List<(Vector2Int, int)>(), new List<(Vector2Int, TileType, int, StepState)>()); return; }
         bool order = hints.Stage == 1;
-        board.ShowHints(order ? HintBadges : new List<(string, int)>(), order ? HintJunctions : new List<(Vector2Int, int)>(), HintGhosts(st));
+        var ghosts = HintGhosts(st);
+        HintSounds(ghosts);
+        board.ShowHints(order ? HintBadges : new List<(string, int)>(), order ? HintJunctions : new List<(Vector2Int, int)>(), ghosts, objects?.Where(o => o.completed).Select(o => o.spec.name).ToList()); // delivered: their junctions show as done
+    }
+
+    // the answer's sounds: a step newly wrong (its number pulses) or the tile just placed newly right (number filled in),
+    // against the last redraw. one sound per frame, wrong over right, played at the frame's end unless an Undo, Hint or
+    // Restart came that frame (those redraw quietly)
+    Dictionary<(Vector2Int, TileType), StepState> heardSteps; // null: the next redraw only sets the baseline
+    AudioManager.Sfx? hintSound;
+    int quietFrame = -1;
+    void HintSounds(List<(Vector2Int square, TileType tile, int number, StepState state)> ghosts)
+    {
+        var now = new Dictionary<(Vector2Int, TileType), StepState>();
+        foreach (var g in ghosts) now[(g.square, g.tile)] = g.state;
+        var before = heardSteps;
+        heardSteps = now;
+        if (before == null) return;
+        foreach (var kv in now)
+        {
+            if (!before.TryGetValue(kv.Key, out var was) || was == kv.Value) continue; // newly shown steps make no sound
+            if (kv.Value == StepState.Early) hintSound = AudioManager.Sfx.HintWrong;
+            else if (kv.Value == StepState.Done && kv.Key.Item1 == lastPlaced && hintSound == null) hintSound = AudioManager.Sfx.HintRight;
+        }
+    }
+    void QuietHintSounds() { quietFrame = Time.frameCount; hintSound = null; }
+    void PlayHintSound()
+    {
+        if (hintSound is AudioManager.Sfx s && quietFrame != Time.frameCount) AudioManager.Play(s);
+        hintSound = null;
+    }
+
+    // stage 1's plan: its order numbers and meeting squares
+    (int family, int order)? orderPlan;
+    void ShowOrderOf((int family, int order) plan)
+    {
+        orderPlan = plan;
+        HintBadges = PlanMatcher.Badges(level, plan.family, plan.order);
+        HintJunctions = PlanMatcher.Junctions(level, plan.family, plan.order);
+    }
+
+    // once everything has stopped: while stage 1's plan can still be finished it stays (the numbers don't jump around);
+    // else the closest plan that fits the board takes its place
+    void FollowOrder(PlayerState st)
+    {
+        if (orderPlan is (int f, int o) && PlanMatcher.Reachable(level, f, o, st)) return;
+        var next = PlanMatcher.Closest(level, st);
+        if (next != null && next != orderPlan) ShowOrderOf(next.Value);
+    }
+
+    // stage 1's order for the hint box: each delivery's objects in order (colour, delivered yet)
+    public List<List<(Color color, bool delivered)>> HintOrderLine()
+    {
+        var res = new List<List<(Color, bool)>>();
+        var badges = hints.Stage >= 2 && stage3 != null ? PlanMatcher.Badges(level, stage3.Plan.family, stage3.Plan.order) : HintBadges; // the answer's plan from stage 2
+        foreach (var g in badges.GroupBy(b => b.number).OrderBy(g => g.Key))
+        {
+            var group = new List<(Color, bool)>();
+            foreach (var (name, _) in g)
+            {
+                var o = objects?.FirstOrDefault(x => x.spec.name == name);
+                if (o != null) group.Add((o.spec.color, o.completed));
+            }
+            res.Add(group);
+        }
+        return res;
     }
 
     // stage 3, once everything has stopped: follows the board (see Stage3.Follow), with the placement this round if any
@@ -173,10 +302,12 @@ public partial class GameManager
     void ResetHintsForLoad()
     {
         hints.Clear();
+        stage1Empty = null; // this level's own
         hintQueued = false;
         HintHidden = false;
         HintBadges = new List<(string, int)>();
         HintJunctions = new List<(Vector2Int, int)>();
+        orderPlan = null;
         stage3 = null;
         placedForHints = false;
         deliveriesSoFar = new List<DeliveryRecord>();

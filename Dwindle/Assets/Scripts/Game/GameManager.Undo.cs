@@ -49,11 +49,21 @@ public partial class GameManager
     public void Undo() => UndoBy(Session.undoByStep);
 
     // for the tutorial (a coach undoing a wrong move): always the whole placement
-    public void UndoPlacement() => UndoBy(false);
+    public void UndoPlacement(bool animate = true)
+    {
+        board.animateUndo = animate && Session.animateUndo; // false: jumps back, no rewind shown
+        UndoBy(false);
+        board.animateUndo = Session.animateUndo;
+    }
 
     // for the tutorial (a coach undoing a wrong way, TutorialCoach.undoToChoice): back to the last arrow question,
     // which shows again (the tile stays), whatever undo by step is set to
-    public void UndoChoiceStep() => UndoBy(true);
+    public void UndoChoiceStep(bool animate = true)
+    {
+        board.animateUndo = animate && Session.animateUndo;
+        UndoBy(true);
+        board.animateUndo = Session.animateUndo;
+    }
 
     void UndoBy(bool byStep)
     {

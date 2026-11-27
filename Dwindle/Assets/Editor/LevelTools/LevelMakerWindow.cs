@@ -282,9 +282,10 @@ public class LevelMakerWindow : EditorWindow
         EditorGUILayout.LabelField("Idea (comment above it)");
         comment = EditorGUILayout.TextArea(comment, EditorStyles.textArea, GUILayout.MinHeight(36));
         // the Levels page and the end window (Solve fills these from the level; Generate picks the tips)
-        l.teach = EditorGUILayout.Toggle(new GUIContent("Teach", "A trick's teach level: purple on the Levels page"), l.teach);
-        l.starsToPass = EditorGUILayout.IntSlider(new GUIContent("Stars to pass", "Stars that unlock the next level"), l.starsToPass, 1, 3);
-        l.section = NullIfBlank(EditorGUILayout.TextField(new GUIContent("Section", "Starts a part heading on the Levels page, e.g. Learn (blank: none)"), l.section ?? ""));
+        l.colorGroup = EditorGUILayout.IntSlider(new GUIContent("Colour group", "Its group on the Levels page (Levels.GroupNames); a group's first level names it"), l.colorGroup, 0, Levels.GroupNames.Length - 1);
+        l.teach = EditorGUILayout.Toggle(new GUIContent("Teach", "Teaches a trick: needs all 3 stars to unlock the next level"), l.teach);
+        l.trick = NullIfBlank(EditorGUILayout.TextField(new GUIContent("Trick", "The trick it teaches (blank: none)"), l.trick ?? ""));
+        l.popup = NullIfBlank(EditorGUILayout.TextField(new GUIContent("Pop-up", "The LevelPopups pop-up shown before it (blank: none)"), l.popup ?? ""));
         l.finishHint = TipField("Tip 0-1 stars", "The end window's tip when not everyone was delivered (blank: none)", l.finishHint);
         l.bestPlanHint = TipField("Tip 2 stars", "The end window's tip when everyone was delivered, below the target (blank: none)", l.bestPlanHint);
         var code = LevelMaker.Code(r, levelNumber, comment);

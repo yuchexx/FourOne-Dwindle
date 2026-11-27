@@ -91,7 +91,13 @@ public class Stage3
     {
         var marked = brokePlan;
         if (round != null && onTrack && !CanFinish(st, round)) marked = new HashSet<Vector2Int>(brokePlan) { round.Value };
-        return PlanMatcher.StepStates(level, Plan.family, Plan.order, Steps, st, marked, moving);
+        var states = PlanMatcher.StepStates(level, Plan.family, Plan.order, Steps, st, marked, moving);
+        // off every plan, the plan shown no longer matches the board: an empty square never shows as done there (its
+        // delivery may have happened in that plan, while on the board an object still has to cross it), it's a ghost again
+        if (!onTrack)
+            for (int i = 0; i < states.Length && i < Steps.Count; i++)
+                if (states[i] == StepState.Done && !st.tiles.ContainsKey(Steps[i].square)) states[i] = StepState.ToDo;
+        return states;
     }
 
     // the way to take at a junction (here.square) or out of a door (here.door), shown only where that square's step is:

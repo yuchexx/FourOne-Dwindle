@@ -86,7 +86,7 @@ static class SolutionExport
         {
             var ps = families[f].ToList(); var p0 = ps[0];
             var allowed = p0.tiles.Keys.ToDictionary(c => c, c => ps.Select(p => p.tiles[c]).Distinct().OrderBy(t => t).ToList());
-            sb.Append($"            // family {(char)('A' + f)}: {ps.Select(Tiles).Distinct().Count()} tile layouts\n");
+            sb.Append($"            // family {(f < 26 ? ((char)('A' + f)).ToString() : (f + 1).ToString())}: {ps.Select(Tiles).Distinct().Count()} tile layouts\n");
             sb.Append("            new RoadFamily\n            {\n                roads = new[]\n                {\n");
             for (int o = 0; o < l.objects.Count; o++)
             {

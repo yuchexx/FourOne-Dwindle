@@ -37,6 +37,12 @@ public partial class BoardView : MonoBehaviour
     public float boardTopMargin = 60f;
     [Tooltip("With several boards: the space between two boards' frames")]
     public float boardGap = 40f;
+    [Tooltip("Nine boards or more: the space between frames, and each frame past its rings (squares), smaller so the squares stay big")]
+     [System.NonSerialized] public float manyBoardsGap = 16f;
+     [System.NonSerialized] public float manyBoardsPadding = 0.15f;
+    bool ManyBoards => level != null && level.boards.Count >= 9;
+    float Gap => ManyBoards ? manyBoardsGap : boardGap;
+    float FramePad => ManyBoards ? manyBoardsPadding : framePadding;
     // set by GameManager: the top bar's parts (the boards stay below them) and the dock (they stay above it)
     [HideInInspector] public RectTransform[] keepBelow, keepAbove;
     [Range(0.2f, 1f)] public float objectSize = 0.55f; // an object's circle, as a fraction of a cell
@@ -195,16 +201,30 @@ public partial class BoardView : MonoBehaviour
         foreach (var c in corners) tops.Add(c.yMin);
         Rect best = Rect.MinMaxRect(left, low, right, tops.Min());
         float bestCell = -1f;
-        foreach (var top in tops)
-        {
-            if (top <= low) continue;
-            var free = Rect.MinMaxRect(left, low, right, top);
-            LayOutGrid(free);
-            var size = LayoutSize();
-            var box = new Rect(free.center.x - size.x / 2f, free.yMin, size.x, size.y); // on the dock gap, as Build puts it
-            if (corners.Any(c => c.Overlaps(box))) continue;
-            if (CellSize > bestCell) { bestCell = CellSize; best = free; }
-        }
+        // the whole width first (every level that fits this way keeps its place); only if none fits, the width between the
+        // corners beside each height, cut the same on both sides so the boards stay centred (a wide layout, e.g. two
+        // 5x4 boards side by side, can't clear Redo at the bottom right at any height otherwise)
+        for (int pass = 0; pass < 2 && bestCell < 0f; pass++)
+            foreach (var top in tops)
+            {
+                if (top <= low) continue;
+                float cut = 0f;
+                if (pass == 1)
+                    foreach (var c in corners)
+                    {
+                        if (c.yMax <= low || c.yMin >= top) continue; // not beside this space
+                        cut = Mathf.Max(cut, c.center.x < screen.center.x ? c.xMax - left : right - c.xMin);
+                    }
+                var free = Rect.MinMaxRect(left + cut, low, right - cut, top);
+                if (free.width <= 0f) continue;
+                LayOutGrid(free);
+                if (!(CellSize > 0f)) continue;
+                var size = LayoutSize();
+                var box = new Rect(free.center.x - size.x / 2f, free.yMin, size.x, size.y); // on the dock gap, as Build puts it
+                if (corners.Any(c => c.Overlaps(box))) continue;
+                if (CellSize > bestCell) { bestCell = CellSize; best = free; }
+            }
+        if (bestCell < 0f) best = Rect.MinMaxRect(left, low, right, Mathf.Max(low + 1f, screen.yMax - boardTopMargin)); // nothing clears every corner: the screen above the dock, never an empty space
         return best;
     }
 
@@ -231,6 +251,7 @@ public partial class BoardView : MonoBehaviour
     }
 
     readonly List<(Image frame, BoardSpec board)> frames = new List<(Image, BoardSpec)>();
+    public RectTransform BoardFrame(int i) => i >= 0 && i < frames.Count ? frames[i].frame.rectTransform : null; // for the tutorial
 
     void LayOutFrame(Image frame, BoardSpec b)
     {
@@ -239,7 +260,7 @@ public partial class BoardView : MonoBehaviour
         var rt = frame.rectTransform;
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = (low + high) / 2f;
-        rt.sizeDelta = high - low + Vector2.one * CellSize * 2f * framePadding;
+        rt.sizeDelta = high - low + Vector2.one * CellSize * 2f * Mathf.Max(FramePad, ringSize / 2f);
         frame.color = boardFrameColor;
     }
 
@@ -460,7 +481,7 @@ public partial class BoardView : MonoBehaviour
     {
         float dot = CellSize * endLineDotSize, step = dot + CellSize * endLineGap;
         float length = Vector2.Distance(from, to);
-        if (length < dot) return null;
+        if (!(dot > 0f) || !(step > 0f) || length < dot || length > CellSize * 50f) return null; // a broken size (0, negative, NaN) or a runaway length: no line, not an endless loop
         var group = new GameObject("EndLine", typeof(RectTransform));
         var root = (RectTransform)group.transform;
         root.SetParent(markersRoot, false);
@@ -507,13 +528,13 @@ public partial class BoardView : MonoBehaviour
     // where each column and row goes
     void LayOutGrid(Rect free)
     {
-        float pad = Mathf.Max(framePadding, ringSize / 2f); // each frame past its ring (or the ring's circle, if bigger)
+        float pad = Mathf.Max(FramePad, ringSize / 2f); // each frame past its ring (or the ring's circle, if bigger)
         bool[] emptyCol = EmptyLines(level.width, b => (b.origin.x, b.width));
         bool[] emptyRow = EmptyLines(level.height, b => (b.origin.y, b.height));
         int ex = emptyCol.Count(e => e), ey = emptyRow.Count(e => e);
         // across: the rings' centers span width + 1 squares, each frame adds pad; an empty line between two rings takes
         // what's left of Board Gap once the two frames' pads past their rings are counted
-        float Fit(float room, int lines, int empties) => (room - empties * boardGap) / (lines + 1 + 2f * pad - empties * (2f - 2f * pad));
+        float Fit(float room, int lines, int empties) => (room - empties * Gap) / (lines + 1 + 2f * pad - empties * (2f - 2f * pad));
         CellSize = Mathf.Floor(Mathf.Min(Fit(free.width, level.width, ex), Fit(free.height, level.height, ey)));
         SetLines();
     }
@@ -521,8 +542,8 @@ public partial class BoardView : MonoBehaviour
     // where each column and row goes at the current square size (an empty line between boards keeps Board Gap)
     void SetLines()
     {
-        float pad = Mathf.Max(framePadding, ringSize / 2f);
-        float squeezed = Mathf.Max(0f, boardGap / Mathf.Max(1f, CellSize) - (1f - 2f * pad)); // an empty line's width, in squares
+        float pad = Mathf.Max(FramePad, ringSize / 2f);
+        float squeezed = Mathf.Max(0f, Gap / Mathf.Max(1f, CellSize) - (1f - 2f * pad)); // an empty line's width, in squares
         colX = Centers(EmptyLines(level.width, b => (b.origin.x, b.width)), squeezed);
         rowY = Centers(EmptyLines(level.height, b => (b.origin.y, b.height)), squeezed);
     }
@@ -530,7 +551,7 @@ public partial class BoardView : MonoBehaviour
     // the whole layout's size at the current square size: ring to ring across, plus each frame past its ring
     Vector2 LayoutSize()
     {
-        float pad = Mathf.Max(framePadding, ringSize / 2f);
+        float pad = Mathf.Max(FramePad, ringSize / 2f);
         return new Vector2(colX[colX.Length - 1] - colX[0] + 2f * pad, rowY[rowY.Length - 1] - rowY[0] + 2f * pad) * CellSize;
     }
 

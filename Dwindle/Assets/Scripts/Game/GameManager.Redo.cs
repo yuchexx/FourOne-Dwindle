@@ -154,6 +154,7 @@ public partial class GameManager
             ClearRedo();
         }
 
+        if (hints.Stage >= Hints.Stages && !Session.HintGuideSeen(3) && HintArrow(o, door) != null) StartCoroutine(ArrowGuideSoon()); // the answer's first arrow: its guide step, once
         if (door == null) yield return board.AskDirection(o, ways, HintArrow(o));
         else
         {

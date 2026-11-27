@@ -440,6 +440,7 @@ public partial class GameManager
 
     void ShowStuckNotice()
     {
+        if (stuckPaused) return; // for the tutorial: no stuck notice while a guide runs (Level 3)
         if (hud.StuckNoticeShowing) return;
         AudioManager.Play(AudioManager.Sfx.StuckNotice);
         hud.ShowStuckNotice(Undo, Restart, EndLevelNow); // the wording is the notice's own, set in the scene

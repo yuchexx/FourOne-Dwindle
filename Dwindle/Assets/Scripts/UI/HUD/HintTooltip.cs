@@ -19,6 +19,12 @@ public class HintTooltip : MonoBehaviour
     public void Show(List<(string text, Color color)> parts, ObjectView objectPrefab, Vector2 screenPos)
     {
         if (!gameObject.activeSelf) gameObject.SetActive(true);
+        if (!TryGetComponent<Canvas>(out var own)) // drawn over a guide's dim too
+        {
+            own = gameObject.AddComponent<Canvas>();
+            own.overrideSorting = true;
+            own.sortingOrder = 450;
+        }
         if (!ReferenceEquals(parts, shown))
         {
             shown = parts;

@@ -8720,6 +8720,11 @@ MonoBehaviour:
   hideText: Hide
   showText: Show
   hoverPanel: {fileID: 528622857}
+  hideSlotY: 46
+  slotStep: 84
+  guideButtonText: Hint guide
+  orderDotSize: 18
+  orderDeliveredAlpha: 0.25
 --- !u!114 &528622857
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12741,6 +12746,11 @@ MonoBehaviour:
   - Answer
   headerSize: 20
   tilesText: Below the supply dock
+  guideLinkText: Hint guide
+  junctionNote: 'Junction: where objects meet'
+  orderNote: 'Order: below the supply dock'
+  hoverNote: Hover a ring or junction for more
+  deliveredAlpha: 0.25
 --- !u!114 &815892583
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20587,12 +20597,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BoardView
   draggedFromOpacity: 0.35
   hintBadgeSize: 0.3
-  hintFrameWidth: 4
+  hintFrameWidth: 7
   hintGhostStrength: 0.6
   hintPulse: 1
-  hintPulseSeconds: 1.6
+  hintPulseSeconds: 1.5
   hintPulseDepth: 0.35
   hintTooltip: {fileID: 517802809}
+  junctionBorderStrength: 0.6
+  junctionDoneStrength: 0.35
+  junctionCycleSeconds: 1.5
+  junctionGhostStrength: 0.3
   closedCellColor: {r: 0.55, g: 0.56, b: 0.6, a: 1}
   closedMarkColor: {r: 0.22, g: 0.22, b: 0.25, a: 1}
   closedMarkSize: 0.75
@@ -20613,6 +20627,8 @@ MonoBehaviour:
   boardDockGap: 40
   boardTopMargin: 60
   boardGap: 40
+  manyBoardsGap: 16
+  manyBoardsPadding: 0.15
   keepBelow: []
   keepAbove: []
   objectSize: 0.55
@@ -21051,12 +21067,27 @@ MonoBehaviour:
   nextButton: {fileID: 2112581377}
   pageLabel: {fileID: 51469489}
   pageText: '{p} / {total}'
+  colourGroups: 1
+  celebrateCleared: 0
+  endCardText: The End
+  groupColors:
+  - {r: 0.41960785, g: 0.4392157, b: 0.9411765, a: 1}
+  - {r: 0.8784314, g: 0.32156864, b: 0.30980393, a: 1}
+  - {r: 0.24705882, g: 0.68235296, b: 0.41568628, a: 1}
+  - {r: 0.9372549, g: 0.5411765, b: 0.17254902, a: 1}
+  - {r: 0.7607843, g: 0.3372549, b: 0.60784316, a: 1}
+  - {r: 0.2901961, g: 0.49803922, b: 0.8784314, a: 1}
+  celebrateSeconds: 2.5
   showParts: 1
   headingTemplate: {fileID: 1623308338}
   headingSpace: 0
   headingOffset: {x: 0, y: 15}
   continuedText: '{name} (continued)'
   tutorialCardColor: {r: 0.2509804, g: 0.23137255, b: 0.5411765, a: 1}
+  shadeCards: 1
+  topSectionShade: {r: 0.41568628, g: 0.43529412, b: 0.5176471, a: 1}
+  bottomSectionShade: {r: 0.2509804, g: 0.26666668, b: 0.32156864, a: 1}
+  firstLevelTint: 0.4
   frameWidth: 3
   frameColor: {r: 0.2509804, g: 0.23137255, b: 0.5411765, a: 1}
 --- !u!114 &1454499149
@@ -27162,6 +27193,14 @@ MonoBehaviour:
     clips:
     - {fileID: 8300000, guid: e88e3d40dd1089f4da692b66ea229ce8, type: 3}
     volume: 0.7
+    pitchVariation: 0
+  hintRight:
+    clips: []
+    volume: 0.6
+    pitchVariation: 0
+  hintWrong:
+    clips: []
+    volume: 0.6
     pitchVariation: 0
   game: {fileID: 0}
   menu: {fileID: 0}
